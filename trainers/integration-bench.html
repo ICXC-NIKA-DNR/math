@@ -582,6 +582,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <label class="toggle-row">
         <input type="checkbox" id="autoNext"> Auto-advance after grading
       </label>
+      <label class="chk">
+        <input type="checkbox" id="examMode"> Exam mode
+      </label>
+      <p class="empty-note" id="examNote" hidden style="margin-top:6px">
+        No hints and no cheat sheet — attempt each one cold. Self-grading still works.</p>
     </div>
 
     <div class="cgroup">
@@ -1655,7 +1660,7 @@ async function saveStore(obj){
 const S={
   techs:new Set(TECHS.map(t=>t.id)),
   diffs:new Set([1,2,3,4]),
-  mode:'up', limit:90, autoReveal:true, autoNext:false, night:true,
+  mode:'up', limit:90, autoReveal:true, autoNext:false, exam:false, night:true,
   queue:[], cur:null, phase:'ask', hintLevel:0,
   t0:0, elapsed:0, timedOut:false, ticker:null,
   session:{log:[],times:[],streak:0,best:0},
@@ -1749,7 +1754,7 @@ function renderControls(){
   const c=$('#controls'); c.innerHTML='';
   if(S.phase==='ask'){
     const hint=el('button','btn','Hint <span class="kbd">H</span>');
-    hint.onclick=showHint; c.appendChild(hint);
+    hint.onclick=showHint; hint.disabled=S.exam; c.appendChild(hint);
     const sol=el('button','btn solid','Show solution <span class="kbd">SPACE</span>');
     sol.onclick=reveal; c.appendChild(sol);
     c.appendChild(el('div','spacer'));
@@ -1763,7 +1768,7 @@ function renderControls(){
     b.onclick=()=>grade('miss'); c.appendChild(b);
     c.appendChild(el('div','spacer'));
     const sheet=el('button','btn','Cheat sheet <span class="kbd">C</span>');
-    sheet.onclick=()=>openSheet(S.cur.tech); c.appendChild(sheet);
+    sheet.onclick=()=>openSheet(S.cur.tech); sheet.disabled=S.exam; c.appendChild(sheet);
   } else {
     const n=el('button','btn solid','Next problem <span class="kbd">N</span>');
     n.onclick=nextProblem; c.appendChild(n);
@@ -1932,6 +1937,8 @@ function wireConsole(){
   };
   $('#autoReveal').onchange=e=>{ S.autoReveal=e.target.checked; persist(); };
   $('#autoNext').onchange=e=>{ S.autoNext=e.target.checked; persist(); };
+  $('#examMode').onchange=e=>{ S.exam=e.target.checked;
+    $('#examNote').hidden=!S.exam; renderControls(); persist(); };
 
   $('#drillWeak').onclick=()=>{
     const rows=TECHS.filter(t=>S.stats[t.id]&&S.stats[t.id].att>=2)
@@ -2032,7 +2039,7 @@ function persist(){
   saveT=setTimeout(()=>{
     saveStore({
       techs:[...S.techs], diffs:[...S.diffs], mode:S.mode, limit:S.limit,
-      autoReveal:S.autoReveal, autoNext:S.autoNext, night:S.night, stats:S.stats
+      autoReveal:S.autoReveal, autoNext:S.autoNext, exam:S.exam, stats:S.stats
     });
   },400);
 }
@@ -2044,7 +2051,7 @@ function applySaved(d){
   if(d.limit) S.limit=d.limit;
   if(typeof d.autoReveal==='boolean') S.autoReveal=d.autoReveal;
   if(typeof d.autoNext==='boolean') S.autoNext=d.autoNext;
-  if(typeof d.night==='boolean') S.night=d.night;
+  if(typeof d.exam==='boolean') S.exam=d.exam;
   if(d.stats) S.stats=d.stats;
   syncTech(); applyTheme();
   $('#diffSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',S.diffs.has(+b.dataset.d)));

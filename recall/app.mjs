@@ -14,9 +14,17 @@ const tex = (s, big) => {
   return n;
 };
 const store = {
+  keys: ["state", "opts", "misses"],
   get(k, fb) { try { return JSON.parse(localStorage.getItem("recall." + k)) ?? fb; } catch { return fb; } },
   set(k, v) { try { localStorage.setItem("recall." + k, JSON.stringify(v)); } catch { /* private mode */ } },
+  clear() { try { this.keys.forEach(k => localStorage.removeItem("recall." + k)); } catch { /* private mode */ } },
 };
+
+// Reset-progress, the shared standard across the trainers.
+document.getElementById("resetAll")?.addEventListener("click", () => {
+  store.clear();
+  location.reload();
+});
 
 let BANK, TREE, state, misses, session, opts, clock, asked, lastResult;
 

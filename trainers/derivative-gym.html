@@ -230,6 +230,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
           <label class="switch"><input type="checkbox" id="adaptive" checked><span></span></label></div>
         <div class="row"><span>Auto-advance when correct</span>
           <label class="switch"><input type="checkbox" id="autonext"><span></span></label></div>
+        <div class="row"><span>Exam mode</span>
+          <label class="switch"><input type="checkbox" id="exam"><span></span></label></div>
       </div>
 
       <div class="panel">
@@ -1482,6 +1484,7 @@ function checkAnswer(input, p) {
 
 /* --- storage: localStorage if present, memory otherwise --- */
 var MEM = {};
+var EXAM = false;   /* exam mode: hints + solutions locked until you check */
 var store = {
   get: async function(k){
     try { var r = localStorage.getItem(k); return r !== null ? r : (MEM[k] || null); }
@@ -1653,7 +1656,8 @@ function newProblem(){
                   : cur.stem === 'tangent' ? 'y = …' : 'type your derivative';
   $('preview').innerHTML = '';
   $('btn-sol').textContent = 'Show solution';
-  $('btn-hint').disabled = false;
+  $('btn-hint').disabled = EXAM;
+  $('btn-sol').disabled = EXAM;
   t0 = Date.now();
   clearInterval(tick);
   tick = setInterval(function(){ $('clock').textContent = ((Date.now()-t0)/1000).toFixed(1)+'s'; }, 100);
@@ -1717,6 +1721,7 @@ function check(){
   if (r.ok){
     clearInterval(tick);
     answered = true;
+    if (EXAM){ $('btn-hint').disabled = false; $('btn-sol').disabled = false; }
     inp.className = 'good';
     record(true);
     var t = ((Date.now()-t0)/1000).toFixed(1);
@@ -1756,7 +1761,8 @@ function hint(){
 }
 
 function reveal(){
-  if (!answered){ clearInterval(tick); record(false); answered = true; }
+  if (!answered){ clearInterval(tick); record(false); answered = true;
+    if (EXAM){ $('btn-hint').disabled = false; $('btn-sol').disabled = false; } }
   showSolution();
   verdict('info', 'Answer shown — this one counts as missed. Next problem when ready.');
   $('answer').className = '';
@@ -1769,6 +1775,11 @@ function skip(){
 
 /* --- wiring --- */
 $('btn-check').addEventListener('click', check);
+$('exam').addEventListener('change', function(){
+  EXAM = this.checked;
+  $('btn-hint').disabled = EXAM && !answered;
+  $('btn-sol').disabled  = EXAM && !answered;
+});
 $('btn-hint').addEventListener('click', hint);
 $('btn-sol').addEventListener('click', reveal);
 $('btn-skip').addEventListener('click', skip);
