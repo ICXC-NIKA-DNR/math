@@ -5,58 +5,382 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Math trainers — precalc through calculus</title>
 <style>
-:root{--bg:#12161D;--panel:#1A1F28;--rule:#2C3444;--tx:#E4E9F2;--dim:#9AA6BC;--faint:#6F7C93;
-  --l3:#A8CBFF;--l3b:#1B2840;--l3t:#CFE2FF;--serif:Cambria,Georgia,serif}
+/* ── monochrome base ─────────────────────────────────────────────
+   The hub itself is strictly black and white. The ONLY colour on
+   this page comes from each trainer's own accent, carried on its
+   card border, its hover glow, and its preview. ───────────────── */
+:root{
+  --bg:#080808; --panel:#111; --panel2:#171717;
+  --tx:#F4F4F4; --dim:#A0A0A0; --faint:#666; --rule:#242424; --rule2:#333;
+  --serif:Cambria,Georgia,serif;
+  --page-accent:#FFFFFF;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-.wrap{max-width:900px;margin:0 auto;padding:48px 24px}
-h1{font-family:var(--serif);font-size:32px;font-weight:600;margin:0 0 6px}
-.sub{color:var(--dim)}
-h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:400;margin:40px 0 14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-a.card{display:block;border:1px solid var(--rule);background:var(--panel);border-radius:6px;padding:18px;
-  text-decoration:none;color:var(--tx)}
-a.card:hover{border-color:var(--l3)}
-a.card.lead{border-color:var(--l3);background:var(--l3b);color:var(--l3t)}
-.name{font-family:var(--serif);font-size:20px}
-.desc{font-size:13px;color:var(--faint);margin-top:6px}
-footer{margin-top:56px;border-top:1px solid var(--rule);padding-top:16px;font-size:13px;color:var(--faint)}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font:15px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased}
+
+/* page-wide accent takeover: tinted aura behind everything */
+.aura{position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0;
+  background:radial-gradient(70% 55% at 50% -10%, var(--page-accent) 0%, transparent 68%);
+  transition:opacity .5s ease, background .5s ease}
+html.accent-on .aura{opacity:.16}
+
+.wrap{position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:52px 24px 72px}
+
+header.top{margin-bottom:44px}
+h1{font-family:var(--serif); font-size:34px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em}
+h1 .dot{color:var(--page-accent); transition:color .5s ease}
+.sub{color:var(--dim); margin:0; max-width:56ch}
+
+h2{font-size:11.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--faint);
+  font-weight:500; margin:0 0 16px; display:flex; align-items:center; gap:12px}
+h2::after{content:""; flex:1; height:1px; background:var(--rule)}
+
+section{margin-bottom:46px}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:26px 22px}
+
+/* ── card ─────────────────────────────────────────────────────── */
+a.card{display:block; text-decoration:none; color:inherit; border-radius:12px;
+  transition:transform .22s cubic-bezier(.2,.7,.3,1);
+  transform-origin:center bottom}
+a.card:hover{transform:translateY(-4px) scale(1.025); z-index:2; position:relative}
+a.card:focus-visible{outline:2px solid var(--accent); outline-offset:4px}
+
+.thumb{position:relative; aspect-ratio:16/9; border-radius:11px; overflow:hidden;
+  background:var(--panel); border:1px solid var(--rule2);
+  transition:border-color .22s ease, box-shadow .3s ease}
+a.card:hover .thumb{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent), 0 14px 46px -10px var(--glow), 0 0 26px -6px var(--glow)}
+
+/* the accent hairline that marks each tool even at rest */
+.thumb::after{content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:var(--accent); opacity:.55; transition:opacity .22s ease}
+a.card:hover .thumb::after{opacity:1}
+
+.badge{position:absolute; right:7px; bottom:8px; z-index:4;
+  background:rgba(0,0,0,.82); color:#EDEDED; font-size:10.5px; font-weight:600;
+  letter-spacing:.03em; padding:3px 6px; border-radius:4px; font-variant-numeric:tabular-nums}
+
+.meta{display:flex; gap:11px; padding:12px 2px 0}
+.tick{width:3px; border-radius:2px; background:var(--accent); opacity:.65;
+  transition:opacity .22s ease}
+a.card:hover .tick{opacity:1}
+.name{font-family:var(--serif); font-size:19px; line-height:1.25; margin-bottom:3px}
+.desc{font-size:12.5px; color:var(--faint); line-height:1.45}
+a.card:hover .desc{color:var(--dim)}
+
+/* ── shared miniature-preview scaffolding ─────────────────────── */
+.mini{position:absolute; inset:0; padding:10px 10px 27px; display:flex; flex-direction:column;
+  gap:6px; font-size:9px; color:var(--dim); overflow:hidden}
+.mini .lbl{font-size:7px; letter-spacing:.12em; text-transform:uppercase; color:#5A5A5A;
+  flex:none; display:flex; justify-content:space-between; align-items:center; gap:8px}
+.mini .lbl .t{font-variant-numeric:tabular-nums; letter-spacing:.04em; color:#4E4E4E}
+.mini .stage{position:relative; flex:1; min-height:0; display:flex; align-items:center;
+  justify-content:center; background:#141414; border:1px solid #262626; border-radius:5px;
+  padding:4px}
+.mini .eq{font-family:var(--serif); color:#EAEAEA; font-size:19px; text-align:center;
+  line-height:1.25}
+.mini .opt{height:14px; border-radius:3px; background:#1B1B1B; border:1px solid #2A2A2A;
+  transition:border-color .2s, background .2s}
+
+/* ── Previews ───────────────────────────────────────────────────
+   Base CSS is the RESTING frame: each thumbnail sits on a rich,
+   "mid-action" still. The animation is attached only on hover, so
+   the clip plays on hover and the still is always exact. ──────── */
+.mini .pick{background:color-mix(in srgb, var(--accent) 17%, #1B1B1B);
+  border-color:var(--accent)}
+
+/* Recall: four choices, one already resolved */
+.m-recall .opts{display:grid; grid-template-columns:1fr 1fr; gap:5px}
+.m-recall .score{position:absolute; left:12px; bottom:10px; font-size:8.5px;
+  font-weight:700; color:var(--accent); opacity:1}
+@keyframes recallPick{
+  0%,100%{background:color-mix(in srgb, var(--accent) 17%, #1B1B1B); border-color:var(--accent)}
+  14%,30%{background:#1B1B1B; border-color:#2A2A2A}
+  52%{background:color-mix(in srgb, var(--accent) 17%, #1B1B1B); border-color:var(--accent)}}
+@keyframes recallScore{0%,100%{opacity:1} 12%,34%{opacity:0} 56%{opacity:1}}
+a.card:hover .m-recall .o2{animation:recallPick 2.6s ease-in-out infinite}
+a.card:hover .m-recall .score{animation:recallScore 2.6s ease-in-out infinite}
+
+/* Limits: stacked options, one already chosen */
+.m-limits .opts{display:flex; flex-direction:column; gap:4px}
+@keyframes limPick{
+  0%,100%{background:color-mix(in srgb, var(--accent) 18%, #1B1B1B); border-color:var(--accent)}
+  15%,32%{background:#1B1B1B; border-color:#2A2A2A}
+  54%{background:color-mix(in srgb, var(--accent) 18%, #1B1B1B); border-color:var(--accent)}}
+a.card:hover .m-limits .o3{animation:limPick 2.6s ease-in-out infinite}
+
+/* Derivative Gym: answer already typed; retypes on hover */
+.m-gym .field{display:flex; gap:5px; align-items:center}
+.m-gym .input{flex:1; height:15px; border-radius:3px; background:#1B1B1B;
+  border:1px solid #2A2A2A; position:relative; overflow:hidden}
+.m-gym .typed{position:absolute; left:4px; top:3px; white-space:nowrap; font-size:8.5px;
+  font-family:var(--serif); color:#E8E8E8; max-width:calc(100% - 8px); overflow:hidden}
+.m-gym .check{width:34px; height:15px; border-radius:3px; background:var(--accent); opacity:1}
+@keyframes gymType{0%,100%{max-width:calc(100% - 8px)} 12%,20%{max-width:0} 62%{max-width:calc(100% - 8px)}}
+@keyframes gymCheck{0%,100%{opacity:1} 14%,42%{opacity:.3} 64%{opacity:1}}
+a.card:hover .m-gym .typed{animation:gymType 2.8s steps(14) infinite}
+a.card:hover .m-gym .check{animation:gymCheck 2.8s ease-in-out infinite}
+
+/* Integration Bench: solution paper resting up; re-slides on hover */
+.m-bench .paper{position:absolute; left:10px; right:10px; bottom:0; height:46%;
+  background:#F0EADC; border-radius:4px 4px 0 0; color:#1A1A1A;
+  font-family:var(--serif); font-size:12px; display:flex; align-items:center;
+  justify-content:center; box-shadow:0 -6px 18px rgba(0,0,0,.45);
+  border-top:2px solid var(--accent)}
+@keyframes benchSlide{0%,100%{bottom:0} 16%,36%{bottom:-48%} 60%{bottom:0}}
+a.card:hover .m-bench .paper{animation:benchSlide 3s cubic-bezier(.3,.8,.3,1) infinite}
+
+/* ── Revolution: the disk method, built step by step ───────────
+   Rest = the finished solid. Hover replays the construction:
+   curve draws -> 2-D region -> representative slice -> the slice
+   sweeps into a disk -> disks stack into the solid. ──────────── */
+.m-rev svg{width:100%; height:100%; display:block; overflow:visible}
+.m-rev .formula{position:absolute; left:7px; top:6px; font-family:var(--serif);
+  font-size:11px; color:var(--accent); white-space:nowrap; pointer-events:none}
+.m-rev .ax{stroke:#6F7C93; stroke-width:1.1; stroke-dasharray:3 3}
+.m-rev .solid{fill:url(#revFill)}
+.m-rev .disks ellipse{fill:none; stroke:#E0645A; stroke-width:1; stroke-opacity:.5}
+.m-rev .cap{fill:#C2483B; fill-opacity:.5; stroke:#F09E92; stroke-width:1.3}
+.m-rev .curve{fill:none; stroke:#F09E92; stroke-width:2.2; stroke-linecap:round;
+  stroke-dasharray:210; stroke-dashoffset:0}
+.m-rev .mirror{fill:none; stroke:#C2483B; stroke-width:1.5; stroke-opacity:.8}
+/* construction aids — absent from the resting frame */
+.m-rev .region{fill:#C2483B; fill-opacity:.2; opacity:0}
+.m-rev .slice{fill:#F09E92; fill-opacity:.85; opacity:0}
+.m-rev .spin{fill:none; stroke:#FFD0C7; stroke-width:1.7; opacity:0;
+  transform-box:fill-box; transform-origin:center}
+
+@keyframes revDraw{0%,100%{stroke-dashoffset:0} 6%{stroke-dashoffset:210} 30%{stroke-dashoffset:0}}
+@keyframes revRegion{0%,8%,100%{opacity:0} 22%,46%{opacity:1} 58%{opacity:0}}
+@keyframes revSlice{0%,30%,100%{opacity:0} 38%,52%{opacity:1} 62%{opacity:0}}
+@keyframes revSpin{0%,100%{opacity:0; transform:scaleX(1)}
+  38%{opacity:0; transform:scaleX(.02)}
+  44%{opacity:1; transform:scaleX(.02)}
+  64%{opacity:1; transform:scaleX(1)}
+  76%{opacity:0; transform:scaleX(1)}}
+@keyframes revSolidIn{0%,100%{opacity:1} 6%,58%{opacity:0} 78%{opacity:1}}
+@keyframes revMirrorIn{0%,100%{opacity:1} 6%,60%{opacity:0} 80%{opacity:1}}
+@keyframes revDisksIn{0%,100%{opacity:1} 6%,66%{opacity:0} 88%{opacity:1}}
+@keyframes revCapIn{0%,100%{opacity:1} 6%,62%{opacity:0} 82%{opacity:1}}
+
+a.card:hover .m-rev .curve {animation:revDraw     5s ease-in-out infinite}
+a.card:hover .m-rev .region{animation:revRegion   5s ease-in-out infinite}
+a.card:hover .m-rev .slice {animation:revSlice    5s ease-in-out infinite}
+a.card:hover .m-rev .spin  {animation:revSpin     5s cubic-bezier(.4,.1,.3,1) infinite}
+a.card:hover .m-rev .solid {animation:revSolidIn  5s ease-in-out infinite}
+a.card:hover .m-rev .mirror{animation:revMirrorIn 5s ease-in-out infinite}
+a.card:hover .m-rev .disks {animation:revDisksIn  5s ease-in-out infinite}
+a.card:hover .m-rev .cap   {animation:revCapIn    5s ease-in-out infinite}
+
+@media (prefers-reduced-motion:reduce){
+  a.card:hover .mini *{animation:none !important}
+}
+
+footer{margin-top:60px; border-top:1px solid var(--rule); padding-top:18px;
+  font-size:12.5px; color:var(--faint); display:flex; gap:8px; flex-wrap:wrap}
+footer a{color:var(--dim); text-decoration:none; border-bottom:1px solid var(--rule2)}
+footer a:hover{color:var(--page-accent); border-color:var(--page-accent)}
+
+@media (prefers-reduced-motion:reduce){
+  .mini .anim{animation:none !important}
+  a.card{transition:none}
+  a.card:hover{transform:none}
+}
+@media (max-width:560px){
+  .wrap{padding:34px 16px 56px}
+  h1{font-size:27px}
+  .grid{grid-template-columns:1fr; gap:22px}
+}
 </style>
 </head>
 <body>
+<div class="aura"></div>
 <div class="wrap">
-  <h1>Math trainers</h1>
-  <p class="sub">Practice tools for precalculus through calculus. Nothing to install, nothing to sign in to.</p>
 
-  <h2>Memory</h2>
-  <div class="grid">
-    <a class="card lead" href="recall/">
-      <div class="name">Recall</div>
-      <div class="desc">443 table forms — derivatives, integrals, identities, the unit circle, Calc 3 formulas, integration-bee facts. Pick families and difficulty.</div>
-    </a>
-  </div>
+  <header class="top">
+    <h1>Math trainers<span class="dot">.</span></h1>
+    <p class="sub">Practice tools for precalculus through calculus. Nothing to install,
+      nothing to sign in to.</p>
+  </header>
 
-  <h2>Working problems</h2>
-  <div class="grid">
-    <a class="card" href="trainers/limits_trainer.html">
-      <div class="name">Limits</div>
-      <div class="desc">Limit evaluation practice.</div>
-    </a>
-    <a class="card" href="trainers/derivative-gym.html">
-      <div class="name">Derivative Gym</div>
-      <div class="desc">Differentiation drills by technique and difficulty.</div>
-    </a>
-    <a class="card" href="trainers/integration-bench.html">
-      <div class="name">Integration Bench</div>
-      <div class="desc">Integration drills with a cheat sheet.</div>
-    </a>
-    <a class="card" href="trainers/revolution-trainer.html">
-      <div class="name">Revolution Trainer</div>
-      <div class="desc">Area, disks, washers and shells.</div>
-    </a>
-  </div>
+  <section>
+    <h2>Memory</h2>
+    <div class="grid">
 
-  <footer>Built by James Montiel-Hernandez. Source on GitHub.</footer>
+      <a class="card" href="recall/" style="--accent:#A8CBFF; --glow:rgba(168,203,255,.42)">
+        <div class="thumb">
+          <div class="mini m-recall">
+            <div class="lbl"><span>Precalc · reverse values</span><span class="t">card 1</span></div>
+            <div class="stage"><div class="eq">sin θ = √3⁄2</div></div>
+            <div class="opts">
+              <div class="opt"></div>
+              <div class="opt o2 pick anim"></div>
+              <div class="opt"></div>
+              <div class="opt"></div>
+            </div>
+            <div class="score anim">Correct · +821</div>
+          </div>
+          <span class="badge">443 cards</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Recall</div>
+            <div class="desc">443 table forms — derivatives, integrals, identities, the unit
+              circle, Calc 3 formulas, integration-bee facts. Pick families and difficulty.</div>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Working problems</h2>
+    <div class="grid">
+
+      <a class="card" href="trainers/limits_trainer.html" style="--accent:#8B83E6; --glow:rgba(139,131,230,.42)">
+        <div class="thumb">
+          <div class="mini m-limits">
+            <div class="lbl"><span>Continuity</span><span class="t">0/0</span></div>
+            <div class="stage"><div class="eq" style="font-size:13px">f(x) = √(x − 5)</div></div>
+            <div class="opts">
+              <div class="opt"></div>
+              <div class="opt"></div>
+              <div class="opt o3 pick anim"></div>
+              <div class="opt"></div>
+            </div>
+          </div>
+          <span class="badge">5 topics</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Limits</div>
+            <div class="desc">Two-sided, one-sided, continuity, limits at infinity and the
+              squeeze theorem.</div>
+          </div>
+        </div>
+      </a>
+
+      <a class="card" href="trainers/derivative-gym.html" style="--accent:#F2A93B; --glow:rgba(242,169,59,.45)">
+        <div class="thumb">
+          <div class="mini m-gym">
+            <div class="lbl"><span>Chain · level 1</span><span class="t">0.2s</span></div>
+            <div class="stage"><div class="eq">d⁄dx (4x − 3)³</div></div>
+            <div class="field">
+              <div class="input"><span class="typed anim">12(4x − 3)²</span></div>
+              <div class="check anim"></div>
+            </div>
+          </div>
+          <span class="badge">14 techniques</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Derivative Gym</div>
+            <div class="desc">Infinite reps across every Calc 1 technique, with hints and
+              weak-spot drilling.</div>
+          </div>
+        </div>
+      </a>
+
+      <a class="card" href="trainers/integration-bench.html" style="--accent:#EBD9A8; --glow:rgba(235,217,168,.40)">
+        <div class="thumb">
+          <div class="mini m-bench">
+            <div class="lbl"><span>Basic · Calc 1</span><span class="t">00:08</span></div>
+            <div class="stage"><div class="eq">∫₀¹ 4x³ dx</div></div>
+            <div class="paper anim">= 1</div>
+          </div>
+          <span class="badge">112 problems</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Integration Bench</div>
+            <div class="desc">Drill, diagnose, recover — nine technique families with a
+              built-in cheat sheet.</div>
+          </div>
+        </div>
+      </a>
+
+      <a class="card" href="trainers/revolution-trainer.html" style="--accent:#C2483B; --glow:rgba(194,72,59,.42)">
+        <div class="thumb">
+          <div class="mini m-rev">
+            <div class="lbl"><span>Disk method</span><span class="t">y = &#8730;x</span></div>
+            <div class="stage">
+              <div class="formula">V = &pi;&#8747;&#8320;&#8308; (&#8730;x)&#178; dx</div>
+              <svg viewBox="0 0 200 96" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <defs>
+                  <linearGradient id="revFill" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="#C2483B" stop-opacity=".16"/>
+                    <stop offset="1" stop-color="#C2483B" stop-opacity=".46"/>
+                  </linearGradient>
+                </defs>
+                <line class="ax" x1="12" y1="52" x2="192" y2="52"/>
+                <path class="solid" d="M18 52 C 46 35, 92 26, 176 21 L176 83 C 92 78, 46 69, 18 52 Z"/>
+                <g class="disks">
+                  <ellipse cx="60" cy="52" rx="4.4" ry="17"/>
+                  <ellipse cx="100" cy="52" rx="5.1" ry="24"/>
+                  <ellipse cx="140" cy="52" rx="5.7" ry="28"/>
+                </g>
+                <ellipse class="cap" cx="176" cy="52" rx="6.4" ry="31"/>
+                <path class="region" d="M18 52 C 46 35, 92 26, 176 21 L176 52 Z"/>
+                <rect class="slice" x="117" y="26" width="5" height="26"/>
+                <ellipse class="spin" cx="119.5" cy="52" rx="5.7" ry="26"/>
+                <path class="curve" d="M18 52 C 46 35, 92 26, 176 21"/>
+                <path class="mirror" d="M18 52 C 46 69, 92 78, 176 83"/>
+              </svg>
+            </div>
+          </div>
+          <span class="badge">4 methods</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Revolution Trainer</div>
+            <div class="desc">Area between curves, and volumes by disks, washers and shells.</div>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <footer>
+    <span>Built by James Montiel-Hernandez.</span>
+    <a href="https://github.com/ICXC-NIKA-DNR/math">Source on GitHub</a>
+  </footer>
 </div>
+
+<script>
+/* Hovering a card lifts its accent to the whole page. */
+(function(){
+  var root = document.documentElement;
+  var clear;
+  document.querySelectorAll('a.card').forEach(function(card){
+    var accent = getComputedStyle(card).getPropertyValue('--accent').trim();
+    function on(){
+      clearTimeout(clear);
+      root.style.setProperty('--page-accent', accent);
+      root.classList.add('accent-on');
+    }
+    function off(){
+      root.classList.remove('accent-on');
+      clear = setTimeout(function(){
+        root.style.setProperty('--page-accent', '#FFFFFF');
+      }, 500);
+    }
+    card.addEventListener('mouseenter', on);
+    card.addEventListener('mouseleave', off);
+    card.addEventListener('focus', on);
+    card.addEventListener('blur', off);
+  });
+})();
+</script>
 </body>
 </html>
