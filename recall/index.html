@@ -8,8 +8,8 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
 :root{
-  --bg:#12161D; --panel:#1A1F28; --rule:#2C3444; --rule2:#252C39;
-  --tx:#E4E9F2; --dim:#9AA6BC; --dim2:#8B98AE; --faint:#6F7C93;
+  --bg:#080808; --panel:#111111; --rule:#242424; --rule2:#1E1E1E;
+  --tx:#F4F4F4; --dim:#A0A0A0; --dim2:#8A8A8A; --faint:#666666;
   --l0:#2C3444; --l1:#3E5F8A; --l2:#6E9BDA; --l3:#A8CBFF;
   --l1b:#172130; --l2b:#19243A; --l3b:#1B2840;
   --l1t:#8FB0D8; --l2t:#A8C6EE; --l3t:#CFE2FF;
@@ -135,6 +135,12 @@ button{font:inherit}
   .prompt .katex{font-size:2em}
   .stats{gap:24px}
 }
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #6E9BDA 0%, transparent 68%);
+  opacity:.16}
+.wrap{position:relative;z-index:1}
 </style>
 </head>
 <body>

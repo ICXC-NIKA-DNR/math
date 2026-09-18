@@ -8,20 +8,20 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
 <style>
 :root{
-  --ink:#0c1117;
-  --chassis:#121a24;
-  --panel:#18222f;
-  --panel-hi:#1f2b3a;
-  --line:#2a3849;
-  --line-soft:#202c3b;
+  --ink:#080808;
+  --chassis:#0D0D0D;
+  --panel:#111111;
+  --panel-hi:#171717;
+  --line:#2A2A2A;
+  --line-soft:#1E1E1E;
   --paper:#f5f1e6;
   --paper-edge:#ded6c4;
   --paper-rule:#e6dfd0;
   --on-paper:#141a20;
   --on-paper-dim:#5d6670;
-  --text:#e9eef6;
-  --dim:#8496ab;
-  --dimmer:#5f7189;
+  --text:#F4F4F4;
+  --dim:#A0A0A0;
+  --dimmer:#666666;
   --amber:#ffb13d;
   --amber-deep:#c47a12;
   --amber-glow:rgba(255,177,61,.16);
@@ -444,69 +444,81 @@ table.ref .katex{font-size:1.02em;color:var(--text)}
 }
 
 /* ═══ NIGHT MODE — low-light, no bright paper ═══════════ */
-body.night{
-  --text:#cdd6e1;
-  --dim:#7889a0;
-  --dimmer:#566a82;
-  --amber:#d99a3f;
-  --amber-deep:#8f5c14;
-  --amber-glow:rgba(217,154,63,.12);
+body{
+  --text:#F4F4F4;
+  --dim:#A0A0A0;
+  --dimmer:#666666;
+  --amber:#EBD9A8;
+  --amber-deep:#8A7A50;
+  --amber-glow:rgba(235,217,168,.14);
   --good:#48b98d;
   --bad:#d96363;
-  --chassis:#0d141c;
-  --panel:#121a24;
-  --panel-hi:#18222e;
-  --line:#243040;
-  --line-soft:#1b2532;
+  --chassis:#0D0D0D;
+  --panel:#111111;
+  --panel-hi:#171717;
+  --line:#2A2A2A;
+  --line-soft:#1E1E1E;
   /* the card stops being paper and becomes a lit panel */
-  --paper:#151d27;
-  --paper-edge:#27333f;
-  --paper-rule:#222d3a;
-  --on-paper:#ccd6e0;
-  --on-paper-dim:#75859a;
-  background:
-    radial-gradient(1100px 560px at 78% -8%, #121a25 0%, transparent 60%),
-    linear-gradient(#070a0e,#05080b 70%);
+  --paper:#111111;
+  --paper-edge:#2A2A2A;
+  --paper-rule:#1E1E1E;
+  --on-paper:#F4F4F4;
+  --on-paper-dim:#A0A0A0;
+  background:var(--bg);
 }
-body.night .paper{box-shadow:0 16px 38px -20px rgba(0,0,0,.9)}
-body.night .strip{background:#1c2531}
-body.night .strip .drain{background:repeating-linear-gradient(90deg,#a8752c 0 7px,#c08e42 7px 9px)}
-body.night .strip .drain.warn{background:repeating-linear-gradient(90deg,#b05f2e 0 7px,#c47a4d 7px 9px)}
-body.night .strip .drain.crit{background:repeating-linear-gradient(90deg,#a83c3c 0 7px,#c25f5f 7px 9px)}
-body.night .clock.warn{color:#d08048}
-body.night .clock.crit{color:#d96b6b}
-body.night .clock.off{color:#5d6d80}
-body.night .stars{color:#4d5c6e}
-body.night .stars b{color:#c0913f}
-body.night .tag{filter:brightness(.72) saturate(.85)}
-body.night .pfoot{background:#111923;border-top-color:var(--paper-rule)}
-body.night .pfoot .btn{background:#1a2430;border-color:#2b3746;color:#c3cdd9}
-body.night .pfoot .btn:hover{background:#212d3b;border-color:#3a4859}
-body.night .pfoot .btn.solid{background:#8f5c14;border-color:#8f5c14;color:#f0e4d0}
-body.night .pfoot .btn.solid:hover{background:#a56b1c;border-color:#a56b1c}
-body.night .pfoot .btn.good{background:rgba(72,185,141,.09);border-color:#2f6a53;color:#5cbb94}
-body.night .pfoot .btn.good:hover{background:rgba(72,185,141,.16)}
-body.night .pfoot .btn.bad{background:rgba(217,99,99,.09);border-color:#6d3434;color:#d17878}
-body.night .pfoot .btn.bad:hover{background:rgba(217,99,99,.16)}
-body.night .pfoot .note{color:var(--on-paper-dim)}
-body.night .hintbox{background:#111a24;border-color:#26323f;border-left-color:#8f5c14;color:#c3cdd9}
-body.night .answer{background:#111a24;border-color:#2c3a49}
-body.night .why{color:#98a6b6;border-top-color:#222d3a}
-body.night .why b{color:#c0913f}
-body.night ol.steps{color:#bcc7d4}
-body.night ol.steps li::marker{color:#5d6d80}
-body.night .card p,body.night .card ul,body.night table.ref td,body.night .flow-txt{color:#b3bfcd}
-body.night .card h4{color:#c99a4b}
-body.night .formula{background:#0b1119}
-body.night .tick.hit{background:#3f9d78}
-body.night .tick.miss{background:#b95656}
-body.night .tick.to{background:#8f5c14}
-body.night .btn.solid{background:#c08e42;border-color:#c08e42;color:#191307}
-body.night .btn.solid:hover{background:#d0a057;border-color:#d0a057}
-body.night ::selection{background:#8f5c14;color:#f0e4d0}
-body.night .brand .glyph{color:#c0913f}
-body.night .scrim{background:rgba(2,4,6,.8)}
-body.night .drawer{background:linear-gradient(#0d141c,#080d13)}
+body .paper{box-shadow:0 16px 38px -20px rgba(0,0,0,.9)}
+body .strip{background:#1E1E1E}
+body .strip .drain{background:repeating-linear-gradient(90deg,#8A7A50 0 7px,#B8A87A 7px 9px)}
+body .strip .drain.warn{background:repeating-linear-gradient(90deg,#b05f2e 0 7px,#c47a4d 7px 9px)}
+body .strip .drain.crit{background:repeating-linear-gradient(90deg,#a83c3c 0 7px,#c25f5f 7px 9px)}
+body .clock.warn{color:#d08048}
+body .clock.crit{color:#d96b6b}
+body .clock.off{color:#666666}
+body .stars{color:#4A4A4A}
+body .stars b{color:#EBD9A8}
+
+body .pfoot{background:#141414;border-top-color:var(--paper-rule)}
+body .pfoot .btn{background:#1A1A1A;border-color:#2A2A2A;color:#D8D8D8}
+body .pfoot .btn:hover{background:#212d3b;border-color:#3a4859}
+body .pfoot .btn.solid{background:#8A7A50;border-color:#8A7A50;color:#F4F0E4}
+body .pfoot .btn.solid:hover{background:#A39161;border-color:#A39161}
+body .pfoot .btn.good{background:rgba(72,185,141,.09);border-color:#2f6a53;color:#5cbb94}
+body .pfoot .btn.good:hover{background:rgba(72,185,141,.16)}
+body .pfoot .btn.bad{background:rgba(217,99,99,.09);border-color:#6d3434;color:#d17878}
+body .pfoot .btn.bad:hover{background:rgba(217,99,99,.16)}
+body .pfoot .note{color:var(--on-paper-dim)}
+body .hintbox{background:#111a24;border-color:#26323f;border-left-color:#8f5c14;color:#c3cdd9}
+body .answer{background:#111a24;border-color:#2c3a49}
+body .why{color:#98a6b6;border-top-color:#222d3a}
+body .why b{color:#c0913f}
+body ol.steps{color:#bcc7d4}
+body ol.steps li::marker{color:#5d6d80}
+body .card p,body .card ul,body table.ref td,body .flow-txt{color:#b3bfcd}
+body .card h4{color:#c99a4b}
+body .formula{background:#0b1119}
+body .tick.hit{background:#3f9d78}
+body .tick.miss{background:#b95656}
+body .tick.to{background:#8f5c14}
+body .btn.solid{background:#EBD9A8;border-color:#EBD9A8;color:#14110A}
+body .btn.solid:hover{background:#F2E4BE;border-color:#F2E4BE}
+body ::selection{background:#8f5c14;color:#f0e4d0}
+body .brand .glyph{color:#c0913f}
+body .scrim{background:rgba(2,4,6,.8)}
+body .drawer{background:linear-gradient(#0d141c,#080d13)}
+
+/* ── unified accent ───────────────────────────────────────────────
+   Per-technique hues fought the one-accent-per-page scheme, so every
+   selection box, tag chip and meter now uses the page accent. The
+   per-technique `color` values stay in the data, simply unused. */
+.sw input:checked+.box{background:var(--amber);border-color:var(--amber)}
+.tag{background:var(--amber);color:#14110A}
+.meter .fill{background:var(--amber)!important}
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #EBD9A8 0%, transparent 68%);
+  opacity:.16}
+.shell{position:relative;z-index:1}
 </style>
 </head>
 <body>
@@ -526,7 +538,6 @@ body.night .drawer{background:linear-gradient(#0d141c,#080d13)}
     <button class="btn mobile-open" id="mobileConsole">&#9776; Setup</button>
     <div class="chip live">streak <b id="chipStreak">0</b></div>
     <div class="chip">pool <b id="chipPool">0</b></div>
-    <button class="btn" id="themeBtn" aria-pressed="true" title="Toggle low-light mode">☾ Night</button>
     <button class="btn key" id="openSheet">Cheat sheet <span class="kbd">C</span></button>
   </div>
 </header>
@@ -1934,7 +1945,6 @@ function wireConsole(){
     toast('Now drilling: '+pick.map(id=>TECH[id].name).join(', '));
   };
 
-  $('#themeBtn').onclick=()=>{ S.night=!S.night; applyTheme(); persist(); };
 
   $('#resetStats').onclick=()=>{
     S.stats={}; S.session={log:[],times:[],streak:0,best:0};
@@ -1947,11 +1957,7 @@ function wireConsole(){
 }
 
 function applyTheme(){
-  document.body.classList.toggle('night',S.night);
-  const b=$('#themeBtn');
-  b.setAttribute('aria-pressed',S.night);
-  b.classList.toggle('key',S.night);
-  b.innerHTML = S.night ? '\u263e Night' : '\u2600 Day';
+  document.body.classList.add('night');  /* legacy no-op: night is the only theme */
 }
 
 /* ── cheat sheet ────────────────────────────────────────── */
@@ -2059,7 +2065,6 @@ function keys(e){
   }
   const k=e.key.toLowerCase();
   if(k==='escape'){ closeSheet(); $('#console').classList.remove('open'); return; }
-  if(k==='d'){ e.preventDefault(); S.night=!S.night; applyTheme(); persist(); return; }
   if(k==='c'){ e.preventDefault(); $('#drawer').classList.contains('open')?closeSheet():openSheet(S.cur&&S.cur.tech); return; }
   if($('#drawer').classList.contains('open')){
     if(k==='/'){ e.preventDefault(); $('#sheetSearch').focus(); }

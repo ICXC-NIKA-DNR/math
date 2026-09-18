@@ -7,8 +7,8 @@
 <style>
 :root{
   /* Base tokens are shared with Recall so the two read as one product. */
-  --bg:#12161D; --panel:#1A1F28; --rule:#2C3444; --rule2:#252C39;
-  --tx:#E4E9F2; --dim:#9AA6BC; --dim2:#8B98AE; --faint:#6F7C93;
+  --bg:#080808; --panel:#111111; --rule:#242424; --rule2:#1E1E1E;
+  --tx:#F4F4F4; --dim:#A0A0A0; --dim2:#8A8A8A; --faint:#666666;
 
   /* Red ramp — this trainer's identity, mirroring Recall's blue ramp. */
   --r0:#3A2320;
@@ -140,6 +140,12 @@ sup,sub{font-size:.68em}
   h1{font-size:22px}
   .controls{gap:14px}
 }
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #C2483B 0%, transparent 68%);
+  opacity:.16}
+.wrap{position:relative;z-index:1}
 </style>
 </head>
 <body>
@@ -205,11 +211,11 @@ sup,sub{font-size:.68em}
 
 <div class="stats">
   <div><b id="sAtt">0</b>attempted</div>
-  <div><b id="sCor">0</b>correct</div>
+  <div><b id="sCor">0</b>solved</div>
   <div><b id="sPct">—</b>accuracy</div>
   <div><b id="sStreak">0</b>streak</div>
   <div><b id="sBest">0</b>best streak</div>
-  <div><b id="sTime">—</b>avg time</div>
+  <div><b id="sTime">—</b>median time</div>
 </div>
 
 <details>
@@ -938,7 +944,7 @@ function updateStats(){
   $("sStreak").textContent=state.streak;
   $("sBest").textContent=state.best;
   const t=state.times;
-  $("sTime").textContent=t.length?Math.round(t.reduce((a,b)=>a+b,0)/t.length)+"s":"—";
+  $("sTime").textContent=t.length?Math.round([...t].sort((a,b)=>a-b)[Math.floor(t.length/2)])+"s":"—";
 }
 
 /* light persistence — falls back to memory if storage is unavailable */

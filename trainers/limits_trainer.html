@@ -5,22 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Limits Trainer</title>
 <style>
-html{background:#0b0d11}
-body{margin:0;padding:20px;max-width:760px;margin-inline:auto;background:#0b0d11}
+html{background:#080808}
+body{margin:0;padding:20px;max-width:760px;margin-inline:auto;background:#080808}
 .home-link{display:inline-flex;align-items:center;gap:7px;margin:0 0 14px;
   font:500 12.5px/1 ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   letter-spacing:.02em;color:var(--dim,#9aa2b1);text-decoration:none;
   border:1px solid var(--line,#262b36);padding:7px 12px;border-radius:999px;
   transition:color .15s,border-color .15s,background .15s}
 .home-link:hover{color:var(--tx,#e8eaef);border-color:var(--acc,#7f77dd);background:rgba(127,119,221,.1)}
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #7F77DD 0%, transparent 68%);
+  opacity:.16}
+#app{position:relative;z-index:1}
 </style>
 </head>
 <body>
 <a class="home-link" href="../index.html">&#8592; all trainers</a>
 <div id="app"></div>
 <style>
-:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--tx:#e8eaef;--dim:#9aa2b1;--acc:#7f77dd;--ok:#63991a;--bad:#e24b4a;--warn:#ef9f27}
-#app{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);padding:20px;border-radius:14px;line-height:1.6}
+:root{--bg:#080808;--card:#111111;--line:#2A2A2A;--tx:#F4F4F4;--dim:#A0A0A0;--acc:#7f77dd;--ok:#63991a;--bad:#e24b4a;--warn:#ef9f27}
+#app{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:transparent;color:var(--tx);padding:20px;border-radius:14px;line-height:1.6}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .btn{background:transparent;border:1px solid var(--line);color:var(--tx);padding:9px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
 .btn:hover{background:#1f232c;border-color:#3a4150}
