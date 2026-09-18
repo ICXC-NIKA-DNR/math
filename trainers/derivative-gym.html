@@ -33,6 +33,11 @@ body::before{
           mask-image:radial-gradient(circle at 50% 30%,#000 0%,transparent 78%);
 }
 .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:22px 18px 64px}
+.home-link{display:inline-flex; align-items:center; gap:7px; margin:0 0 16px;
+  font:500 12.5px/1 ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  letter-spacing:.02em; color:var(--dim); text-decoration:none; border:1px solid var(--line);
+  padding:7px 12px; border-radius:999px; transition:color .15s, border-color .15s, background .15s}
+.home-link:hover{color:var(--chalk); border-color:var(--amber); background:rgba(242,169,59,.09)}
 
 /* ---------- header ---------- */
 header{display:flex; flex-wrap:wrap; gap:18px; align-items:flex-end; justify-content:space-between;
@@ -156,6 +161,7 @@ footer{margin-top:26px; font-family:var(--mono); font-size:11px; color:var(--dim
 </head>
 <body>
 <div class="wrap">
+  <a class="home-link" href="../index.html">&#8592; all trainers</a>
   <header>
     <div class="brand">
       <span class="ddx">d/dx</span>
