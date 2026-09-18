@@ -105,16 +105,8 @@ a.card:hover .desc{color:var(--dim)}
 a.card:hover .m-recall .o2{animation:recallPick 2.6s ease-in-out infinite}
 a.card:hover .m-recall .score{animation:recallScore 2.6s ease-in-out infinite}
 
-/* Limits: stacked options, one already chosen */
-.m-limits .opts{display:flex; flex-direction:column; gap:4px}
-@keyframes limPick{
-  0%,100%{background:color-mix(in srgb, var(--accent) 18%, #1B1B1B); border-color:var(--accent)}
-  15%,32%{background:#1B1B1B; border-color:#2A2A2A}
-  54%{background:color-mix(in srgb, var(--accent) 18%, #1B1B1B); border-color:var(--accent)}}
-a.card:hover .m-limits .o3{animation:limPick 2.6s ease-in-out infinite}
-
-/* Answer field — shared by the two type-an-answer trainers (Gym, Revolution),
-   so they read as the same kind of tool with different subject matter. */
+/* Answer field — shared by the three type-an-answer trainers (Limits, Gym,
+   Revolution), so they read as the same kind of tool with different subjects. */
 .mini .field{display:flex; gap:5px; align-items:center}
 .mini .input{flex:1; height:15px; border-radius:3px; background:#1B1B1B;
   border:1px solid #2A2A2A; position:relative; overflow:hidden}
@@ -219,23 +211,21 @@ footer a:hover{color:var(--page-accent); border-color:var(--page-accent)}
       <a class="card" href="trainers/limits_trainer.html" style="--accent:#8B83E6; --glow:rgba(139,131,230,.42)">
         <div class="thumb">
           <div class="mini m-limits">
-            <div class="lbl"><span>Continuity</span><span class="t">0/0</span></div>
-            <div class="stage"><div class="eq" style="font-size:13px">f(x) = √(x − 5)</div></div>
-            <div class="opts">
-              <div class="opt"></div>
-              <div class="opt"></div>
-              <div class="opt o3 pick anim"></div>
-              <div class="opt"></div>
+            <div class="lbl"><span>L'Hôpital · 0/0</span><span class="t">0:12</span></div>
+            <div class="stage"><div class="eq" style="font-size:16px">lim<sub>x→0</sub> (e²ˣ − 1 − 2x)/x²</div></div>
+            <div class="field">
+              <div class="input"><span class="typed">2</span></div>
+              <div class="check"></div>
             </div>
           </div>
-          <span class="badge">5 topics</span>
+          <span class="badge">69 generators</span>
         </div>
         <div class="meta">
           <div class="tick"></div>
           <div>
             <div class="name">Limits</div>
-            <div class="desc">Two-sided, one-sided, continuity, limits at infinity and the
-              squeeze theorem.</div>
+            <div class="desc">Type the limit: two-sided, one-sided, continuity, limits at infinity,
+              the squeeze theorem and indeterminate forms.</div>
           </div>
         </div>
       </a>
