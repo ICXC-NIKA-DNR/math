@@ -6,89 +6,125 @@
 <title>Revolution Trainer — area, disks, washers, shells</title>
 <style>
 :root{
-  --paper:#EDF0F2;
-  --panel:#F7F9FA;
-  --ink:#14212B;
-  --ink-soft:#4A5C68;
-  --rule:#C3D2DB;
-  --axis:#B23A2F;
-  --steel:#2E6E8E;
-  --good:#2A6247;
-  --bad:#9C3227;
-  --serif: "Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
+  /* Base tokens are shared with Recall so the two read as one product. */
+  --bg:#12161D; --panel:#1A1F28; --rule:#2C3444; --rule2:#252C39;
+  --tx:#E4E9F2; --dim:#9AA6BC; --dim2:#8B98AE; --faint:#6F7C93;
+
+  /* Red ramp — this trainer's identity, mirroring Recall's blue ramp. */
+  --r0:#3A2320;
+  --r1:#8A4038; --r2:#C2483B; --r3:#F09E92;
+  --r1b:#24140F; --r2b:#2E1611; --r3b:#3A1C16;
+  --r1t:#D2897E; --r2t:#EFA79B; --r3t:#FFD0C7;
+
+  --axis:#E0645A;          /* axis of revolution / centerline */
+  --good:#7CCBA6;          /* verdict: correct */
+  --bad:#F09E92;           /* verdict: wrong */
+
+  --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
   --sans: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+html{background:var(--bg)}
 body{
-  background:var(--paper);
-  background-image:linear-gradient(var(--rule) 1px, transparent 1px),
-                   linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background:var(--bg);
+  /* the engineering grid is kept, but taken down to a whisper */
+  background-image:linear-gradient(rgba(130,152,188,.05) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(130,152,188,.05) 1px, transparent 1px);
   background-size:28px 28px;
   background-position:-1px -1px;
-  color:var(--ink);
+  color:var(--tx);
   font-family:var(--sans);
-  font-size:16px;
+  font-size:15px;
   line-height:1.55;
   -webkit-text-size-adjust:100%;
 }
-.wrap{max-width:760px;margin:0 auto;padding:28px 20px 64px}
+.wrap{max-width:860px;margin:0 auto;padding:28px 24px 56px}
 
-header{border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
-h1{font-family:var(--serif);font-weight:normal;font-size:1.9rem;letter-spacing:.01em;margin:0}
-header p{margin:.35em 0 0;color:var(--ink-soft);font-size:.9rem;max-width:60ch}
+.home-link{display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;
+  font:500 12.5px/1 var(--sans);letter-spacing:.02em;color:var(--dim);text-decoration:none;
+  border:1px solid var(--rule);padding:7px 12px;border-radius:999px;background:none;
+  transition:color .15s,border-color .15s,background .15s}
+.home-link:hover{color:var(--r3t);border-color:var(--r2);background:var(--r1b)}
 
-.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;
-  border:1px solid var(--rule);background:var(--panel);padding:12px 14px;margin-bottom:20px}
-.group{display:flex;flex-direction:column;gap:6px}
-.group h2{font-size:.78rem;font-weight:600;color:var(--ink-soft);margin:0}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font:inherit;font-size:.85rem;padding:3px 10px;border:1px solid var(--rule);
-  background:transparent;color:var(--ink-soft);cursor:pointer;border-radius:2px}
-.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+header{border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:24px}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;color:var(--tx)}
+header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:64ch}
 
-.problem{border:1px solid var(--ink);background:var(--panel);padding:0;margin-bottom:16px;position:relative}
+/* ── controls: Recall's card + pill language ─────────────────── */
+.controls{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:16px 18px;margin-bottom:20px}
+.group{display:flex;flex-direction:column;gap:8px}
+.group h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:400;
+  color:var(--faint);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:13px;height:34px;padding:0 14px;border:1px solid var(--r0);
+  background:none;color:var(--faint);cursor:pointer;border-radius:17px;
+  transition:color .15s,border-color .15s,background .15s}
+.chip:hover{color:var(--r2t);border-color:var(--r1)}
+.chip[aria-pressed="true"]{background:var(--r3b);border-color:var(--r3);color:var(--r3t)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--r3);outline-offset:2px}
+
+/* ── problem card ────────────────────────────────────────────── */
+.problem{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:0;margin-bottom:16px;position:relative;overflow:hidden}
 .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;
-  border-bottom:1px solid var(--rule);padding:7px 16px;font-size:.78rem;color:var(--ink-soft)}
-.meta .tag{font-weight:600;color:var(--ink)}
-.body{padding:18px 16px 16px;position:relative}
-.stem{font-family:var(--serif);font-size:1.14rem;line-height:1.6;margin:0 0 .5em;max-width:62ch}
-.ask{font-family:var(--serif);font-size:1.14rem;margin:0}
+  border-bottom:1px solid var(--rule2);padding:10px 18px;font-size:12px;color:var(--faint)}
+.meta .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--r2t)}
+.body{padding:20px 18px 18px;position:relative}
+.stem{font-family:var(--serif);font-size:1.12rem;line-height:1.6;margin:0 0 .5em;
+  max-width:64ch;color:var(--tx)}
+.ask{font-family:var(--serif);font-size:1.12rem;margin:0;color:var(--tx)}
 
 /* the axis of revolution, drawn as a machinist's centerline */
-.axisline{margin:16px 0 4px;display:flex;align-items:center;gap:10px;color:var(--axis);font-size:.78rem}
+.axisline{margin:16px 0 4px;display:flex;align-items:center;gap:10px;color:var(--axis);font-size:12px}
 .axisline .line{flex:1;height:0;border-top:1.5px dashed var(--axis)}
 .axisline.vert{align-items:stretch;gap:10px}
 .axisline.vert .line{border-top:none;border-left:1.5px dashed var(--axis);flex:none;width:0;min-height:22px}
 
-.answer{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 6px}
-input[type=text]{font-family:var(--serif);font-size:1.05rem;padding:8px 10px;
-  border:1px solid var(--rule);background:#fff;color:var(--ink);width:min(280px,100%);border-radius:2px}
-button{font:inherit;font-size:.9rem;padding:8px 14px;border:1px solid var(--ink);
-  background:var(--ink);color:var(--paper);cursor:pointer;border-radius:2px}
-button.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
-button:disabled{opacity:.4;cursor:not-allowed}
-.hintnote{font-size:.8rem;color:var(--ink-soft);margin:0}
+/* ── answer row ──────────────────────────────────────────────── */
+.answer{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 6px}
+input[type=text]{font-family:var(--serif);font-size:1.02rem;padding:9px 12px;
+  border:1px solid var(--rule);background:var(--bg);color:var(--tx);
+  width:min(300px,100%);border-radius:4px}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus{border-color:var(--r2);outline:none}
+button{font:inherit;font-size:13px;padding:9px 16px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--r3);background:var(--r3b);color:var(--r3t);
+  transition:border-color .15s,background .15s,color .15s}
+button:hover:enabled{background:var(--r2b);border-color:var(--r3)}
+button.ghost{background:none;color:var(--dim);border-color:var(--rule)}
+button.ghost:hover:enabled{color:var(--tx);border-color:var(--r1);background:var(--r1b)}
+button:disabled{opacity:.38;cursor:not-allowed}
+.hintnote{font-size:12.5px;color:var(--faint);margin:0}
 
-.verdict{font-family:var(--serif);font-size:1.05rem;margin:10px 0 0;padding-left:12px;border-left:3px solid transparent}
+.verdict{font-family:var(--serif);font-size:1.02rem;margin:12px 0 0;padding-left:12px;
+  border-left:3px solid transparent}
 .verdict.ok{border-color:var(--good);color:var(--good)}
 .verdict.no{border-color:var(--bad);color:var(--bad)}
 
-.work{border-top:1px solid var(--rule);margin-top:16px;padding-top:12px}
+/* ── worked solution ─────────────────────────────────────────── */
+.work{border-top:1px solid var(--rule2);margin-top:18px;padding-top:14px}
 .work ol{margin:0;padding-left:1.25em}
-.work li{margin:.55em 0;font-family:var(--serif);font-size:1.02rem}
-.work li .label{font-family:var(--sans);font-size:.76rem;color:var(--ink-soft);display:block}
+.work li{margin:.55em 0;font-family:var(--serif);font-size:1rem;color:var(--tx)}
+.work li::marker{color:var(--faint)}
+.work li .label{font-family:var(--sans);font-size:11.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint);display:block}
 
-.stats{display:flex;flex-wrap:wrap;gap:22px;border-top:1px solid var(--rule);padding-top:12px;
-  font-size:.85rem;color:var(--ink-soft)}
-.stats b{display:block;font-family:var(--serif);font-size:1.35rem;font-weight:normal;color:var(--ink)}
-details{border:1px solid var(--rule);background:var(--panel);padding:10px 14px;margin-top:22px}
-summary{cursor:pointer;font-size:.88rem}
-details .ref{font-family:var(--serif);font-size:1rem}
+.stats{display:flex;flex-wrap:wrap;gap:34px;border-top:1px solid var(--rule2);padding-top:14px;
+  font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.stats b{display:block;font-family:var(--serif);font-size:1.5rem;font-weight:400;
+  color:var(--tx);letter-spacing:0;text-transform:none}
+
+details{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:12px 16px;margin-top:22px}
+summary{cursor:pointer;font-size:13px;color:var(--dim)}
+summary:hover{color:var(--tx)}
+details .ref{font-family:var(--serif);font-size:1rem;color:var(--dim2)}
 details .ref div{margin:.5em 0}
 
-/* math bits */
+/* ── math bits (unchanged shapes, new ink) ───────────────────── */
 .fr{display:inline-flex;flex-direction:column;vertical-align:-0.42em;text-align:center;line-height:1.1;font-size:.86em}
 .fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em}
 .fr>span:last-child{padding:0 .2em}
@@ -97,21 +133,19 @@ details .ref div{margin:.5em 0}
 .rad{border-top:1px solid currentColor;padding:0 .12em}
 i{font-family:var(--serif);font-style:italic}
 sup,sub{font-size:.68em}
-.hl{color:var(--steel)}
+.hl{color:var(--r3)}
 
 @media (max-width:520px){
-  .wrap{padding:18px 14px 48px}
-  h1{font-size:1.5rem}
-  .controls{gap:12px}
-}
-@media (prefers-reduced-motion:no-preference){
-  .work{animation:rise .22s ease-out}
-  @keyframes rise{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .wrap{padding:18px 16px 44px}
+  h1{font-size:22px}
+  .controls{gap:14px}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
+
+<a class="home-link" href="../index.html">&#8592; all trainers</a>
 
 <header>
   <h1>Revolution Trainer</h1>
