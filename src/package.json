@@ -1,0 +1,13 @@
+{
+  "name": "recall-trainer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "bundle": "node bundle.mjs",
+    "test": "node test/engine.test.mjs"
+  },
+  "dependencies": {
+    "katex": "^0.16.47"
+  }
+}

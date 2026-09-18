@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Integration Bench — drill trainer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
+<style>
+:root{
+  --ink:#0c1117;
+  --chassis:#121a24;
+  --panel:#18222f;
+  --panel-hi:#1f2b3a;
+  --line:#2a3849;
+  --line-soft:#202c3b;
+  --paper:#f5f1e6;
+  --paper-edge:#ded6c4;
+  --paper-rule:#e6dfd0;
+  --on-paper:#141a20;
+  --on-paper-dim:#5d6670;
+  --text:#e9eef6;
+  --dim:#8496ab;
+  --dimmer:#5f7189;
+  --amber:#ffb13d;
+  --amber-deep:#c47a12;
+  --amber-glow:rgba(255,177,61,.16);
+  --good:#57d3a2;
+  --bad:#ff7272;
+  --ui:"Inter","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-sans-serif,sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 78% -8%, #1a2635 0%, transparent 62%),
+    linear-gradient(#0c1117,#0a0e14 70%);
+  background-attachment:fixed;
+  color:var(--text);
+  font-family:var(--ui);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:2px}
+::selection{background:var(--amber);color:#111}
+
+/* ─── shell ─────────────────────────────── */
+.shell{max-width:1240px;margin:0 auto;padding:0 20px 80px}
+
+header.bar{
+  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  padding:22px 0 16px;border-bottom:1px solid var(--line-soft);margin-bottom:22px;
+}
+.brand{display:flex;align-items:baseline;gap:11px}
+.brand .glyph{
+  font-family:var(--serif);font-size:30px;line-height:.8;color:var(--amber);
+  transform:translateY(2px);
+}
+.brand h1{
+  margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em;
+}
+.brand .sub{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dimmer);margin-top:2px;
+}
+.bar-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.chip{
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+  border:1px solid var(--line);border-radius:var(--r);
+  padding:6px 10px;color:var(--dim);background:var(--panel);white-space:nowrap;
+}
+.chip b{color:var(--text);font-weight:600}
+.chip.live b{color:var(--amber)}
+
+.btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);
+  padding:8px 13px;border-radius:var(--r);font-size:13px;font-weight:500;
+  transition:background .13s,border-color .13s,color .13s;
+}
+.btn:hover{background:var(--panel-hi);border-color:#3a4c63}
+.btn.key{border-color:var(--amber-deep);color:var(--amber);background:rgba(255,177,61,.07)}
+.btn.key:hover{background:rgba(255,177,61,.14)}
+.btn.solid{background:var(--amber);color:#1a1206;border-color:var(--amber);font-weight:640}
+.btn.solid:hover{background:#ffc264;border-color:#ffc264}
+.btn.good{border-color:#2c6b53;color:var(--good);background:rgba(87,211,162,.07)}
+.btn.good:hover{background:rgba(87,211,162,.15)}
+.btn.bad{border-color:#7a3232;color:var(--bad);background:rgba(255,114,114,.07)}
+.btn.bad:hover{background:rgba(255,114,114,.15)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn .kbd{font-family:var(--mono);font-size:10px;opacity:.55;margin-left:7px}
+
+/* ─── layout ─────────────────────────────── */
+.grid{display:grid;grid-template-columns:264px minmax(0,1fr);gap:22px;align-items:start}
+
+/* ─── console (left rail) ────────────────── */
+.console{
+  background:linear-gradient(var(--chassis),#0f1620);
+  border:1px solid var(--line);border-radius:5px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+  position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+}
+.console::-webkit-scrollbar{width:8px}
+.console::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+.cgroup{padding:15px 15px 16px;border-bottom:1px solid var(--line-soft)}
+.cgroup:last-child{border-bottom:none}
+.clabel{
+  font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dimmer);display:flex;align-items:center;gap:8px;margin-bottom:11px;
+}
+.clabel .rule{flex:1;height:1px;background:var(--line-soft)}
+.clabel .mini{
+  letter-spacing:.04em;text-transform:none;color:var(--dim);cursor:pointer;
+  border-bottom:1px dotted var(--dimmer);
+}
+.clabel .mini:hover{color:var(--amber);border-color:var(--amber)}
+
+/* technique switches */
+.sw{
+  display:flex;align-items:center;gap:9px;padding:5px 6px;margin:0 -6px;
+  border-radius:var(--r);cursor:pointer;user-select:none;
+}
+.sw:hover{background:rgba(255,255,255,.035)}
+.sw input{position:absolute;opacity:0;pointer-events:none}
+.sw .box{
+  width:15px;height:15px;flex:none;border:1px solid #3d4f66;border-radius:2px;
+  background:#0d141d;position:relative;transition:.12s;
+}
+.sw input:checked+.box{background:var(--tc,var(--amber));border-color:var(--tc,var(--amber))}
+.sw input:checked+.box::after{
+  content:"";position:absolute;inset:0;
+  background:#0d141d;
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat;
+}
+.sw input:focus-visible+.box{outline:2px solid var(--amber);outline-offset:2px}
+.sw .nm{flex:1;font-size:13px;color:var(--text);min-width:0}
+.sw input:not(:checked)~.nm{color:var(--dim)}
+.sw .ct{font-family:var(--mono);font-size:10.5px;color:var(--dimmer)}
+.sw .only{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--dimmer);
+  opacity:0;padding:1px 4px;border:1px solid var(--line);border-radius:2px;
+}
+.sw:hover .only{opacity:1}
+.sw .only:hover{color:var(--amber);border-color:var(--amber-deep)}
+
+/* segmented pickers */
+.seg{display:flex;flex-wrap:wrap;gap:5px}
+.seg button{
+  flex:1;min-width:40px;border:1px solid var(--line);background:#0e151e;border-radius:var(--r);
+  padding:7px 6px;font-family:var(--mono);font-size:11.5px;color:var(--dim);transition:.12s;
+}
+.seg button:hover{border-color:#3d4f66;color:var(--text)}
+.seg button[aria-pressed="true"]{
+  background:var(--amber-glow);border-color:var(--amber-deep);color:var(--amber);
+}
+.seg.diff button{flex-direction:column}
+.seg.diff small{display:block;font-size:9px;letter-spacing:.05em;opacity:.6;margin-top:1px}
+
+.field{display:flex;align-items:center;gap:8px;margin-top:9px}
+.field label{font-size:12px;color:var(--dim);flex:1}
+.field input[type=number]{
+  width:64px;background:#0e151e;border:1px solid var(--line);border-radius:var(--r);
+  padding:5px 7px;font-family:var(--mono);font-size:12px;
+}
+.toggle-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);padding:4px 0;cursor:pointer}
+.toggle-row input{accent-color:var(--amber);width:14px;height:14px}
+
+/* weakness meters */
+.meter{margin-bottom:9px}
+.meter-top{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px;gap:8px}
+.meter-top .nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meter-top .val{font-family:var(--mono);font-size:10.5px;color:var(--dim);flex:none}
+.track{height:4px;background:#0d141d;border-radius:9px;overflow:hidden}
+.fill{height:100%;border-radius:9px;transition:width .35s ease}
+.empty-note{font-size:12px;color:var(--dimmer);line-height:1.55}
+
+/* ─── paper card ─────────────────────────── */
+.stage{display:flex;flex-direction:column;gap:16px;min-width:0}
+
+.paper{
+  background:var(--paper);color:var(--on-paper);border-radius:5px;
+  border:1px solid var(--paper-edge);
+  box-shadow:0 18px 40px -18px rgba(0,0,0,.75), 0 2px 0 rgba(255,255,255,.04);
+  overflow:hidden;position:relative;
+}
+/* SIGNATURE: the drain strip */
+.strip{height:5px;background:#e3dbcb;position:relative;overflow:hidden}
+.strip .drain{
+  position:absolute;inset:0;transform-origin:left center;
+  background:repeating-linear-gradient(90deg,var(--amber) 0 7px,#ffc978 7px 9px);
+  transition:transform .25s linear;
+}
+.strip .drain.warn{background:repeating-linear-gradient(90deg,#ff7d3d 0 7px,#ffa06b 7px 9px)}
+.strip .drain.crit{
+  background:repeating-linear-gradient(90deg,#ff5252 0 7px,#ff8a8a 7px 9px);
+  animation:pulse .7s ease-in-out infinite;
+}
+@keyframes pulse{50%{opacity:.5}}
+
+.pmeta{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 22px;border-bottom:1px solid var(--paper-rule);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--on-paper-dim);
+}
+.tag{
+  padding:3px 8px;border-radius:2px;font-weight:600;letter-spacing:.08em;
+  background:var(--tc,#999);color:#0d141d;
+}
+.stars{letter-spacing:.16em;color:#b3a98f}
+.stars b{color:#8a6d2e;font-weight:400}
+.clock{
+  margin-left:auto;font-family:var(--mono);font-size:19px;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;color:var(--on-paper);text-transform:none;
+}
+.clock.warn{color:#c2560f}
+.clock.crit{color:#c22b2b}
+.clock.off{color:#b3a98f}
+
+.prompt{
+  padding:44px 26px 40px;text-align:center;
+  min-height:150px;display:flex;align-items:center;justify-content:center;
+  background:
+    linear-gradient(var(--paper),var(--paper)) padding-box;
+  overflow-x:auto;overflow-y:hidden;
+}
+.prompt .katex{font-size:2.05em}
+.prompt .fallback{font-family:var(--mono);font-size:16px;white-space:pre-wrap}
+
+.pfoot{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:13px 18px;border-top:1px solid var(--paper-rule);background:#efe9dc;
+}
+.pfoot .btn{background:#e5ddcc;border-color:#cfc5b0;color:#2a3038}
+.pfoot .btn:hover{background:#dcd2be;border-color:#b9ac91}
+.pfoot .btn.solid{background:#2b3542;border-color:#2b3542;color:#f5f1e6}
+.pfoot .btn.solid:hover{background:#3a4757;border-color:#3a4757}
+.pfoot .btn.good{background:rgba(40,140,95,.12);border-color:#61a986;color:#1d6b4a}
+.pfoot .btn.good:hover{background:rgba(40,140,95,.22)}
+.pfoot .btn.bad{background:rgba(180,50,50,.1);border-color:#c58585;color:#9b2f2f}
+.pfoot .btn.bad:hover{background:rgba(180,50,50,.18)}
+.pfoot .spacer{flex:1}
+.pfoot .note{font-size:11.5px;color:var(--on-paper-dim)}
+
+/* hints + solution */
+.reveal{
+  border-top:1px solid var(--paper-rule);padding:0 22px;
+  max-height:0;overflow:hidden;transition:max-height .3s ease;
+}
+.reveal.open{max-height:2600px;padding:20px 22px 24px}
+.rsec{margin-bottom:18px}
+.rsec:last-child{margin-bottom:0}
+.rhead{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--on-paper-dim);margin-bottom:9px;display:flex;align-items:center;gap:9px;
+}
+.rhead .rule{flex:1;height:1px;background:var(--paper-rule)}
+.hintbox{
+  background:#fffdf6;border:1px solid var(--paper-rule);border-left:2px solid var(--amber-deep);
+  border-radius:2px;padding:11px 14px;font-size:14.5px;line-height:1.6;margin-bottom:8px;
+}
+.answer{
+  background:#fffdf6;border:1px solid #cbbf9f;border-radius:3px;
+  padding:16px 18px;text-align:center;overflow-x:auto;
+}
+.answer .katex{font-size:1.4em}
+ol.steps{margin:0;padding-left:22px;font-size:14.5px;line-height:1.72}
+ol.steps li{margin-bottom:7px;padding-left:3px}
+ol.steps li::marker{font-family:var(--mono);font-size:11.5px;color:var(--on-paper-dim)}
+.why{
+  margin-top:14px;font-size:13.5px;line-height:1.65;color:#3c454f;
+  border-top:1px dashed var(--paper-rule);padding-top:12px;
+}
+.why b{color:#8a6d2e;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;display:block;margin-bottom:5px}
+
+/* session log */
+.log{
+  border:1px solid var(--line);border-radius:5px;background:var(--chassis);padding:14px 16px;
+}
+.log-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.log-head h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.04em}
+.log-head .rule{flex:1;height:1px;background:var(--line-soft)}
+.tape{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:12px;min-height:14px}
+.tick{width:11px;height:14px;border-radius:1px;background:var(--line)}
+.tick.hit{background:var(--good)}
+.tick.miss{background:var(--bad)}
+.tick.skip{background:#3a4757}
+.tick.to{background:var(--amber-deep)}
+.statrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:12px}
+.stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer)}
+.stat .v{font-family:var(--mono);font-size:20px;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
+.stat .v.am{color:var(--amber)}
+
+/* ─── cheat sheet drawer ─────────────────── */
+.scrim{
+  position:fixed;inset:0;background:rgba(4,7,11,.72);backdrop-filter:blur(3px);
+  opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;
+}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(760px,100%);z-index:50;
+  background:linear-gradient(var(--chassis),#0e151e);border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.drawer.open{transform:none}
+.dhead{
+  padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex:none;
+}
+.dhead h2{margin:0;font-size:15px;font-weight:600}
+.dhead h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dimmer);
+  text-transform:uppercase;display:block;font-weight:400;margin-top:1px}
+.search{
+  flex:1;background:#0d141d;border:1px solid var(--line);border-radius:var(--r);
+  padding:8px 11px;font-size:13px;min-width:0;
+}
+.search::placeholder{color:var(--dimmer)}
+.dtabs{
+  display:flex;gap:4px;overflow-x:auto;padding:10px 20px;border-bottom:1px solid var(--line-soft);flex:none;
+  scrollbar-width:none;
+}
+.dtabs::-webkit-scrollbar{display:none}
+.dtabs button{
+  white-space:nowrap;padding:6px 11px;border-radius:var(--r);font-size:12.5px;color:var(--dim);
+  border:1px solid transparent;
+}
+.dtabs button:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.dtabs button[aria-pressed="true"]{
+  background:var(--amber-glow);color:var(--amber);border-color:var(--amber-deep);
+}
+.dbody{overflow-y:auto;padding:22px 20px 60px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.dbody::-webkit-scrollbar{width:9px}
+.dbody::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+
+.sheet-sec{margin-bottom:32px;scroll-margin-top:12px}
+.sheet-sec > h3{
+  font-size:14px;margin:0 0 4px;font-weight:640;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:10px;
+}
+.sheet-sec > h3 .idx{font-family:var(--mono);font-size:10.5px;color:var(--amber);letter-spacing:.1em}
+.sheet-sec > .lede{font-size:13px;color:var(--dim);margin:0 0 14px;line-height:1.6;max-width:64ch}
+.card{
+  background:var(--panel);border:1px solid var(--line-soft);border-radius:4px;
+  padding:13px 15px;margin-bottom:10px;
+}
+.card h4{
+  margin:0 0 9px;font-size:12px;font-weight:600;color:var(--amber);
+  letter-spacing:.02em;
+}
+.card p{margin:0 0 8px;font-size:13.5px;line-height:1.65;color:#c8d3e0}
+.card p:last-child{margin-bottom:0}
+.card ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:#c8d3e0}
+.card ul li{margin-bottom:4px}
+.card ul li::marker{color:var(--dimmer)}
+.formula{
+  background:#0d141d;border:1px solid var(--line-soft);border-radius:3px;
+  padding:11px 14px;margin:9px 0;overflow-x:auto;text-align:center;
+}
+.formula .katex{color:var(--text)}
+table.ref{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 2px}
+table.ref th{
+  text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dimmer);font-weight:400;padding:0 10px 7px 0;border-bottom:1px solid var(--line-soft);
+}
+table.ref td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line-soft);vertical-align:middle;color:#c8d3e0}
+table.ref tr:last-child td{border-bottom:none}
+table.ref .katex{font-size:1.02em;color:var(--text)}
+.warnbox{
+  border-left:2px solid var(--bad);background:rgba(255,114,114,.06);
+  padding:10px 13px;border-radius:0 3px 3px 0;font-size:13px;line-height:1.6;color:#dbc4c4;margin:9px 0;
+}
+.tipbox{
+  border-left:2px solid var(--good);background:rgba(87,211,162,.06);
+  padding:10px 13px;border-radius:0 3px 3px 0;font-size:13px;line-height:1.6;color:#bfdccf;margin:9px 0;
+}
+.flow{display:flex;flex-direction:column;gap:0}
+.flow-step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.flow-step:last-child{border-bottom:none}
+.flow-num{
+  font-family:var(--mono);font-size:10px;color:var(--amber);border:1px solid var(--amber-deep);
+  border-radius:2px;padding:2px 5px;flex:none;margin-top:2px;
+}
+.flow-txt{font-size:13.5px;line-height:1.6;color:#c8d3e0}
+.flow-txt b{color:var(--text);font-weight:600}
+.noresult{color:var(--dimmer);font-size:13.5px;padding:20px 0;line-height:1.6}
+
+.iconbtn{
+  border:1px solid var(--line);background:var(--panel);border-radius:var(--r);
+  width:32px;height:32px;display:grid;place-items:center;color:var(--dim);flex:none;font-size:15px;
+}
+.iconbtn:hover{color:var(--text);background:var(--panel-hi)}
+
+/* toast */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);
+  background:var(--panel-hi);border:1px solid var(--line);border-radius:4px;
+  padding:9px 15px;font-size:13px;z-index:70;opacity:0;pointer-events:none;transition:.2s;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.8);
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* mobile */
+.mobile-open{display:none}
+.mobile-only{display:none}
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .console{
+    position:fixed;inset:0;z-index:45;max-height:100%;border-radius:0;border:none;
+    transform:translateX(-100%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+    padding-bottom:70px;
+  }
+  .console.open{transform:none}
+  .mobile-open{display:inline-flex;align-items:center;gap:7px}
+  .mobile-only{display:block}
+  .prompt{padding:34px 18px 30px}
+  .prompt .katex{font-size:1.6em}
+  .shell{padding:0 13px 60px}
+  .clock{font-size:17px}
+}
+@media (max-width:520px){
+  .pfoot{padding:11px 12px}
+  .btn{padding:8px 11px;font-size:12.5px}
+  .btn .kbd{display:none}
+  .prompt .katex{font-size:1.35em}
+  .brand .sub{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+/* ═══ NIGHT MODE — low-light, no bright paper ═══════════ */
+body.night{
+  --text:#cdd6e1;
+  --dim:#7889a0;
+  --dimmer:#566a82;
+  --amber:#d99a3f;
+  --amber-deep:#8f5c14;
+  --amber-glow:rgba(217,154,63,.12);
+  --good:#48b98d;
+  --bad:#d96363;
+  --chassis:#0d141c;
+  --panel:#121a24;
+  --panel-hi:#18222e;
+  --line:#243040;
+  --line-soft:#1b2532;
+  /* the card stops being paper and becomes a lit panel */
+  --paper:#151d27;
+  --paper-edge:#27333f;
+  --paper-rule:#222d3a;
+  --on-paper:#ccd6e0;
+  --on-paper-dim:#75859a;
+  background:
+    radial-gradient(1100px 560px at 78% -8%, #121a25 0%, transparent 60%),
+    linear-gradient(#070a0e,#05080b 70%);
+}
+body.night .paper{box-shadow:0 16px 38px -20px rgba(0,0,0,.9)}
+body.night .strip{background:#1c2531}
+body.night .strip .drain{background:repeating-linear-gradient(90deg,#a8752c 0 7px,#c08e42 7px 9px)}
+body.night .strip .drain.warn{background:repeating-linear-gradient(90deg,#b05f2e 0 7px,#c47a4d 7px 9px)}
+body.night .strip .drain.crit{background:repeating-linear-gradient(90deg,#a83c3c 0 7px,#c25f5f 7px 9px)}
+body.night .clock.warn{color:#d08048}
+body.night .clock.crit{color:#d96b6b}
+body.night .clock.off{color:#5d6d80}
+body.night .stars{color:#4d5c6e}
+body.night .stars b{color:#c0913f}
+body.night .tag{filter:brightness(.72) saturate(.85)}
+body.night .pfoot{background:#111923;border-top-color:var(--paper-rule)}
+body.night .pfoot .btn{background:#1a2430;border-color:#2b3746;color:#c3cdd9}
+body.night .pfoot .btn:hover{background:#212d3b;border-color:#3a4859}
+body.night .pfoot .btn.solid{background:#8f5c14;border-color:#8f5c14;color:#f0e4d0}
+body.night .pfoot .btn.solid:hover{background:#a56b1c;border-color:#a56b1c}
+body.night .pfoot .btn.good{background:rgba(72,185,141,.09);border-color:#2f6a53;color:#5cbb94}
+body.night .pfoot .btn.good:hover{background:rgba(72,185,141,.16)}
+body.night .pfoot .btn.bad{background:rgba(217,99,99,.09);border-color:#6d3434;color:#d17878}
+body.night .pfoot .btn.bad:hover{background:rgba(217,99,99,.16)}
+body.night .pfoot .note{color:var(--on-paper-dim)}
+body.night .hintbox{background:#111a24;border-color:#26323f;border-left-color:#8f5c14;color:#c3cdd9}
+body.night .answer{background:#111a24;border-color:#2c3a49}
+body.night .why{color:#98a6b6;border-top-color:#222d3a}
+body.night .why b{color:#c0913f}
+body.night ol.steps{color:#bcc7d4}
+body.night ol.steps li::marker{color:#5d6d80}
+body.night .card p,body.night .card ul,body.night table.ref td,body.night .flow-txt{color:#b3bfcd}
+body.night .card h4{color:#c99a4b}
+body.night .formula{background:#0b1119}
+body.night .tick.hit{background:#3f9d78}
+body.night .tick.miss{background:#b95656}
+body.night .tick.to{background:#8f5c14}
+body.night .btn.solid{background:#c08e42;border-color:#c08e42;color:#191307}
+body.night .btn.solid:hover{background:#d0a057;border-color:#d0a057}
+body.night ::selection{background:#8f5c14;color:#f0e4d0}
+body.night .brand .glyph{color:#c0913f}
+body.night .scrim{background:rgba(2,4,6,.8)}
+body.night .drawer{background:linear-gradient(#0d141c,#080d13)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header class="bar">
+  <div class="brand">
+    <div class="glyph">&#8747;</div>
+    <div>
+      <h1>Integration Bench</h1>
+      <div class="sub">drill &middot; diagnose &middot; recover</div>
+    </div>
+  </div>
+  <div class="bar-right">
+    <button class="btn mobile-open" id="mobileConsole">&#9776; Setup</button>
+    <div class="chip live">streak <b id="chipStreak">0</b></div>
+    <div class="chip">pool <b id="chipPool">0</b></div>
+    <button class="btn" id="themeBtn" aria-pressed="true" title="Toggle low-light mode">☾ Night</button>
+    <button class="btn key" id="openSheet">Cheat sheet <span class="kbd">C</span></button>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- ══ CONSOLE ══ -->
+  <aside class="console" id="console">
+    <div class="cgroup">
+      <div class="clabel">
+        Techniques <span class="rule"></span>
+        <span class="mini" id="selAll">all</span>
+        <span class="mini" id="selNone">none</span>
+      </div>
+      <div id="techList"></div>
+    </div>
+
+    <div class="cgroup">
+      <div class="clabel">Difficulty <span class="rule"></span></div>
+      <div class="seg diff" id="diffSeg">
+        <button data-d="1" aria-pressed="true">1<small>CALC 1</small></button>
+        <button data-d="2" aria-pressed="true">2<small>CORE</small></button>
+        <button data-d="3" aria-pressed="true">3<small>HARD</small></button>
+        <button data-d="4" aria-pressed="true">4<small>BEE</small></button>
+      </div>
+    </div>
+
+    <div class="cgroup">
+      <div class="clabel">Clock <span class="rule"></span></div>
+      <div class="seg" id="modeSeg">
+        <button data-m="off" aria-pressed="false">Off</button>
+        <button data-m="up" aria-pressed="true">Stopwatch</button>
+        <button data-m="down" aria-pressed="false">Countdown</button>
+      </div>
+      <div class="field" id="limitField" hidden>
+        <label for="limitInput">Seconds per problem</label>
+        <input type="number" id="limitInput" min="5" max="900" step="5" value="90">
+      </div>
+      <label class="toggle-row" id="autoRevealRow" hidden>
+        <input type="checkbox" id="autoReveal" checked> Reveal when time runs out
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="autoNext"> Auto-advance after grading
+      </label>
+    </div>
+
+    <div class="cgroup">
+      <div class="clabel">
+        Weak spots <span class="rule"></span>
+        <span class="mini" id="drillWeak">drill</span>
+      </div>
+      <div id="weakList"><p class="empty-note">Grade a few problems and your accuracy by technique shows up here.</p></div>
+    </div>
+
+    <div class="cgroup">
+      <div class="clabel">Records <span class="rule"></span></div>
+      <button class="btn" id="resetStats" style="width:100%">Clear all history</button>
+    </div>
+    <div class="cgroup mobile-only">
+      <button class="btn solid" id="closeConsole" style="width:100%">Back to the problem</button>
+    </div>
+  </aside>
+
+  <!-- ══ STAGE ══ -->
+  <main class="stage">
+    <section class="paper">
+      <div class="strip"><div class="drain" id="drain"></div></div>
+      <div class="pmeta">
+        <span class="tag" id="mTag">—</span>
+        <span id="mLevel"></span>
+        <span class="stars" id="mStars"></span>
+        <span class="clock off" id="clock">--:--</span>
+      </div>
+      <div class="prompt" id="prompt"><span class="fallback">Loading…</span></div>
+      <div class="pfoot" id="controls"></div>
+      <div class="reveal" id="reveal"></div>
+    </section>
+
+    <section class="log">
+      <div class="log-head">
+        <h2>This session</h2><span class="rule"></span>
+      </div>
+      <div class="tape" id="tape"></div>
+      <div class="statrow">
+        <div class="stat"><div class="k">Attempted</div><div class="v" id="sAtt">0</div></div>
+        <div class="stat"><div class="k">Solved</div><div class="v" id="sHit">0</div></div>
+        <div class="stat"><div class="k">Accuracy</div><div class="v am" id="sAcc">—</div></div>
+        <div class="stat"><div class="k">Median time</div><div class="v" id="sMed">—</div></div>
+        <div class="stat"><div class="k">Best streak</div><div class="v" id="sBest">0</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Cheat sheet">
+  <div class="dhead">
+    <h2>Cheat sheet<span>reference &amp; triage</span></h2>
+    <input class="search" id="sheetSearch" type="search" placeholder="Search: parts, sec x, King, Jacobian…" autocomplete="off">
+    <button class="iconbtn" id="closeSheet" aria-label="Close cheat sheet">&#10005;</button>
+  </div>
+  <div class="dtabs" id="sheetTabs"></div>
+  <div class="dbody" id="sheetBody"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ══════════════════════════════════════════════════════════
+   TECHNIQUE REGISTRY
+   ══════════════════════════════════════════════════════════ */
+const TECHS = [
+  {id:'power',    name:'Basic & power rule', short:'BASIC',    color:'#8ea8c3'},
+  {id:'usub',     name:'u-substitution',     short:'U-SUB',    color:'#5fc9b4'},
+  {id:'parts',    name:'By parts',           short:'PARTS',    color:'#f0a868'},
+  {id:'trigint',  name:'Trig integrals',     short:'TRIG',     color:'#c79cdc'},
+  {id:'trigsub',  name:'Trig substitution',  short:'TRIG SUB', color:'#7fb3ff'},
+  {id:'partial',  name:'Partial fractions',  short:'PARTIAL',  color:'#eb8fa8'},
+  {id:'improper', name:'Improper integrals', short:'IMPROPER', color:'#b9c46a'},
+  {id:'clever',   name:'Clever / bee tricks',short:'CLEVER',   color:'#ffb13d'},
+  {id:'multi',    name:'Multiple integrals', short:'MULTI',    color:'#67c2d4'}
+];
+const TECH = Object.fromEntries(TECHS.map(t=>[t.id,t]));
+const LEVELS = {1:'Calc 1', 2:'Calc 2 core', 3:'Calc 2 hard', 4:'Bee / Calc 3'};
+
+/* ══════════════════════════════════════════════════════════
+   PROBLEM BANK
+   t = prompt, a = answer, h = hint (nudge only), s = worked steps,
+   w = why-it-works note (shown on reveal)
+   ══════════════════════════════════════════════════════════ */
+const BANK = [
+
+/* ── BASIC / POWER RULE ─────────────────────────────────── */
+{tech:'power',d:1,t:'\\int (3x^2+2x)\\,dx',a:'x^3+x^2+C',
+ h:'Power rule term by term. Then simplify the coefficients.',
+ s:['$\\int 3x^2dx = 3\\cdot\\frac{x^3}{3}=x^3$','$\\int 2x\\,dx = 2\\cdot\\frac{x^2}{2}=x^2$','Add the constant: $x^3+x^2+C$']},
+
+{tech:'power',d:1,t:'\\int (5x^4-3x^2+7)\\,dx',a:'x^5-x^3+7x+C',
+ h:'Bump each exponent by one and divide by the new exponent.',
+ s:['$5x^4\\to x^5$, $-3x^2\\to -x^3$, $7\\to 7x$','$x^5-x^3+7x+C$']},
+
+{tech:'power',d:1,t:'\\int \\frac{1}{x^2}\\,dx',a:'-\\frac{1}{x}+C',
+ h:'Rewrite as $x^{-2}$ before you reach for the power rule.',
+ s:['$\\int x^{-2}dx=\\frac{x^{-1}}{-1}=-x^{-1}$','$=-\\frac{1}{x}+C$'],
+ w:'Rewriting a fraction as a negative power is the single most common “first move” in Calc 1. Nothing is integrable until it looks like $x^n$.'},
+
+{tech:'power',d:1,t:'\\int \\sqrt{x}\\,dx',a:'\\frac{2}{3}x^{3/2}+C',
+ h:'Roots are fractional powers: $\\sqrt{x}=x^{1/2}$.',
+ s:['$\\int x^{1/2}dx=\\frac{x^{3/2}}{3/2}$','$=\\frac{2}{3}x^{3/2}+C$']},
+
+{tech:'power',d:1,t:'\\int \\left(\\frac{2}{x}+e^{x}\\right)dx',a:'2\\ln|x|+e^{x}+C',
+ h:'$1/x$ is the one case the power rule cannot handle.',
+ s:['$\\int\\frac{2}{x}dx=2\\ln|x|$','$\\int e^xdx=e^x$','$2\\ln|x|+e^x+C$'],
+ w:'The power rule fails at $n=-1$ because it would divide by zero. That gap is exactly where the logarithm lives.'},
+
+{tech:'power',d:1,t:'\\int \\frac{x^3+1}{x}\\,dx',a:'\\frac{x^3}{3}+\\ln|x|+C',
+ h:'Split the fraction first — you can divide term by term.',
+ s:['$\\frac{x^3+1}{x}=x^2+\\frac1x$','$\\int(x^2+\\tfrac1x)dx=\\frac{x^3}{3}+\\ln|x|+C$']},
+
+{tech:'power',d:1,t:'\\int (x+1)^2\\,dx',a:'\\frac{x^3}{3}+x^2+x+C',
+ h:'Expand it — or note this is also a trivial $u$-sub.',
+ s:['Expand: $x^2+2x+1$','$\\frac{x^3}{3}+x^2+x+C$'],
+ w:'Via $u=x+1$ you get $\\frac{(x+1)^3}{3}+C$. Both are right — they differ by a constant, which the $+C$ absorbs.'},
+
+{tech:'power',d:1,t:'\\int (3\\sin x-2\\cos x)\\,dx',a:'-3\\cos x-2\\sin x+C',
+ h:'Antiderivative of $\\sin$ picks up a minus sign; $\\cos$ does not.',
+ s:['$\\int\\sin x\\,dx=-\\cos x$','$\\int\\cos x\\,dx=\\sin x$','$-3\\cos x-2\\sin x+C$']},
+
+{tech:'power',d:1,t:'\\int_{0}^{1} 4x^3\\,dx',a:'1',
+ h:'Find the antiderivative, then evaluate top minus bottom.',
+ s:['$F(x)=x^4$','$F(1)-F(0)=1-0=1$']},
+
+{tech:'power',d:1,t:'\\int_{1}^{4}\\frac{dx}{\\sqrt{x}}',a:'2',
+ h:'$1/\\sqrt x = x^{-1/2}$.',
+ s:['$F(x)=2\\sqrt{x}$','$2\\sqrt4-2\\sqrt1=4-2=2$']},
+
+{tech:'power',d:1,t:'\\int (\\sec x\\tan x+\\sec^2 x)\\,dx',a:'\\sec x+\\tan x+C',
+ h:'Both are derivatives you already know — read them backwards.',
+ s:['$\\frac{d}{dx}\\sec x=\\sec x\\tan x$','$\\frac{d}{dx}\\tan x=\\sec^2x$','$\\sec x+\\tan x+C$']},
+
+{tech:'power',d:1,t:'\\int_{0}^{\\pi/2}\\cos x\\,dx',a:'1',
+ h:'Antiderivative of cosine, evaluated at the endpoints.',
+ s:['$F(x)=\\sin x$','$\\sin(\\pi/2)-\\sin 0=1-0=1$']},
+
+{tech:'power',d:2,t:'\\int \\frac{x^2-1}{x-1}\\,dx',a:'\\frac{x^2}{2}+x+C',
+ h:'Do the algebra before the calculus. Factor the numerator.',
+ s:['$\\frac{(x-1)(x+1)}{x-1}=x+1$ (for $x\\ne1$)','$\\int(x+1)dx=\\frac{x^2}{2}+x+C$'],
+ w:'Bee-relevant reflex: always ask whether the integrand simplifies algebraically before choosing a technique. Many “hard” integrals are easy ones in disguise.'},
+
+/* ── U-SUBSTITUTION ─────────────────────────────────────── */
+{tech:'usub',d:1,t:'\\int 2x\\cos(x^2)\\,dx',a:'\\sin(x^2)+C',
+ h:'The derivative of the inside function is sitting right there.',
+ s:['$u=x^2,\\ du=2x\\,dx$','$\\int\\cos u\\,du=\\sin u$','$=\\sin(x^2)+C$'],
+ w:'$u$-sub is the chain rule read backwards. The tell is always “a function and its derivative, together.”'},
+
+{tech:'usub',d:1,t:'\\int x\\,e^{x^2}\\,dx',a:'\\frac{1}{2}e^{x^2}+C',
+ h:'You have $x\\,dx$ but $du=2x\\,dx$ — fix it with a constant.',
+ s:['$u=x^2,\\ du=2x\\,dx\\Rightarrow x\\,dx=\\tfrac{du}{2}$','$\\tfrac12\\int e^u du=\\tfrac12 e^u$','$=\\tfrac12 e^{x^2}+C$']},
+
+{tech:'usub',d:1,t:'\\int \\frac{2x}{x^2+1}\\,dx',a:'\\ln(x^2+1)+C',
+ h:'Numerator is exactly the derivative of the denominator.',
+ s:['$u=x^2+1,\\ du=2x\\,dx$','$\\int\\frac{du}{u}=\\ln|u|$','$=\\ln(x^2+1)+C$ (no bars needed — always positive)'],
+ w:'Pattern to burn in: $\\int\\frac{f\'(x)}{f(x)}dx=\\ln|f(x)|+C$. This one shows up constantly.'},
+
+{tech:'usub',d:1,t:'\\int \\frac{\\ln x}{x}\\,dx',a:'\\frac{(\\ln x)^2}{2}+C',
+ h:'$\\frac{1}{x}$ is the derivative of $\\ln x$.',
+ s:['$u=\\ln x,\\ du=\\frac{dx}{x}$','$\\int u\\,du=\\frac{u^2}{2}$','$=\\frac{(\\ln x)^2}{2}+C$']},
+
+{tech:'usub',d:1,t:'\\int x\\sqrt{x^2+1}\\,dx',a:'\\frac{1}{3}(x^2+1)^{3/2}+C',
+ h:'Let $u$ be whatever is under the root.',
+ s:['$u=x^2+1,\\ x\\,dx=\\tfrac{du}{2}$','$\\tfrac12\\int u^{1/2}du=\\tfrac12\\cdot\\tfrac23u^{3/2}$','$=\\tfrac13(x^2+1)^{3/2}+C$']},
+
+{tech:'usub',d:1,t:'\\int \\sin^3 x\\cos x\\,dx',a:'\\frac{\\sin^4 x}{4}+C',
+ h:'$\\cos x\\,dx$ is begging to be $du$.',
+ s:['$u=\\sin x,\\ du=\\cos x\\,dx$','$\\int u^3du=\\frac{u^4}{4}$','$=\\frac{\\sin^4x}{4}+C$']},
+
+{tech:'usub',d:1,t:'\\int e^{\\sin x}\\cos x\\,dx',a:'e^{\\sin x}+C',
+ h:'Exponent and its derivative both present.',
+ s:['$u=\\sin x,\\ du=\\cos x\\,dx$','$\\int e^udu=e^u$','$=e^{\\sin x}+C$']},
+
+{tech:'usub',d:1,t:'\\int x^2(x^3+5)^{9}\\,dx',a:'\\frac{(x^3+5)^{10}}{30}+C',
+ h:'Never expand a ninth power. Substitute.',
+ s:['$u=x^3+5,\\ x^2dx=\\tfrac{du}{3}$','$\\tfrac13\\int u^9du=\\tfrac{u^{10}}{30}$','$=\\frac{(x^3+5)^{10}}{30}+C$']},
+
+{tech:'usub',d:1,t:'\\int \\frac{e^x}{1+e^x}\\,dx',a:'\\ln(1+e^x)+C',
+ h:'Derivative-over-function again.',
+ s:['$u=1+e^x,\\ du=e^xdx$','$\\int\\frac{du}{u}=\\ln|u|$','$=\\ln(1+e^x)+C$']},
+
+{tech:'usub',d:1,t:'\\int e^{2x}\\,dx',a:'\\frac{1}{2}e^{2x}+C',
+ h:'Linear inside: the constant just divides out.',
+ s:['$u=2x,\\ dx=\\tfrac{du}{2}$','$\\tfrac12\\int e^udu=\\tfrac12e^{2x}+C$'],
+ w:'General shortcut worth memorising: $\\int f(ax+b)dx=\\frac1a F(ax+b)+C$.'},
+
+{tech:'usub',d:2,t:'\\int \\tan x\\,dx',a:'-\\ln|\\cos x|+C',
+ h:'Rewrite as $\\frac{\\sin x}{\\cos x}$ first.',
+ s:['$u=\\cos x,\\ du=-\\sin x\\,dx$','$-\\int\\frac{du}{u}=-\\ln|u|$','$=-\\ln|\\cos x|+C=\\ln|\\sec x|+C$']},
+
+{tech:'usub',d:2,t:'\\int \\frac{dx}{x\\ln x}',a:'\\ln|\\ln x|+C',
+ h:'Nested logs — take $u$ as the innermost function.',
+ s:['$u=\\ln x,\\ du=\\frac{dx}{x}$','$\\int\\frac{du}{u}=\\ln|u|$','$=\\ln|\\ln x|+C$']},
+
+{tech:'usub',d:2,t:'\\int_{0}^{\\pi/4}\\tan x\\sec^2 x\\,dx',a:'\\frac{1}{2}',
+ h:'Change the limits when you change the variable — it saves back-substituting.',
+ s:['$u=\\tan x,\\ du=\\sec^2x\\,dx$','Limits: $x=0\\to u=0$, $x=\\pi/4\\to u=1$','$\\int_0^1 u\\,du=\\tfrac12$'],
+ w:'For definite integrals, converting the limits is faster and eliminates a whole class of back-substitution errors. Do it by default.'},
+
+{tech:'usub',d:2,t:'\\int \\frac{x}{1+x^4}\\,dx',a:'\\frac{1}{2}\\arctan(x^2)+C',
+ h:'$x^4=(x^2)^2$. What does that suggest for $u$?',
+ s:['$u=x^2,\\ x\\,dx=\\tfrac{du}{2}$','$\\tfrac12\\int\\frac{du}{1+u^2}=\\tfrac12\\arctan u$','$=\\tfrac12\\arctan(x^2)+C$']},
+
+{tech:'usub',d:2,t:'\\int \\frac{\\arctan x}{1+x^2}\\,dx',a:'\\frac{(\\arctan x)^2}{2}+C',
+ h:'$\\frac{1}{1+x^2}$ is the derivative of what?',
+ s:['$u=\\arctan x,\\ du=\\frac{dx}{1+x^2}$','$\\int u\\,du=\\frac{u^2}{2}$','$=\\frac{(\\arctan x)^2}{2}+C$']},
+
+{tech:'usub',d:2,t:'\\int \\frac{\\cos\\sqrt{x}}{\\sqrt{x}}\\,dx',a:'2\\sin\\sqrt{x}+C',
+ h:'$u=\\sqrt x$ gives $du=\\frac{dx}{2\\sqrt x}$.',
+ s:['$u=\\sqrt x,\\ \\frac{dx}{\\sqrt x}=2\\,du$','$2\\int\\cos u\\,du=2\\sin u$','$=2\\sin\\sqrt x+C$']},
+
+{tech:'usub',d:2,t:'\\int \\frac{x}{x+1}\\,dx',a:'x-\\ln|x+1|+C',
+ h:'Add and subtract 1 on top — no substitution needed.',
+ s:['$\\frac{x}{x+1}=\\frac{(x+1)-1}{x+1}=1-\\frac{1}{x+1}$','$\\int\\left(1-\\tfrac{1}{x+1}\\right)dx=x-\\ln|x+1|+C$'],
+ w:'“Add zero cleverly” is one of the highest-value manipulations in the toolbox. Whenever the numerator has the same degree as the denominator, force the split.'},
+
+{tech:'usub',d:2,t:'\\int \\frac{x}{\\sqrt{1-x^2}}\\,dx',a:'-\\sqrt{1-x^2}+C',
+ h:'Don\'t trig-sub this one — the $x$ out front makes it a plain $u$-sub.',
+ s:['$u=1-x^2,\\ x\\,dx=-\\tfrac{du}{2}$','$-\\tfrac12\\int u^{-1/2}du=-u^{1/2}$','$=-\\sqrt{1-x^2}+C$'],
+ w:'Contrast with $\\int\\frac{dx}{\\sqrt{1-x^2}}=\\arcsin x$. One stray factor of $x$ completely changes which tool you need.'},
+
+{tech:'usub',d:2,t:'\\int_{0}^{1}\\frac{x}{x^2+1}\\,dx',a:'\\frac{1}{2}\\ln 2',
+ h:'Half of derivative-over-function, with converted limits.',
+ s:['$u=x^2+1$, limits $1\\to2$','$\\tfrac12\\int_1^2\\frac{du}{u}=\\tfrac12\\ln2$']},
+
+{tech:'usub',d:3,t:'\\int \\sec x\\,dx',a:'\\ln|\\sec x+\\tan x|+C',
+ h:'Multiply and divide by $\\sec x+\\tan x$. Watch what happens to the numerator.',
+ s:['$\\sec x\\cdot\\frac{\\sec x+\\tan x}{\\sec x+\\tan x}=\\frac{\\sec^2x+\\sec x\\tan x}{\\sec x+\\tan x}$','The numerator is exactly $\\frac{d}{dx}(\\sec x+\\tan x)$','$u=\\sec x+\\tan x\\Rightarrow\\ln|u|$','$=\\ln|\\sec x+\\tan x|+C$'],
+ w:'Nobody derives this in competition — memorise it. But understand the trick, because “multiply by a clever form of 1” recurs everywhere.'},
+
+{tech:'usub',d:3,t:'\\int \\frac{dx}{1+e^{x}}',a:'x-\\ln(1+e^{x})+C',
+ h:'Split it: what is $1-\\frac{e^x}{1+e^x}$?',
+ s:['$\\frac{1}{1+e^x}=\\frac{(1+e^x)-e^x}{1+e^x}=1-\\frac{e^x}{1+e^x}$','$\\int 1\\,dx-\\int\\frac{e^x}{1+e^x}dx$','$=x-\\ln(1+e^x)+C$']},
+
+/* ── INTEGRATION BY PARTS ───────────────────────────────── */
+{tech:'parts',d:2,t:'\\int x\\,e^{x}\\,dx',a:'xe^{x}-e^{x}+C',
+ h:'LIATE: algebraic beats exponential, so $u=x$.',
+ s:['$u=x,\\ dv=e^xdx\\Rightarrow du=dx,\\ v=e^x$','$xe^x-\\int e^xdx$','$=xe^x-e^x+C$'],
+ w:'By parts is the product rule reversed. You pick $u$ to be the thing that gets *simpler* when differentiated — here $x\\to1$, killing the product entirely.'},
+
+{tech:'parts',d:2,t:'\\int \\ln x\\,dx',a:'x\\ln x-x+C',
+ h:'There is only one function — so let $dv=dx$.',
+ s:['$u=\\ln x,\\ dv=dx\\Rightarrow du=\\frac{dx}{x},\\ v=x$','$x\\ln x-\\int x\\cdot\\frac1x dx=x\\ln x-\\int dx$','$=x\\ln x-x+C$'],
+ w:'The “invisible $dv=dx$” move also cracks $\\arcsin x$, $\\arctan x$, and $\\ln(\\text{anything})$. Memorise the pattern, not just the answer.'},
+
+{tech:'parts',d:2,t:'\\int x\\ln x\\,dx',a:'\\frac{x^2}{2}\\ln x-\\frac{x^2}{4}+C',
+ h:'Log ranks above algebraic in LIATE — $u=\\ln x$.',
+ s:['$u=\\ln x,\\ dv=x\\,dx\\Rightarrow v=\\frac{x^2}{2}$','$\\frac{x^2}{2}\\ln x-\\int\\frac{x^2}{2}\\cdot\\frac1x dx=\\frac{x^2}{2}\\ln x-\\int\\frac{x}{2}dx$','$=\\frac{x^2}{2}\\ln x-\\frac{x^2}{4}+C$']},
+
+{tech:'parts',d:2,t:'\\int x\\sin x\\,dx',a:'-x\\cos x+\\sin x+C',
+ h:'$u=x$; the sine integrates cleanly.',
+ s:['$u=x,\\ dv=\\sin x\\,dx\\Rightarrow v=-\\cos x$','$-x\\cos x+\\int\\cos x\\,dx$','$=-x\\cos x+\\sin x+C$']},
+
+{tech:'parts',d:2,t:'\\int \\arctan x\\,dx',a:'x\\arctan x-\\frac{1}{2}\\ln(1+x^2)+C',
+ h:'Same trick as $\\ln x$: take $dv=dx$.',
+ s:['$u=\\arctan x,\\ v=x$','$x\\arctan x-\\int\\frac{x}{1+x^2}dx$','The leftover is a $u$-sub: $\\tfrac12\\ln(1+x^2)$','$=x\\arctan x-\\tfrac12\\ln(1+x^2)+C$']},
+
+{tech:'parts',d:2,t:'\\int_{1}^{e}\\ln x\\,dx',a:'1',
+ h:'Antiderivative is $x\\ln x-x$; now evaluate.',
+ s:['$F(x)=x\\ln x-x$','$F(e)=e-e=0$; $F(1)=0-1=-1$','$0-(-1)=1$']},
+
+{tech:'parts',d:2,t:'\\int x\\cos(2x)\\,dx',a:'\\frac{x\\sin 2x}{2}+\\frac{\\cos 2x}{4}+C',
+ h:'$u=x$, and remember the chain-rule factor when integrating $\\cos 2x$.',
+ s:['$u=x,\\ dv=\\cos2x\\,dx\\Rightarrow v=\\frac{\\sin2x}{2}$','$\\frac{x\\sin2x}{2}-\\tfrac12\\int\\sin2x\\,dx$','$=\\frac{x\\sin2x}{2}+\\frac{\\cos2x}{4}+C$']},
+
+{tech:'parts',d:3,t:'\\int x^{2}e^{x}\\,dx',a:'e^{x}(x^2-2x+2)+C',
+ h:'Apply parts twice — or use the tabular shortcut.',
+ s:['First pass: $x^2e^x-2\\int xe^xdx$','Second pass: $\\int xe^xdx=xe^x-e^x$','$x^2e^x-2xe^x+2e^x=e^x(x^2-2x+2)+C$'],
+ w:'Tabular (“DI”) method: differentiate $x^2$ down to zero, integrate $e^x$ across, alternate signs. For polynomial × exponential/trig it is dramatically faster than repeated by-parts.'},
+
+{tech:'parts',d:3,t:'\\int e^{x}\\sin x\\,dx',a:'\\frac{e^{x}(\\sin x-\\cos x)}{2}+C',
+ h:'Apply parts twice and the original integral reappears. Solve for it algebraically.',
+ s:['Let $I=\\int e^x\\sin x\\,dx$','Two rounds of parts give $I=e^x\\sin x-e^x\\cos x-I$','$2I=e^x(\\sin x-\\cos x)$','$I=\\frac{e^x(\\sin x-\\cos x)}{2}+C$'],
+ w:'The “loop” case. When the integral returns, you are not stuck — you have an *equation*. This is a genuine competition staple.'},
+
+{tech:'parts',d:3,t:'\\int \\arcsin x\\,dx',a:'x\\arcsin x+\\sqrt{1-x^2}+C',
+ h:'$dv=dx$, then the remainder is a $u$-sub.',
+ s:['$u=\\arcsin x,\\ v=x$','$x\\arcsin x-\\int\\frac{x}{\\sqrt{1-x^2}}dx$','Leftover: $-\\sqrt{1-x^2}$ with the sign, so it becomes $+$','$=x\\arcsin x+\\sqrt{1-x^2}+C$']},
+
+{tech:'parts',d:3,t:'\\int (\\ln x)^2\\,dx',a:'x(\\ln x)^2-2x\\ln x+2x+C',
+ h:'Parts once reduces the power of the log; then you know the rest.',
+ s:['$u=(\\ln x)^2,\\ v=x$: $x(\\ln x)^2-2\\int\\ln x\\,dx$','$\\int\\ln x\\,dx=x\\ln x-x$','$=x(\\ln x)^2-2x\\ln x+2x+C$']},
+
+{tech:'parts',d:3,t:'\\int x\\sec^2 x\\,dx',a:'x\\tan x+\\ln|\\cos x|+C',
+ h:'$dv=\\sec^2x\\,dx$ integrates to $\\tan x$; the leftover is $\\int\\tan x$.',
+ s:['$u=x,\\ v=\\tan x$','$x\\tan x-\\int\\tan x\\,dx$','$\\int\\tan x\\,dx=-\\ln|\\cos x|$','$=x\\tan x+\\ln|\\cos x|+C$']},
+
+{tech:'parts',d:3,t:'\\int x^{3}e^{x^{2}}\\,dx',a:'\\frac{1}{2}e^{x^{2}}(x^{2}-1)+C',
+ h:'Substitute first to tame the exponent, then use parts.',
+ s:['$u=x^2,\\ du=2x\\,dx$: integral becomes $\\tfrac12\\int u\\,e^u du$','Parts: $\\tfrac12(ue^u-e^u)$','$=\\tfrac12 e^{x^2}(x^2-1)+C$'],
+ w:'Combining techniques is the norm above Calc 2 level. Substitute to simplify the *shape*, then pick a technique for what remains.'},
+
+{tech:'parts',d:3,t:'\\int_{0}^{1}x\\,e^{-x}\\,dx',a:'1-\\frac{2}{e}',
+ h:'Parts with $u=x$, then evaluate carefully — mind the signs.',
+ s:['$\\int xe^{-x}dx=-xe^{-x}-e^{-x}$','At $1$: $-\\tfrac1e-\\tfrac1e=-\\tfrac2e$; at $0$: $-1$','$-\\tfrac2e-(-1)=1-\\tfrac2e$']},
+
+/* ── TRIG INTEGRALS ─────────────────────────────────────── */
+{tech:'trigint',d:2,t:'\\int \\sin^2 x\\,dx',a:'\\frac{x}{2}-\\frac{\\sin 2x}{4}+C',
+ h:'Even power — use the half-angle identity, not substitution.',
+ s:['$\\sin^2x=\\frac{1-\\cos2x}{2}$','$\\int\\left(\\tfrac12-\\tfrac{\\cos2x}{2}\\right)dx$','$=\\frac{x}{2}-\\frac{\\sin2x}{4}+C$'],
+ w:'Even powers of sine/cosine always need the power-reduction identities. Odd powers can be attacked by peeling off one factor and substituting.'},
+
+{tech:'trigint',d:2,t:'\\int \\cos^2 x\\,dx',a:'\\frac{x}{2}+\\frac{\\sin 2x}{4}+C',
+ h:'Half angle: $\\cos^2x=\\frac{1+\\cos2x}{2}$.',
+ s:['$\\int\\frac{1+\\cos2x}{2}dx$','$=\\frac{x}{2}+\\frac{\\sin2x}{4}+C$']},
+
+{tech:'trigint',d:2,t:'\\int \\sin^3 x\\,dx',a:'-\\cos x+\\frac{\\cos^3 x}{3}+C',
+ h:'Odd power: split off one $\\sin x$ and convert the rest to cosine.',
+ s:['$\\sin^3x=(1-\\cos^2x)\\sin x$','$u=\\cos x,\\ du=-\\sin x\\,dx$','$-\\int(1-u^2)du=-u+\\frac{u^3}{3}$','$=-\\cos x+\\frac{\\cos^3x}{3}+C$']},
+
+{tech:'trigint',d:2,t:'\\int \\sin^2 x\\cos^3 x\\,dx',a:'\\frac{\\sin^3 x}{3}-\\frac{\\sin^5 x}{5}+C',
+ h:'Cosine has the odd power — peel one off and let $u=\\sin x$.',
+ s:['$\\cos^3x=(1-\\sin^2x)\\cos x$','$u=\\sin x$: $\\int u^2(1-u^2)du$','$=\\frac{u^3}{3}-\\frac{u^5}{5}$','$=\\frac{\\sin^3x}{3}-\\frac{\\sin^5x}{5}+C$']},
+
+{tech:'trigint',d:2,t:'\\int \\sec^4 x\\,dx',a:'\\tan x+\\frac{\\tan^3 x}{3}+C',
+ h:'Save one $\\sec^2x$ for $du$; convert the other to $1+\\tan^2x$.',
+ s:['$\\sec^4x=(1+\\tan^2x)\\sec^2x$','$u=\\tan x,\\ du=\\sec^2x\\,dx$','$\\int(1+u^2)du=u+\\frac{u^3}{3}$','$=\\tan x+\\frac{\\tan^3x}{3}+C$']},
+
+{tech:'trigint',d:2,t:'\\int \\tan x\\sec^3 x\\,dx',a:'\\frac{\\sec^3 x}{3}+C',
+ h:'$\\sec x\\tan x\\,dx$ is a $du$ waiting to happen.',
+ s:['Rewrite: $\\sec^2x\\cdot(\\sec x\\tan x\\,dx)$','$u=\\sec x,\\ du=\\sec x\\tan x\\,dx$','$\\int u^2du=\\frac{u^3}{3}=\\frac{\\sec^3x}{3}+C$']},
+
+{tech:'trigint',d:2,t:'\\int_{0}^{\\pi/2}\\sin^2 x\\,dx',a:'\\frac{\\pi}{4}',
+ h:'Half-angle, or use symmetry with $\\cos^2$.',
+ s:['$\\int_0^{\\pi/2}\\sin^2x\\,dx=\\left[\\frac x2-\\frac{\\sin2x}{4}\\right]_0^{\\pi/2}=\\frac{\\pi}{4}$'],
+ w:'Fast route: over $[0,\\pi/2]$, $\\int\\sin^2=\\int\\cos^2$ by symmetry, and they sum to $\\int 1=\\pi/2$. So each is $\\pi/4$ — no antiderivative needed.'},
+
+{tech:'trigint',d:2,t:'\\int_{0}^{2\\pi}\\sin^2 x\\,dx',a:'\\pi',
+ h:'Average value of $\\sin^2$ over a full period is $\\tfrac12$.',
+ s:['Mean of $\\sin^2$ over a period $=\\tfrac12$','$\\tfrac12\\cdot 2\\pi=\\pi$']},
+
+{tech:'trigint',d:3,t:'\\int \\tan^3 x\\,dx',a:'\\frac{\\tan^2 x}{2}+\\ln|\\cos x|+C',
+ h:'$\\tan^2x=\\sec^2x-1$ turns this into two easy pieces.',
+ s:['$\\tan^3x=\\tan x(\\sec^2x-1)$','$\\int\\tan x\\sec^2x\\,dx=\\frac{\\tan^2x}{2}$','$-\\int\\tan x\\,dx=+\\ln|\\cos x|$','$=\\frac{\\tan^2x}{2}+\\ln|\\cos x|+C$']},
+
+{tech:'trigint',d:3,t:'\\int \\sec^3 x\\,dx',a:'\\frac{1}{2}\\sec x\\tan x+\\frac{1}{2}\\ln|\\sec x+\\tan x|+C',
+ h:'Parts with $u=\\sec x$, $dv=\\sec^2x\\,dx$ — then the integral loops back.',
+ s:['Parts gives $\\sec x\\tan x-\\int\\sec x\\tan^2x\\,dx$','Use $\\tan^2=\\sec^2-1$: $I=\\sec x\\tan x-I+\\int\\sec x\\,dx$','$2I=\\sec x\\tan x+\\ln|\\sec x+\\tan x|$','$I=\\tfrac12\\sec x\\tan x+\\tfrac12\\ln|\\sec x+\\tan x|+C$'],
+ w:'Worth memorising outright — it appears as a sub-step inside almost every trig substitution with $\\sqrt{x^2\\pm a^2}$.'},
+
+{tech:'trigint',d:3,t:'\\int \\sin(3x)\\cos(5x)\\,dx',a:'\\frac{\\cos 2x}{4}-\\frac{\\cos 8x}{16}+C',
+ h:'Product-to-sum identity. Different frequencies never mix otherwise.',
+ s:['$\\sin A\\cos B=\\tfrac12[\\sin(A+B)+\\sin(A-B)]$','$=\\tfrac12[\\sin8x-\\sin2x]$','$\\int:\\ -\\frac{\\cos8x}{16}+\\frac{\\cos2x}{4}+C$']},
+
+{tech:'trigint',d:3,t:'\\int \\cos^4 x\\,dx',a:'\\frac{3x}{8}+\\frac{\\sin 2x}{4}+\\frac{\\sin 4x}{32}+C',
+ h:'Apply the half-angle identity twice.',
+ s:['$\\cos^4x=\\left(\\frac{1+\\cos2x}{2}\\right)^2=\\frac{1+2\\cos2x+\\cos^22x}{4}$','$\\cos^22x=\\frac{1+\\cos4x}{2}$','Combine: $\\frac38+\\frac{\\cos2x}{2}+\\frac{\\cos4x}{8}$','$=\\frac{3x}{8}+\\frac{\\sin2x}{4}+\\frac{\\sin4x}{32}+C$']},
+
+/* ── TRIG SUBSTITUTION ──────────────────────────────────── */
+{tech:'trigsub',d:1,t:'\\int \\frac{dx}{1+x^2}',a:'\\arctan x+C',
+ h:'This is a memorised form — no work needed.',
+ s:['$\\int\\frac{dx}{1+x^2}=\\arctan x+C$']},
+
+{tech:'trigsub',d:2,t:'\\int \\frac{dx}{\\sqrt{1-x^2}}',a:'\\arcsin x+C',
+ h:'Memorised form; also derivable with $x=\\sin\\theta$.',
+ s:['$x=\\sin\\theta,\\ dx=\\cos\\theta\\,d\\theta$, $\\sqrt{1-x^2}=\\cos\\theta$','$\\int d\\theta=\\theta=\\arcsin x+C$']},
+
+{tech:'trigsub',d:2,t:'\\int_{0}^{1}\\sqrt{1-x^2}\\,dx',a:'\\frac{\\pi}{4}',
+ h:'Before integrating: what shape is $y=\\sqrt{1-x^2}$?',
+ s:['It is the upper unit semicircle','$[0,1]$ traces a quarter disc','Area $=\\tfrac14\\pi(1)^2=\\frac{\\pi}{4}$'],
+ w:'Recognising an integral as a known area is a legitimate — and very fast — solution method. Always glance for circles and triangles before computing.'},
+
+{tech:'trigsub',d:2,t:'\\int \\frac{dx}{x^2+2x+2}',a:'\\arctan(x+1)+C',
+ h:'Complete the square in the denominator.',
+ s:['$x^2+2x+2=(x+1)^2+1$','$\\int\\frac{du}{u^2+1}$ with $u=x+1$','$=\\arctan(x+1)+C$']},
+
+{tech:'trigsub',d:3,t:'\\int \\sqrt{1-x^2}\\,dx',a:'\\frac{1}{2}\\left(x\\sqrt{1-x^2}+\\arcsin x\\right)+C',
+ h:'$x=\\sin\\theta$; you will land on $\\int\\cos^2\\theta\\,d\\theta$.',
+ s:['$x=\\sin\\theta$: $\\int\\cos^2\\theta\\,d\\theta=\\frac{\\theta}{2}+\\frac{\\sin2\\theta}{4}$','$\\sin2\\theta=2\\sin\\theta\\cos\\theta=2x\\sqrt{1-x^2}$','$=\\tfrac12\\arcsin x+\\tfrac12 x\\sqrt{1-x^2}+C$']},
+
+{tech:'trigsub',d:3,t:'\\int \\frac{dx}{x^2\\sqrt{x^2-1}}',a:'\\frac{\\sqrt{x^2-1}}{x}+C',
+ h:'$\\sqrt{x^2-a^2}$ calls for $x=\\sec\\theta$.',
+ s:['$x=\\sec\\theta,\\ dx=\\sec\\theta\\tan\\theta\\,d\\theta$, $\\sqrt{x^2-1}=\\tan\\theta$','$\\int\\frac{\\sec\\theta\\tan\\theta}{\\sec^2\\theta\\tan\\theta}d\\theta=\\int\\cos\\theta\\,d\\theta=\\sin\\theta$','Triangle: $\\sin\\theta=\\frac{\\sqrt{x^2-1}}{x}$']},
+
+{tech:'trigsub',d:3,t:'\\int \\frac{x^2}{\\sqrt{4-x^2}}\\,dx',a:'2\\arcsin\\!\\frac{x}{2}-\\frac{x\\sqrt{4-x^2}}{2}+C',
+ h:'$x=2\\sin\\theta$ clears the root completely.',
+ s:['$x=2\\sin\\theta$: integrand $\\to 4\\sin^2\\theta\\,d\\theta$','$4\\int\\sin^2\\theta\\,d\\theta=2\\theta-\\sin2\\theta$','Back-substitute: $2\\arcsin\\frac x2-\\frac{x\\sqrt{4-x^2}}{2}+C$']},
+
+{tech:'trigsub',d:3,t:'\\int \\frac{dx}{(x^2+4)^{3/2}}',a:'\\frac{x}{4\\sqrt{x^2+4}}+C',
+ h:'$x=2\\tan\\theta$; the $3/2$ power becomes $\\sec^3\\theta$.',
+ s:['$x=2\\tan\\theta,\\ dx=2\\sec^2\\theta\\,d\\theta$, $(x^2+4)^{3/2}=8\\sec^3\\theta$','$\\tfrac14\\int\\cos\\theta\\,d\\theta=\\tfrac14\\sin\\theta$','$\\sin\\theta=\\frac{x}{\\sqrt{x^2+4}}$, so $=\\frac{x}{4\\sqrt{x^2+4}}+C$']},
+
+{tech:'trigsub',d:3,t:'\\int \\frac{dx}{\\sqrt{x^2+9}}',a:'\\ln\\left|x+\\sqrt{x^2+9}\\right|+C',
+ h:'$x=3\\tan\\theta$ turns this into $\\int\\sec\\theta\\,d\\theta$.',
+ s:['$x=3\\tan\\theta$: $\\int\\sec\\theta\\,d\\theta=\\ln|\\sec\\theta+\\tan\\theta|$','$\\sec\\theta=\\frac{\\sqrt{x^2+9}}{3},\\ \\tan\\theta=\\frac x3$','$=\\ln\\left|x+\\sqrt{x^2+9}\\right|+C$ (constant absorbed)']},
+
+{tech:'trigsub',d:3,t:'\\int \\frac{dx}{\\sqrt{x^2+2x+5}}',a:'\\ln\\left|x+1+\\sqrt{x^2+2x+5}\\right|+C',
+ h:'Complete the square first, then it is a standard form.',
+ s:['$x^2+2x+5=(x+1)^2+4$','$\\int\\frac{du}{\\sqrt{u^2+4}}=\\ln|u+\\sqrt{u^2+4}|$','$=\\ln|x+1+\\sqrt{x^2+2x+5}|+C$'],
+ w:'Completing the square is the gateway move: it converts any quadratic under a root into one of the three canonical trig-sub forms.'},
+
+{tech:'trigsub',d:4,t:'\\int \\sqrt{x^2+1}\\,dx',a:'\\frac{1}{2}\\left(x\\sqrt{x^2+1}+\\ln\\left|x+\\sqrt{x^2+1}\\right|\\right)+C',
+ h:'$x=\\tan\\theta$ lands you on $\\int\\sec^3\\theta\\,d\\theta$ — which loops.',
+ s:['$x=\\tan\\theta$: $\\int\\sec^3\\theta\\,d\\theta$','$=\\tfrac12\\sec\\theta\\tan\\theta+\\tfrac12\\ln|\\sec\\theta+\\tan\\theta|$','Back-substitute with $\\sec\\theta=\\sqrt{x^2+1}$','$=\\tfrac12\\left(x\\sqrt{x^2+1}+\\ln|x+\\sqrt{x^2+1}|\\right)+C$']},
+
+/* ── PARTIAL FRACTIONS ──────────────────────────────────── */
+{tech:'partial',d:2,t:'\\int \\frac{dx}{x^2-1}',a:'\\frac{1}{2}\\ln\\left|\\frac{x-1}{x+1}\\right|+C',
+ h:'Factor into $(x-1)(x+1)$ and split.',
+ s:['$\\frac{1}{(x-1)(x+1)}=\\frac{1/2}{x-1}-\\frac{1/2}{x+1}$','$\\tfrac12\\ln|x-1|-\\tfrac12\\ln|x+1|$','$=\\tfrac12\\ln\\left|\\frac{x-1}{x+1}\\right|+C$']},
+
+{tech:'partial',d:2,t:'\\int \\frac{dx}{x(x+1)}',a:'\\ln\\left|\\frac{x}{x+1}\\right|+C',
+ h:'Two linear factors — cover-up method gets the coefficients instantly.',
+ s:['$\\frac{1}{x(x+1)}=\\frac1x-\\frac{1}{x+1}$','$\\ln|x|-\\ln|x+1|$','$=\\ln\\left|\\frac{x}{x+1}\\right|+C$'],
+ w:'Cover-up (Heaviside) method: to get the coefficient over $(x-a)$, delete that factor and evaluate the rest at $x=a$. Much faster than solving a system.'},
+
+{tech:'partial',d:2,t:'\\int \\frac{x}{(x-1)(x+2)}\\,dx',a:'\\frac{1}{3}\\ln|x-1|+\\frac{2}{3}\\ln|x+2|+C',
+ h:'Cover-up: at $x=1$ and $x=-2$.',
+ s:['$A=\\frac{1}{1+2}=\\tfrac13$, $B=\\frac{-2}{-2-1}=\\tfrac23$','$\\int\\left(\\frac{1/3}{x-1}+\\frac{2/3}{x+2}\\right)dx$','$=\\tfrac13\\ln|x-1|+\\tfrac23\\ln|x+2|+C$']},
+
+{tech:'partial',d:3,t:'\\int \\frac{3x+1}{x^2+x-2}\\,dx',a:'\\frac{5}{3}\\ln|x+2|+\\frac{4}{3}\\ln|x-1|+C',
+ h:'Factor the denominator as $(x+2)(x-1)$ first.',
+ s:['$3x+1=A(x-1)+B(x+2)$','$x=1:\\ 4=3B\\Rightarrow B=\\tfrac43$; $x=-2:\\ -5=-3A\\Rightarrow A=\\tfrac53$','$=\\tfrac53\\ln|x+2|+\\tfrac43\\ln|x-1|+C$']},
+
+{tech:'partial',d:3,t:'\\int \\frac{dx}{x^3+x}',a:'\\ln|x|-\\frac{1}{2}\\ln(x^2+1)+C',
+ h:'Factor as $x(x^2+1)$ — the quadratic is irreducible, so its numerator is $Bx+C$.',
+ s:['$\\frac{1}{x(x^2+1)}=\\frac1x-\\frac{x}{x^2+1}$','$\\ln|x|-\\tfrac12\\ln(x^2+1)+C$']},
+
+{tech:'partial',d:3,t:'\\int \\frac{2x^2-x+4}{x^3+4x}\\,dx',a:'\\ln|x|+\\frac{1}{2}\\ln(x^2+4)-\\frac{1}{2}\\arctan\\!\\frac{x}{2}+C',
+ h:'Denominator is $x(x^2+4)$: use $\\frac{A}{x}+\\frac{Bx+C}{x^2+4}$.',
+ s:['$A=1,\\ B=1,\\ C=-1$','$\\int\\frac{dx}{x}+\\int\\frac{x-1}{x^2+4}dx$','$=\\ln|x|+\\tfrac12\\ln(x^2+4)-\\tfrac12\\arctan\\frac x2+C$'],
+ w:'Irreducible quadratics split into two jobs: the $x$ part gives a log, the constant part gives an arctangent. Separate them deliberately.'},
+
+{tech:'partial',d:3,t:'\\int \\frac{x+4}{x^2+2x+5}\\,dx',a:'\\frac{1}{2}\\ln(x^2+2x+5)+\\frac{3}{2}\\arctan\\!\\frac{x+1}{2}+C',
+ h:'Denominator is irreducible. Force the numerator to contain its derivative.',
+ s:['$x+4=\\tfrac12(2x+2)+3$','$\\tfrac12\\int\\frac{2x+2}{x^2+2x+5}dx=\\tfrac12\\ln(x^2+2x+5)$','$3\\int\\frac{dx}{(x+1)^2+4}=\\tfrac32\\arctan\\frac{x+1}{2}$']},
+
+{tech:'partial',d:3,t:'\\int \\frac{x^3}{x-1}\\,dx',a:'\\frac{x^3}{3}+\\frac{x^2}{2}+x+\\ln|x-1|+C',
+ h:'Top-heavy fraction — divide before you decompose.',
+ s:['Long division: $\\frac{x^3}{x-1}=x^2+x+1+\\frac{1}{x-1}$','$=\\frac{x^3}{3}+\\frac{x^2}{2}+x+\\ln|x-1|+C$'],
+ w:'Rule: if $\\deg(\\text{num})\\ge\\deg(\\text{den})$, polynomial-divide first. Partial fractions only applies to proper fractions.'},
+
+{tech:'partial',d:4,t:'\\int \\frac{dx}{(x-1)^2(x+1)}',a:'\\frac{1}{4}\\ln\\left|\\frac{x+1}{x-1}\\right|-\\frac{1}{2(x-1)}+C',
+ h:'A repeated factor needs both $\\frac{A}{x-1}$ and $\\frac{B}{(x-1)^2}$.',
+ s:['$\\frac{1}{(x-1)^2(x+1)}=\\frac{-1/4}{x-1}+\\frac{1/2}{(x-1)^2}+\\frac{1/4}{x+1}$','$-\\tfrac14\\ln|x-1|-\\frac{1}{2(x-1)}+\\tfrac14\\ln|x+1|$','$=\\tfrac14\\ln\\left|\\frac{x+1}{x-1}\\right|-\\frac{1}{2(x-1)}+C$']},
+
+/* ── IMPROPER ───────────────────────────────────────────── */
+{tech:'improper',d:2,t:'\\int_{1}^{\\infty}\\frac{dx}{x^2}',a:'1',
+ h:'Replace $\\infty$ with $b$ and take a limit.',
+ s:['$\\int_1^b x^{-2}dx=1-\\tfrac1b$','$\\lim_{b\\to\\infty}\\left(1-\\tfrac1b\\right)=1$'],
+ w:'$\\int_1^\\infty x^{-p}dx$ converges exactly when $p>1$. Know this test cold — it decides convergence at a glance.'},
+
+{tech:'improper',d:2,t:'\\int_{1}^{\\infty}\\frac{dx}{x}',a:'\\text{diverges}',
+ h:'$p=1$ is exactly the boundary case.',
+ s:['$\\int_1^b\\frac{dx}{x}=\\ln b$','$\\ln b\\to\\infty$, so the integral diverges']},
+
+{tech:'improper',d:2,t:'\\int_{0}^{\\infty}e^{-x}\\,dx',a:'1',
+ h:'Exponential decay always wins.',
+ s:['$\\int_0^b e^{-x}dx=1-e^{-b}$','$\\lim_{b\\to\\infty}=1$']},
+
+{tech:'improper',d:2,t:'\\int_{0}^{1}\\frac{dx}{\\sqrt{x}}',a:'2',
+ h:'The blow-up is at the *lower* limit, not at infinity.',
+ s:['$\\int_a^1 x^{-1/2}dx=2-2\\sqrt a$','$\\lim_{a\\to0^+}=2$'],
+ w:'Improper does not only mean infinite bounds — an infinite discontinuity inside the interval counts too, and it is the case students most often miss.'},
+
+{tech:'improper',d:2,t:'\\int_{0}^{1}\\frac{dx}{x}',a:'\\text{diverges}',
+ h:'Compare with the previous one: how strong is the singularity?',
+ s:['$\\int_a^1\\frac{dx}{x}=-\\ln a$','$\\to\\infty$ as $a\\to0^+$: diverges']},
+
+{tech:'improper',d:2,t:'\\int_{0}^{\\infty}\\frac{dx}{1+x^2}',a:'\\frac{\\pi}{2}',
+ h:'Antiderivative is arctangent; what is its limit at infinity?',
+ s:['$\\left[\\arctan x\\right]_0^\\infty=\\tfrac{\\pi}{2}-0$','$=\\frac{\\pi}{2}$']},
+
+{tech:'improper',d:2,t:'\\int_{-\\infty}^{\\infty}\\frac{dx}{1+x^2}',a:'\\pi',
+ h:'Even integrand — double the half-line result.',
+ s:['$\\left[\\arctan x\\right]_{-\\infty}^{\\infty}=\\tfrac\\pi2-\\left(-\\tfrac\\pi2\\right)=\\pi$']},
+
+{tech:'improper',d:3,t:'\\int_{0}^{\\infty}x\\,e^{-x}\\,dx',a:'1',
+ h:'By parts — or recognise the Gamma function.',
+ s:['Parts: $\\left[-xe^{-x}-e^{-x}\\right]_0^\\infty$','At $\\infty$ both terms $\\to0$; at $0$ the value is $-1$','$=1$'],
+ w:'$\\int_0^\\infty x^n e^{-x}dx=n!$. This is the Gamma function, and it turns a whole family of improper integrals into instant recall.'},
+
+{tech:'improper',d:3,t:'\\int_{0}^{\\infty}x^{2}e^{-x}\\,dx',a:'2',
+ h:'Use the factorial pattern.',
+ s:['$\\int_0^\\infty x^ne^{-x}dx=n!$','$n=2\\Rightarrow 2!=2$']},
+
+{tech:'improper',d:3,t:'\\int_{0}^{1}\\ln x\\,dx',a:'-1',
+ h:'Improper at $0$ — but the antiderivative behaves.',
+ s:['$\\int\\ln x\\,dx=x\\ln x-x$','At $1$: $-1$. At $0^+$: $x\\ln x\\to0$, so the value is $0$','$-1-0=-1$']},
+
+/* ── CLEVER / BEE ───────────────────────────────────────── */
+{tech:'clever',d:3,t:'\\int_{-\\pi}^{\\pi}x^{3}\\cos x\\,dx',a:'0',
+ h:'Check the parity of the integrand before doing anything else.',
+ s:['$x^3$ odd, $\\cos x$ even $\\Rightarrow$ product is odd','Odd function on a symmetric interval integrates to $0$'],
+ w:'Parity is the single cheapest win in any bee. Scan for it *first*, every time: odd on $[-a,a]$ gives zero, even lets you double the half-interval.'},
+
+{tech:'clever',d:3,t:'\\int \\frac{dx}{1+\\sin x}',a:'\\tan x-\\sec x+C',
+ h:'Multiply top and bottom by $1-\\sin x$.',
+ s:['$\\frac{1}{1+\\sin x}\\cdot\\frac{1-\\sin x}{1-\\sin x}=\\frac{1-\\sin x}{\\cos^2x}$','$=\\sec^2x-\\sec x\\tan x$','$=\\tan x-\\sec x+C$'],
+ w:'Conjugate multiplication beats the Weierstrass $t=\\tan(x/2)$ substitution here by a mile. Reach for the identity before the machinery.'},
+
+{tech:'clever',d:4,t:'\\int_{-1}^{1}\\frac{x^{2}}{1+e^{x}}\\,dx',a:'\\frac{1}{3}',
+ h:'Add the integral to its own reflection $x\\to-x$.',
+ s:['$I=\\int_{-1}^1\\frac{x^2}{1+e^x}dx$; sub $x\\to-x$: $I=\\int_{-1}^1\\frac{x^2e^x}{1+e^x}dx$','Add: $2I=\\int_{-1}^1 x^2\\frac{1+e^x}{1+e^x}dx=\\int_{-1}^1x^2dx=\\tfrac23$','$I=\\tfrac13$'],
+ w:'The $\\frac{1}{1+e^x}$ trick: for even $f$, $\\int_{-a}^{a}\\frac{f(x)}{1+e^{x}}dx=\\int_0^a f(x)\\,dx$. A bee classic — recognise the shape instantly.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{\\pi}\\frac{x\\sin x}{1+\\cos^{2}x}\\,dx',a:'\\frac{\\pi^{2}}{4}',
+ h:'King\'s rule: substitute $x\\to\\pi-x$ and add.',
+ s:['$x\\to\\pi-x$ gives $I=\\int_0^\\pi\\frac{(\\pi-x)\\sin x}{1+\\cos^2x}dx$','Add: $2I=\\pi\\int_0^\\pi\\frac{\\sin x}{1+\\cos^2x}dx$','$u=\\cos x$: $\\int_{-1}^{1}\\frac{du}{1+u^2}=\\frac{\\pi}{2}$','$2I=\\frac{\\pi^2}{2}\\Rightarrow I=\\frac{\\pi^2}{4}$'],
+ w:'King\'s rule: $\\int_a^b f(x)dx=\\int_a^b f(a+b-x)dx$. When a stray linear factor of $x$ blocks you, this is almost always the move.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{\\pi/2}\\frac{\\sqrt{\\sin x}}{\\sqrt{\\sin x}+\\sqrt{\\cos x}}\\,dx',a:'\\frac{\\pi}{4}',
+ h:'$x\\to\\frac{\\pi}{2}-x$ swaps sine and cosine.',
+ s:['Reflection gives $J=\\int_0^{\\pi/2}\\frac{\\sqrt{\\cos x}}{\\sqrt{\\sin x}+\\sqrt{\\cos x}}dx$','$I+J=\\int_0^{\\pi/2}1\\,dx=\\frac{\\pi}{2}$ and $I=J$','$I=\\frac{\\pi}{4}$'],
+ w:'The exponent is a decoy — replace $\\sqrt{\\ }$ with any power and the answer is still $\\pi/4$. Bees love this because it punishes brute force and rewards structure.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{\\pi/2}\\frac{dx}{1+\\tan^{\\sqrt{2}}x}',a:'\\frac{\\pi}{4}',
+ h:'Same reflection as the previous problem. The exponent is bait.',
+ s:['$x\\to\\frac\\pi2-x$ turns $\\tan\\to\\cot$','$I+I\'=\\int_0^{\\pi/2}dx=\\frac\\pi2$ where $I=I\'$','$I=\\frac{\\pi}{4}$']},
+
+{tech:'clever',d:4,t:'\\int_{0}^{4}\\frac{\\sqrt{x}}{\\sqrt{x}+\\sqrt{4-x}}\\,dx',a:'2',
+ h:'King\'s rule with $a+b=4$.',
+ s:['$x\\to4-x$ gives the complementary integral $J$','$I+J=\\int_0^4 1\\,dx=4$, and $I=J$','$I=2$']},
+
+{tech:'clever',d:4,t:'\\int_{0}^{\\pi/2}\\ln(\\sin x)\\,dx',a:'-\\frac{\\pi}{2}\\ln 2',
+ h:'Use reflection symmetry plus the double-angle identity $\\sin2x=2\\sin x\\cos x$.',
+ s:['$I=\\int_0^{\\pi/2}\\ln\\sin x\\,dx=\\int_0^{\\pi/2}\\ln\\cos x\\,dx$','$2I=\\int_0^{\\pi/2}\\ln\\left(\\tfrac{\\sin2x}{2}\\right)dx=-\\tfrac\\pi2\\ln2+\\int_0^{\\pi/2}\\ln\\sin2x\\,dx$','The last integral equals $I$ by periodicity','$I=-\\frac{\\pi}{2}\\ln2$'],
+ w:'Self-similarity: the integral reproduces itself after a substitution, so you solve for it algebraically. Same idea as the by-parts loop, one level up.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{1}\\frac{x^{2}-1}{\\ln x}\\,dx',a:'\\ln 3',
+ h:'Feynman: generalise the exponent to $a$ and differentiate under the integral.',
+ s:['Let $I(a)=\\int_0^1\\frac{x^a-1}{\\ln x}dx$','$I\'(a)=\\int_0^1 x^a dx=\\frac{1}{a+1}$','$I(a)=\\ln(a+1)$ since $I(0)=0$','$I(2)=\\ln3$'],
+ w:'The $\\ln x$ in the denominator is the signal: differentiating $x^a$ with respect to $a$ produces $x^a\\ln x$, which cancels it. Parameter placement is the whole art.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{1}\\frac{\\ln(1+x)}{1+x^{2}}\\,dx',a:'\\frac{\\pi\\ln 2}{8}',
+ h:'Try $x=\\tan\\theta$, then King\'s rule on the result.',
+ s:['$x=\\tan\\theta$: $I=\\int_0^{\\pi/4}\\ln(1+\\tan\\theta)d\\theta$','King\'s rule $\\theta\\to\\frac\\pi4-\\theta$ uses $1+\\tan(\\tfrac\\pi4-\\theta)=\\frac{2}{1+\\tan\\theta}$','$2I=\\int_0^{\\pi/4}\\ln2\\,d\\theta=\\frac{\\pi\\ln2}{4}$','$I=\\frac{\\pi\\ln2}{8}$'],
+ w:'A Putnam classic (1997). Two techniques stacked: substitute to change the *shape*, then exploit symmetry in the new variable.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{\\infty}e^{-x^{2}}\\,dx',a:'\\frac{\\sqrt{\\pi}}{2}',
+ h:'No elementary antiderivative exists. Square it and go to polar coordinates.',
+ s:['$I^2=\\int_0^\\infty\\!\\!\\int_0^\\infty e^{-(x^2+y^2)}dx\\,dy$','Polar over the first quadrant: $\\int_0^{\\pi/2}\\!\\!\\int_0^\\infty e^{-r^2}r\\,dr\\,d\\theta$','$=\\frac{\\pi}{2}\\cdot\\frac12=\\frac{\\pi}{4}$','$I=\\frac{\\sqrt\\pi}{2}$'],
+ w:'The definite integral exists even though the antiderivative is not elementary. Escaping to a higher dimension to gain a usable substitution is a real strategic move.'},
+
+{tech:'clever',d:4,t:'\\int_{0}^{\\infty}\\frac{\\sin x}{x}\\,dx',a:'\\frac{\\pi}{2}',
+ h:'Insert a damping factor $e^{-tx}$ and differentiate with respect to $t$.',
+ s:['$I(t)=\\int_0^\\infty e^{-tx}\\frac{\\sin x}{x}dx$','$I\'(t)=-\\int_0^\\infty e^{-tx}\\sin x\\,dx=-\\frac{1}{1+t^2}$','$I(t)=\\frac\\pi2-\\arctan t$ (using $I(\\infty)=0$)','$I=I(0)=\\frac{\\pi}{2}$'],
+ w:'The Dirichlet integral. The parameter is inserted where it will *cancel the obstruction* — here $\\frac1x$ — when you differentiate. That is the design principle behind Feynman\'s trick.'},
+
+{tech:'clever',d:4,t:'\\int \\frac{dx}{\\sin x+\\cos x}',a:'\\frac{1}{\\sqrt{2}}\\ln\\left|\\tan\\!\\left(\\frac{x}{2}+\\frac{\\pi}{8}\\right)\\right|+C',
+ h:'Combine the two waves into one: $a\\sin x+b\\cos x=R\\sin(x+\\varphi)$.',
+ s:['$\\sin x+\\cos x=\\sqrt2\\sin\\!\\left(x+\\tfrac\\pi4\\right)$','$\\tfrac{1}{\\sqrt2}\\int\\csc\\!\\left(x+\\tfrac\\pi4\\right)dx$','$\\int\\csc u\\,du=\\ln|\\tan\\tfrac u2|$','$=\\tfrac{1}{\\sqrt2}\\ln\\left|\\tan\\!\\left(\\tfrac x2+\\tfrac\\pi8\\right)\\right|+C$'],
+ w:'Harmonic addition collapses any $a\\sin x+b\\cos x$ into a single shifted sine. It turns a two-term mess into a standard form.'},
+
+/* ── MULTIPLE INTEGRALS ─────────────────────────────────── */
+{tech:'multi',d:2,t:'\\int_{0}^{1}\\!\\!\\int_{0}^{1}(x+y)\\,dy\\,dx',a:'1',
+ h:'Integrate the inner variable first, treating $x$ as a constant.',
+ s:['Inner: $\\int_0^1(x+y)dy=x+\\tfrac12$','Outer: $\\int_0^1\\left(x+\\tfrac12\\right)dx=\\tfrac12+\\tfrac12=1$']},
+
+{tech:'multi',d:2,t:'\\int_{0}^{1}\\!\\!\\int_{0}^{x}2y\\,dy\\,dx',a:'\\frac{1}{3}',
+ h:'The inner limit depends on $x$ — that is fine, just integrate it out.',
+ s:['Inner: $\\int_0^x 2y\\,dy=x^2$','Outer: $\\int_0^1x^2dx=\\tfrac13$']},
+
+{tech:'multi',d:2,t:'\\int_{0}^{1}\\!\\!\\int_{0}^{1}\\!\\!\\int_{0}^{1}xyz\\,dz\\,dy\\,dx',a:'\\frac{1}{8}',
+ h:'The integrand separates — so the integral factors.',
+ s:['$=\\left(\\int_0^1x\\,dx\\right)\\left(\\int_0^1y\\,dy\\right)\\left(\\int_0^1z\\,dz\\right)$','$=\\tfrac12\\cdot\\tfrac12\\cdot\\tfrac12=\\tfrac18$'],
+ w:'Separable integrand + rectangular region = product of one-dimensional integrals. Always check for this before grinding through iterated limits.'},
+
+{tech:'multi',d:2,t:'\\iint_{x^{2}+y^{2}\\le 1} dA',a:'\\pi',
+ h:'Polar: remember the Jacobian factor $r$.',
+ s:['$\\int_0^{2\\pi}\\!\\int_0^1 r\\,dr\\,d\\theta$','$=2\\pi\\cdot\\tfrac12=\\pi$','(It is just the area of the unit disc.)']},
+
+{tech:'multi',d:3,t:'\\iint_{x^{2}+y^{2}\\le 4}(x^{2}+y^{2})\\,dA',a:'8\\pi',
+ h:'In polar the integrand becomes $r^2$, and $dA=r\\,dr\\,d\\theta$.',
+ s:['$\\int_0^{2\\pi}\\!\\int_0^2 r^2\\cdot r\\,dr\\,d\\theta$','$=2\\pi\\left[\\tfrac{r^4}{4}\\right]_0^2=2\\pi\\cdot4=8\\pi$'],
+ w:'Forgetting the $r$ in $dA=r\\,dr\\,d\\theta$ is the most common Calc 3 error there is. The $r$ is the Jacobian — it is not optional.'},
+
+{tech:'multi',d:3,t:'\\int_{0}^{2\\pi}\\!\\!\\int_{0}^{\\pi}\\!\\!\\int_{0}^{1}\\rho^{2}\\sin\\varphi\\,d\\rho\\,d\\varphi\\,d\\theta',a:'\\frac{4\\pi}{3}',
+ h:'This is the volume of the unit ball in spherical coordinates.',
+ s:['$\\int_0^1\\rho^2d\\rho=\\tfrac13$','$\\int_0^\\pi\\sin\\varphi\\,d\\varphi=2$','$\\int_0^{2\\pi}d\\theta=2\\pi$','$\\tfrac13\\cdot2\\cdot2\\pi=\\frac{4\\pi}{3}$']},
+
+{tech:'multi',d:4,t:'\\int_{0}^{1}\\!\\!\\int_{x}^{1}e^{y^{2}}\\,dy\\,dx',a:'\\frac{e-1}{2}',
+ h:'$e^{y^2}$ has no elementary antiderivative — so change the order of integration.',
+ s:['Region: $0\\le x\\le y\\le1$','Swap: $\\int_0^1\\!\\int_0^y e^{y^2}dx\\,dy=\\int_0^1 y\\,e^{y^2}dy$','$=\\tfrac12\\left[e^{y^2}\\right]_0^1=\\frac{e-1}{2}$'],
+ w:'If the inner integral is impossible, that is the *signal* to swap the order. Sketch the region, re-read the limits off the sketch, and the stray variable you need for $du$ appears for free.'},
+
+{tech:'multi',d:4,t:'\\int_{0}^{\\sqrt{\\pi}}\\!\\!\\int_{y}^{\\sqrt{\\pi}}\\sin(x^{2})\\,dx\\,dy',a:'1',
+ h:'Same move as the previous one — reverse the order.',
+ s:['Region: $0\\le y\\le x\\le\\sqrt\\pi$','Swap: $\\int_0^{\\sqrt\\pi}\\!\\int_0^x\\sin(x^2)dy\\,dx=\\int_0^{\\sqrt\\pi}x\\sin(x^2)dx$','$=\\left[-\\tfrac12\\cos(x^2)\\right]_0^{\\sqrt\\pi}=\\tfrac12+\\tfrac12=1$']},
+
+{tech:'multi',d:4,t:'\\iint_{\\mathbb{R}^{2}}e^{-(x^{2}+y^{2})}\\,dA',a:'\\pi',
+ h:'Polar coordinates make this one line.',
+ s:['$\\int_0^{2\\pi}\\!\\int_0^\\infty e^{-r^2}r\\,dr\\,d\\theta$','$\\int_0^\\infty e^{-r^2}r\\,dr=\\tfrac12$','$=2\\pi\\cdot\\tfrac12=\\pi$'],
+ w:'This is the engine behind $\\int_{-\\infty}^{\\infty}e^{-x^2}dx=\\sqrt\\pi$. The extra $r$ from the Jacobian is exactly what makes it integrable.'}
+
+];
+BANK.forEach((p,i)=>{p.id='p'+i});
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   CHEAT SHEET
+   ══════════════════════════════════════════════════════════ */
+const SHEET = [
+
+{id:'triage', tab:'Triage', title:'Which technique? — read top to bottom',
+ lede:'Stop guessing. Run this list in order every time; the first match is almost always right. Most “hard” integrals are easy ones that have not been simplified yet.',
+ html:`
+<div class="card"><div class="flow">
+<div class="flow-step"><span class="flow-num">0</span><span class="flow-txt"><b>Simplify algebraically first.</b> Expand, factor, cancel, split the fraction, divide if top-heavy, rationalise, or use a trig identity. Do the algebra before the calculus.</span></div>
+<div class="flow-step"><span class="flow-num">1</span><span class="flow-txt"><b>Is it a known form?</b> Check the core table below. If it is $\\int e^x$, $\\int\\frac{dx}{1+x^2}$, $\\int\\sec x$ — you are already done.</span></div>
+<div class="flow-step"><span class="flow-num">2</span><span class="flow-txt"><b>Definite with symmetric or paired limits?</b> Check parity, King's rule, and periodicity <i>before</i> hunting for an antiderivative. These finish in seconds when they apply.</span></div>
+<div class="flow-step"><span class="flow-num">3</span><span class="flow-txt"><b>Is a function and its derivative both present?</b> $\\Rightarrow$ $u$-substitution. Look especially for $\\frac{f'}{f}$, and for an inner function whose derivative is a stray factor out front.</span></div>
+<div class="flow-step"><span class="flow-num">4</span><span class="flow-txt"><b>Product of two unlike types?</b> (polynomial × log / exp / trig, or a lone $\\ln$, $\\arcsin$, $\\arctan$) $\\Rightarrow$ integration by parts, choosing $u$ by LIATE.</span></div>
+<div class="flow-step"><span class="flow-num">5</span><span class="flow-txt"><b>Powers or products of trig functions?</b> $\\Rightarrow$ trig-integral strategy: parity of the exponents decides the move.</span></div>
+<div class="flow-step"><span class="flow-num">6</span><span class="flow-txt"><b>$\\sqrt{a^2-x^2}$, $\\sqrt{a^2+x^2}$, $\\sqrt{x^2-a^2}$?</b> $\\Rightarrow$ trig substitution. Complete the square first if the quadratic is not already centred.</span></div>
+<div class="flow-step"><span class="flow-num">7</span><span class="flow-txt"><b>Rational function $\\frac{P(x)}{Q(x)}$?</b> $\\Rightarrow$ divide if improper, factor $Q$, then partial fractions.</span></div>
+<div class="flow-step"><span class="flow-num">8</span><span class="flow-txt"><b>Still stuck?</b> Try: a parameter + differentiate under the integral (Feynman), a self-similar substitution that reproduces the integral, series expansion, or swapping the order in a double integral.</span></div>
+</div></div>
+<div class="tipbox"><b>Diagnosing your own mistake.</b> Wrong answer? Check in this order — (1) did you differentiate your answer back? (2) sign errors from $\\int\\sin=-\\cos$ or $du=-\\dots$; (3) forgot the constant factor when $du$ needed scaling; (4) forgot to convert limits, or converted them but back-substituted anyway; (5) dropped the $+C$; (6) absolute value missing inside a log.</div>`},
+
+{id:'core', tab:'Core forms', title:'Antiderivatives worth knowing cold',
+ lede:'If you have to derive any of these mid-problem, you are losing time you cannot afford. These are recall, not work.',
+ html:`
+<div class="card"><h4>Algebraic &amp; exponential</h4>
+<table class="ref">
+<tr><td>$\\int x^{n}dx=\\dfrac{x^{n+1}}{n+1}+C\\ \\ (n\\neq-1)$</td><td>$\\int\\dfrac{dx}{x}=\\ln|x|+C$</td></tr>
+<tr><td>$\\int e^{x}dx=e^{x}+C$</td><td>$\\int a^{x}dx=\\dfrac{a^{x}}{\\ln a}+C$</td></tr>
+<tr><td>$\\int\\ln x\\,dx=x\\ln x-x+C$</td><td>$\\int f(ax+b)dx=\\dfrac{1}{a}F(ax+b)+C$</td></tr>
+</table></div>
+
+<div class="card"><h4>Trigonometric</h4>
+<table class="ref">
+<tr><td>$\\int\\sin x\\,dx=-\\cos x+C$</td><td>$\\int\\cos x\\,dx=\\sin x+C$</td></tr>
+<tr><td>$\\int\\sec^{2}x\\,dx=\\tan x+C$</td><td>$\\int\\csc^{2}x\\,dx=-\\cot x+C$</td></tr>
+<tr><td>$\\int\\sec x\\tan x\\,dx=\\sec x+C$</td><td>$\\int\\csc x\\cot x\\,dx=-\\csc x+C$</td></tr>
+<tr><td>$\\int\\tan x\\,dx=\\ln|\\sec x|+C$</td><td>$\\int\\cot x\\,dx=\\ln|\\sin x|+C$</td></tr>
+<tr><td>$\\int\\sec x\\,dx=\\ln|\\sec x+\\tan x|+C$</td><td>$\\int\\csc x\\,dx=\\ln\\left|\\tan\\dfrac{x}{2}\\right|+C$</td></tr>
+</table></div>
+
+<div class="card"><h4>Inverse-trig forms</h4>
+<table class="ref">
+<tr><td>$\\int\\dfrac{dx}{\\sqrt{a^{2}-x^{2}}}=\\arcsin\\dfrac{x}{a}+C$</td><td>$\\int\\dfrac{dx}{a^{2}+x^{2}}=\\dfrac{1}{a}\\arctan\\dfrac{x}{a}+C$</td></tr>
+<tr><td>$\\int\\dfrac{dx}{x\\sqrt{x^{2}-a^{2}}}=\\dfrac{1}{a}\\operatorname{arcsec}\\left|\\dfrac{x}{a}\\right|+C$</td><td>$\\int\\dfrac{dx}{\\sqrt{x^{2}\\pm a^{2}}}=\\ln\\left|x+\\sqrt{x^{2}\\pm a^{2}}\\right|+C$</td></tr>
+</table></div>
+
+<div class="card"><h4>Inverse functions (all by parts with $dv=dx$)</h4>
+<table class="ref">
+<tr><td>$\\int\\arcsin x\\,dx=x\\arcsin x+\\sqrt{1-x^{2}}+C$</td></tr>
+<tr><td>$\\int\\arccos x\\,dx=x\\arccos x-\\sqrt{1-x^{2}}+C$</td></tr>
+<tr><td>$\\int\\arctan x\\,dx=x\\arctan x-\\tfrac{1}{2}\\ln(1+x^{2})+C$</td></tr>
+</table></div>
+
+<div class="card"><h4>Hyperbolic</h4>
+<table class="ref">
+<tr><td>$\\int\\sinh x\\,dx=\\cosh x+C$</td><td>$\\int\\cosh x\\,dx=\\sinh x+C$</td></tr>
+<tr><td>$\\int\\operatorname{sech}^{2}x\\,dx=\\tanh x+C$</td><td>$\\int\\tanh x\\,dx=\\ln\\cosh x+C$</td></tr>
+</table>
+<p>Identities: $\\cosh^{2}x-\\sinh^{2}x=1$, $\\ \\cosh^2 x=\\frac{1+\\cosh 2x}{2}$. Hyperbolic substitution ($x=a\\sinh t$) is often cleaner than trig sub for $\\sqrt{x^{2}+a^{2}}$ — no $\\sec^3$ loop.</p></div>`},
+
+{id:'moves', tab:'First moves', title:'Algebraic moves before any technique',
+ lede:'These are the manipulations that turn an unrecognisable integrand into a recognisable one. In a bee, this is where most of the time is actually won.',
+ html:`
+<div class="card"><h4>Split the fraction</h4>
+<p>Anything over a monomial divides term by term: $\\dfrac{x^{3}+1}{x}=x^{2}+\\dfrac{1}{x}$.</p></div>
+
+<div class="card"><h4>Add zero cleverly</h4>
+<p>Force the numerator to contain the denominator:</p>
+<div class="formula">$\\dfrac{x}{x+1}=\\dfrac{(x+1)-1}{x+1}=1-\\dfrac{1}{x+1}$</div>
+<p>Same idea: $\\dfrac{1}{1+e^{x}}=1-\\dfrac{e^{x}}{1+e^{x}}$. Use whenever numerator and denominator have equal degree.</p></div>
+
+<div class="card"><h4>Multiply by a clever form of 1</h4>
+<p>Conjugates kill roots and unlock $\\sec x$:</p>
+<ul>
+<li>$\\sec x\\cdot\\dfrac{\\sec x+\\tan x}{\\sec x+\\tan x}$ makes the numerator the derivative of the denominator.</li>
+<li>$\\dfrac{1}{1+\\sin x}\\cdot\\dfrac{1-\\sin x}{1-\\sin x}=\\dfrac{1-\\sin x}{\\cos^{2}x}$.</li>
+<li>$\\dfrac{1}{\\sqrt{x+1}+\\sqrt{x}}$ times its conjugate $=\\sqrt{x+1}-\\sqrt{x}$.</li>
+</ul></div>
+
+<div class="card"><h4>Complete the square</h4>
+<p>Every quadratic becomes one of three canonical forms:</p>
+<div class="formula">$ax^{2}+bx+c=a\\left(x+\\dfrac{b}{2a}\\right)^{2}+\\left(c-\\dfrac{b^{2}}{4a}\\right)$</div>
+<p>Then it is arcsin, arctan, or a log — or ready for trig sub.</p></div>
+
+<div class="card"><h4>Polynomial long division</h4>
+<p>If $\\deg(\\text{numerator})\\ge\\deg(\\text{denominator})$, divide first. Partial fractions is only defined for proper fractions.</p></div>
+
+<div class="card"><h4>Harmonic addition</h4>
+<div class="formula">$a\\sin x+b\\cos x=\\sqrt{a^{2}+b^{2}}\\,\\sin(x+\\varphi),\\quad \\tan\\varphi=\\dfrac{b}{a}$</div>
+<p>Collapses two waves into one shifted wave, converting $\\dfrac{1}{\\sin x+\\cos x}$ into a plain cosecant.</p></div>
+
+<div class="card"><h4>Rationalising substitutions</h4>
+<ul>
+<li>$\\sqrt[n]{ax+b}$ present $\\Rightarrow$ let $u=\\sqrt[n]{ax+b}$ (so $x$ becomes a polynomial in $u$).</li>
+<li>Any rational function of $\\sin x,\\cos x$ $\\Rightarrow$ Weierstrass, $t=\\tan\\frac{x}{2}$:</li>
+</ul>
+<div class="formula">$\\sin x=\\dfrac{2t}{1+t^{2}},\\quad\\cos x=\\dfrac{1-t^{2}}{1+t^{2}},\\quad dx=\\dfrac{2\\,dt}{1+t^{2}}$</div>
+<div class="warnbox">Weierstrass always works and is almost always slow. Treat it as a last resort — look for an identity or conjugate first.</div></div>`},
+
+{id:'usub', tab:'u-sub', title:'u-substitution — the chain rule, reversed',
+ lede:'The tell is always the same: a function and its derivative appear together, possibly off by a constant.',
+ html:`
+<div class="card"><h4>The mechanism</h4>
+<div class="formula">$\\displaystyle\\int f(g(x))\\,g'(x)\\,dx=\\int f(u)\\,du,\\qquad u=g(x)$</div>
+<p>Steps: choose $u$ (usually the innermost function, the thing under a root, in an exponent, or in a denominator), compute $du$, replace <i>every</i> $x$ and $dx$, integrate, substitute back.</p></div>
+
+<div class="card"><h4>Patterns to recognise instantly</h4>
+<table class="ref">
+<tr><th>Shape</th><th>Result</th></tr>
+<tr><td>$\\int\\dfrac{f'(x)}{f(x)}dx$</td><td>$\\ln|f(x)|+C$</td></tr>
+<tr><td>$\\int f'(x)\\,e^{f(x)}dx$</td><td>$e^{f(x)}+C$</td></tr>
+<tr><td>$\\int f'(x)\\,[f(x)]^{n}dx$</td><td>$\\dfrac{[f(x)]^{n+1}}{n+1}+C$</td></tr>
+<tr><td>$\\int\\dfrac{f'(x)}{\\sqrt{f(x)}}dx$</td><td>$2\\sqrt{f(x)}+C$</td></tr>
+</table></div>
+
+<div class="card"><h4>Choosing $u$ — in priority order</h4>
+<ul>
+<li>The exponent of $e$, or the argument of $\\sin,\\cos,\\ln$</li>
+<li>Whatever is under a root</li>
+<li>The whole denominator</li>
+<li>The inside of any parenthesised power</li>
+<li>The messiest-looking chunk whose derivative you can find elsewhere in the integrand</li>
+</ul></div>
+
+<div class="card"><h4>Definite integrals: convert the limits</h4>
+<div class="formula">$\\displaystyle\\int_{a}^{b}f(g(x))g'(x)dx=\\int_{g(a)}^{g(b)}f(u)\\,du$</div>
+<p>Faster, and it removes an entire class of back-substitution errors. Convert by default.</p>
+<div class="warnbox">Never mix the two: if you converted limits, do <i>not</i> substitute back to $x$ before evaluating.</div></div>`},
+
+{id:'parts', tab:'By parts', title:'Integration by parts — the product rule, reversed',
+ lede:'Use when the integrand is a product of two unlike types, or when it is a single function whose derivative is nicer than itself.',
+ html:`
+<div class="card"><h4>The formula</h4>
+<div class="formula">$\\displaystyle\\int u\\,dv=uv-\\int v\\,du$</div>
+<p>Definite version: $\\displaystyle\\int_{a}^{b}u\\,dv=\\Big[uv\\Big]_{a}^{b}-\\int_{a}^{b}v\\,du$.</p></div>
+
+<div class="card"><h4>LIATE — pick $u$ from the highest category present</h4>
+<table class="ref">
+<tr><td><b>L</b>ogarithmic</td><td>$\\ln x,\\ \\log_a x$</td></tr>
+<tr><td><b>I</b>nverse trig</td><td>$\\arcsin x,\\ \\arctan x$</td></tr>
+<tr><td><b>A</b>lgebraic</td><td>$x,\\ x^{2},\\ \\sqrt{x}$</td></tr>
+<tr><td><b>T</b>rigonometric</td><td>$\\sin x,\\ \\cos x$</td></tr>
+<tr><td><b>E</b>xponential</td><td>$e^{x},\\ a^{x}$</td></tr>
+</table>
+<p>Rationale: $u$ should get <i>simpler</i> when differentiated, $dv$ should stay easy to integrate. LIATE is a heuristic, not a law — if the result looks worse, swap.</p></div>
+
+<div class="card"><h4>Three signature situations</h4>
+<ul>
+<li><b>Invisible $dv$.</b> One function only? Take $dv=dx$, $v=x$. Cracks $\\ln x$, $\\arcsin x$, $\\arctan x$.</li>
+<li><b>Polynomial × (exp or trig).</b> Repeat until the polynomial differentiates to zero. Use the tabular method.</li>
+<li><b>The loop.</b> $\\int e^{x}\\sin x\\,dx$, $\\int\\sec^{3}x\\,dx$ — after two rounds the original integral $I$ reappears. Solve $2I=\\dots$ algebraically.</li>
+</ul></div>
+
+<div class="card"><h4>Tabular method (the DI table)</h4>
+<p>Column D: differentiate $u$ repeatedly to zero. Column I: integrate $dv$ repeatedly. Multiply diagonally, alternating $+,-,+,-$.</p>
+<div class="formula">$\\int x^{3}e^{x}dx=e^{x}\\left(x^{3}-3x^{2}+6x-6\\right)+C$</div>
+<p>Cuts a four-round by-parts to about fifteen seconds. Learn it before any timed competition.</p></div>
+
+<div class="tipbox"><b>Sanity check.</b> If $\\int v\\,du$ came out harder than what you started with, you chose $u$ and $dv$ backwards. Swap and try again — do not push forward.</div>`},
+
+{id:'trigint', tab:'Trig integrals', title:'Powers and products of trig functions',
+ lede:'Everything here is decided by the parity of the exponents. Identify the odd one and you have the substitution.',
+ html:`
+<div class="card"><h4>$\\int\\sin^{m}x\\cos^{n}x\\,dx$</h4>
+<table class="ref">
+<tr><th>Case</th><th>Move</th></tr>
+<tr><td>$n$ odd</td><td>Peel off one $\\cos x$ for $du$; convert the rest with $\\cos^{2}=1-\\sin^{2}$; let $u=\\sin x$</td></tr>
+<tr><td>$m$ odd</td><td>Peel off one $\\sin x$; convert with $\\sin^{2}=1-\\cos^{2}$; let $u=\\cos x$</td></tr>
+<tr><td>both even</td><td>Power-reduction identities (below)</td></tr>
+</table></div>
+
+<div class="card"><h4>$\\int\\tan^{m}x\\sec^{n}x\\,dx$</h4>
+<table class="ref">
+<tr><th>Case</th><th>Move</th></tr>
+<tr><td>$n$ even</td><td>Save $\\sec^{2}x$ for $du$; convert with $\\sec^{2}=1+\\tan^{2}$; let $u=\\tan x$</td></tr>
+<tr><td>$m$ odd</td><td>Save $\\sec x\\tan x$ for $du$; convert with $\\tan^{2}=\\sec^{2}-1$; let $u=\\sec x$</td></tr>
+<tr><td>$m$ even, $n$ odd</td><td>Convert all to $\\sec$, then reduce — expect a $\\int\\sec^{n}$ loop</td></tr>
+</table></div>
+
+<div class="card"><h4>Identities you must have memorised</h4>
+<table class="ref">
+<tr><td>$\\sin^{2}x=\\dfrac{1-\\cos 2x}{2}$</td><td>$\\cos^{2}x=\\dfrac{1+\\cos 2x}{2}$</td></tr>
+<tr><td>$\\sin 2x=2\\sin x\\cos x$</td><td>$\\cos 2x=\\cos^{2}x-\\sin^{2}x$</td></tr>
+<tr><td>$1+\\tan^{2}x=\\sec^{2}x$</td><td>$1+\\cot^{2}x=\\csc^{2}x$</td></tr>
+</table></div>
+
+<div class="card"><h4>Product-to-sum (different frequencies)</h4>
+<table class="ref">
+<tr><td>$\\sin A\\cos B=\\tfrac{1}{2}[\\sin(A+B)+\\sin(A-B)]$</td></tr>
+<tr><td>$\\sin A\\sin B=\\tfrac{1}{2}[\\cos(A-B)-\\cos(A+B)]$</td></tr>
+<tr><td>$\\cos A\\cos B=\\tfrac{1}{2}[\\cos(A-B)+\\cos(A+B)]$</td></tr>
+</table>
+<p>Essential for $\\int\\sin(3x)\\cos(5x)dx$ and for orthogonality arguments in Fourier work.</p></div>
+
+<div class="tipbox"><b>Over a full period,</b> $\\int\\sin^{2}=\\int\\cos^{2}=\\tfrac{1}{2}\\cdot(\\text{length})$, and $\\int\\sin^{m}x\\cos^{n}x=0$ whenever either exponent is odd. Use averages instead of antiderivatives when the limits are $0$ to $2\\pi$.</div>`},
+
+{id:'trigsub', tab:'Trig sub', title:'Trigonometric substitution',
+ lede:'Triggered by a quadratic under a root. Complete the square first if the quadratic is not already in one of the three canonical shapes.',
+ html:`
+<div class="card"><h4>The three cases</h4>
+<table class="ref">
+<tr><th>See</th><th>Substitute</th><th>Root becomes</th><th>Identity</th></tr>
+<tr><td>$\\sqrt{a^{2}-x^{2}}$</td><td>$x=a\\sin\\theta$</td><td>$a\\cos\\theta$</td><td>$1-\\sin^{2}=\\cos^{2}$</td></tr>
+<tr><td>$\\sqrt{a^{2}+x^{2}}$</td><td>$x=a\\tan\\theta$</td><td>$a\\sec\\theta$</td><td>$1+\\tan^{2}=\\sec^{2}$</td></tr>
+<tr><td>$\\sqrt{x^{2}-a^{2}}$</td><td>$x=a\\sec\\theta$</td><td>$a\\tan\\theta$</td><td>$\\sec^{2}-1=\\tan^{2}$</td></tr>
+</table>
+<p>The same table applies without the root — $(a^{2}+x^{2})^{3/2}$ and $(a^{2}-x^{2})^{2}$ respond to exactly the same substitutions.</p></div>
+
+<div class="card"><h4>Getting back to $x$</h4>
+<p>Draw the right triangle implied by your substitution and read every ratio off it. For $x=a\\sin\\theta$: opposite $=x$, hypotenuse $=a$, adjacent $=\\sqrt{a^{2}-x^{2}}$. Then $\\cos\\theta=\\frac{\\sqrt{a^{2}-x^{2}}}{a}$, $\\tan\\theta=\\frac{x}{\\sqrt{a^{2}-x^{2}}}$, and so on.</p>
+<div class="tipbox">For a definite integral, convert the limits to $\\theta$ and skip the triangle entirely.</div></div>
+
+<div class="card"><h4>Do not over-apply it</h4>
+<div class="warnbox">If an odd power of $x$ multiplies the root, it is a plain $u$-substitution, not a trig sub. Compare $\\int\\frac{x\\,dx}{\\sqrt{1-x^{2}}}=-\\sqrt{1-x^{2}}$ (u-sub) with $\\int\\frac{dx}{\\sqrt{1-x^{2}}}=\\arcsin x$ (known form). Check for the easy route first.</div></div>
+
+<div class="card"><h4>Hyperbolic alternative</h4>
+<p>$x=a\\sinh t$ for $\\sqrt{x^{2}+a^{2}}$ and $x=a\\cosh t$ for $\\sqrt{x^{2}-a^{2}}$. The root becomes $a\\cosh t$ or $a\\sinh t$ with no $\\sec^{3}$ loop, and back-substitution uses $\\operatorname{arcsinh}x=\\ln(x+\\sqrt{x^{2}+1})$. Often two lines shorter.</p></div>`},
+
+{id:'partial', tab:'Partial fractions', title:'Partial fraction decomposition',
+ lede:'For rational functions. Divide first if improper, factor the denominator completely, then match the case to the correct form.',
+ html:`
+<div class="card"><h4>The four cases</h4>
+<table class="ref">
+<tr><th>Factor in $Q(x)$</th><th>Contributes</th></tr>
+<tr><td>Distinct linear $(x-a)$</td><td>$\\dfrac{A}{x-a}$</td></tr>
+<tr><td>Repeated linear $(x-a)^{k}$</td><td>$\\dfrac{A_{1}}{x-a}+\\dfrac{A_{2}}{(x-a)^{2}}+\\cdots+\\dfrac{A_{k}}{(x-a)^{k}}$</td></tr>
+<tr><td>Irreducible quadratic $(x^{2}+bx+c)$</td><td>$\\dfrac{Ax+B}{x^{2}+bx+c}$</td></tr>
+<tr><td>Repeated quadratic $(x^{2}+bx+c)^{k}$</td><td>One $\\dfrac{A_{i}x+B_{i}}{(x^{2}+bx+c)^{i}}$ for each $i\\le k$</td></tr>
+</table></div>
+
+<div class="card"><h4>Cover-up method (distinct linear factors)</h4>
+<p>To find the coefficient over $(x-a)$: delete that factor from the original fraction and evaluate what remains at $x=a$.</p>
+<div class="formula">$\\dfrac{x}{(x-1)(x+2)}:\\quad A=\\dfrac{1}{1+2}=\\dfrac{1}{3},\\qquad B=\\dfrac{-2}{-2-1}=\\dfrac{2}{3}$</div>
+<p>Seconds instead of a linear system. Use it whenever the factors are distinct and linear.</p></div>
+
+<div class="card"><h4>Finishing the pieces</h4>
+<ul>
+<li>$\\displaystyle\\int\\frac{A}{x-a}dx=A\\ln|x-a|$</li>
+<li>$\\displaystyle\\int\\frac{A}{(x-a)^{k}}dx=\\frac{A}{(1-k)(x-a)^{k-1}}$ for $k\\ge2$</li>
+<li>Quadratic piece: split $\\dfrac{Ax+B}{x^{2}+bx+c}$ into a multiple of $\\dfrac{2x+b}{x^{2}+bx+c}$ (gives a log) plus a constant over the completed square (gives an arctangent).</li>
+</ul></div>
+
+<div class="warnbox">Two habits that cost marks: forgetting to long-divide an improper fraction, and assigning a single constant to an irreducible quadratic instead of $Ax+B$.</div>`},
+
+{id:'improper', tab:'Improper', title:'Improper integrals & convergence',
+ lede:'Improper means an infinite limit or an infinite discontinuity. Always rewrite as a limit — never evaluate an antiderivative at $\\infty$ directly.',
+ html:`
+<div class="card"><h4>Setup</h4>
+<div class="formula">$\\displaystyle\\int_{a}^{\\infty}f=\\lim_{b\\to\\infty}\\int_{a}^{b}f,\\qquad \\int_{a}^{b}f=\\lim_{t\\to c^{-}}\\int_{a}^{t}f\\ \\ (\\text{blow-up at }c)$</div>
+<p>If the singularity is interior, split at it and require <i>both</i> pieces to converge. Doubly infinite integrals split at any convenient point, usually $0$.</p></div>
+
+<div class="card"><h4>The two benchmark families</h4>
+<table class="ref">
+<tr><th>Integral</th><th>Converges when</th></tr>
+<tr><td>$\\displaystyle\\int_{1}^{\\infty}\\frac{dx}{x^{p}}$</td><td>$p>1$</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{1}\\frac{dx}{x^{p}}$</td><td>$p<1$</td></tr>
+</table>
+<p>Note the reversal: at infinity you need fast decay; at a singularity you need a mild blow-up.</p></div>
+
+<div class="card"><h4>Comparison tests</h4>
+<ul>
+<li><b>Direct:</b> if $0\\le f\\le g$ and $\\int g$ converges, so does $\\int f$. If $\\int f$ diverges, so does $\\int g$.</li>
+<li><b>Limit comparison:</b> if $\\lim\\frac{f}{g}=L\\in(0,\\infty)$, both converge or both diverge. Compare against the nearest $p$-form.</li>
+</ul></div>
+
+<div class="card"><h4>Standing results</h4>
+<table class="ref">
+<tr><td>$\\displaystyle\\int_{0}^{\\infty}x^{n}e^{-x}dx=n!$</td><td>Gamma function</td></tr>
+<tr><td>$\\displaystyle\\int_{-\\infty}^{\\infty}e^{-x^{2}}dx=\\sqrt{\\pi}$</td><td>Gaussian</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{\\infty}\\frac{\\sin x}{x}dx=\\frac{\\pi}{2}$</td><td>Dirichlet</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{1}\\ln x\\,dx=-1$</td><td>Converges despite the blow-up</td></tr>
+</table></div>`},
+
+{id:'definite', tab:'Symmetry', title:'Definite-integral tricks — no antiderivative required',
+ lede:'These finish problems in seconds and they are what integration bees are built around. Scan for them before choosing any technique.',
+ html:`
+<div class="card"><h4>Parity on a symmetric interval</h4>
+<div class="formula">$f$ odd $\\Rightarrow\\displaystyle\\int_{-a}^{a}f=0;\\qquad f$ even $\\Rightarrow\\displaystyle\\int_{-a}^{a}f=2\\int_{0}^{a}f$</div>
+<p>Check parity first, always. Odd × even = odd. A single odd factor can zero out an otherwise brutal integrand.</p></div>
+
+<div class="card"><h4>King's rule (reflection)</h4>
+<div class="formula">$\\displaystyle\\int_{a}^{b}f(x)\\,dx=\\int_{a}^{b}f(a+b-x)\\,dx$</div>
+<p>Add the two forms and the sum usually collapses. The canonical use: $\\displaystyle\\int_{0}^{a}\\frac{f(x)}{f(x)+f(a-x)}dx=\\frac{a}{2}$ — regardless of what $f$ is.</p>
+<p>Also handles a stray linear factor: $\\displaystyle\\int_{0}^{\\pi}x\\,f(\\sin x)dx=\\frac{\\pi}{2}\\int_{0}^{\\pi}f(\\sin x)dx$.</p></div>
+
+<div class="card"><h4>The $1+e^{x}$ trick</h4>
+<div class="formula">$f$ even $\\Rightarrow\\displaystyle\\int_{-a}^{a}\\frac{f(x)}{1+e^{x}}dx=\\int_{0}^{a}f(x)\\,dx$</div>
+<p>Reflect, add to the original, and the awkward denominator cancels to 1.</p></div>
+
+<div class="card"><h4>Periodicity</h4>
+<div class="formula">$\\displaystyle\\int_{a}^{a+T}f=\\int_{0}^{T}f$ for any $T$-periodic $f$</div>
+<p>Shift the window to wherever the algebra is easiest. Over a whole period, replace $\\sin^{2}$ or $\\cos^{2}$ by their average $\\tfrac{1}{2}$.</p></div>
+
+<div class="card"><h4>Recognise the geometry</h4>
+<p>$\\displaystyle\\int_{0}^{1}\\sqrt{1-x^{2}}\\,dx=\\frac{\\pi}{4}$ is a quarter disc, not a trig substitution. Scan for circles, triangles, and known areas before computing anything.</p></div>`},
+
+{id:'feynman', tab:'Feynman', title:'Differentiating under the integral sign',
+ lede:'When no technique fits, make the problem more general on purpose. Insert a parameter, differentiate with respect to it, solve the easier integral, then integrate back.',
+ html:`
+<div class="card"><h4>Leibniz rule</h4>
+<div class="formula">$\\dfrac{d}{dt}\\displaystyle\\int_{a}^{b}f(x,t)\\,dx=\\int_{a}^{b}\\dfrac{\\partial f}{\\partial t}\\,dx$</div>
+<p>With variable limits: $\\dfrac{d}{dt}\\displaystyle\\int_{a(t)}^{b(t)}f(x,t)dx=f(b,t)b'(t)-f(a,t)a'(t)+\\int_{a}^{b}\\dfrac{\\partial f}{\\partial t}dx$.</p></div>
+
+<div class="card"><h4>The procedure</h4>
+<div class="flow">
+<div class="flow-step"><span class="flow-num">1</span><span class="flow-txt">Insert a parameter $t$ so that some specific value recovers your original integral.</span></div>
+<div class="flow-step"><span class="flow-num">2</span><span class="flow-txt">Differentiate $I(t)$ under the integral sign — the point is that this <i>cancels the obstruction</i>.</span></div>
+<div class="flow-step"><span class="flow-num">3</span><span class="flow-txt">Evaluate the now-standard integral to get $I'(t)$.</span></div>
+<div class="flow-step"><span class="flow-num">4</span><span class="flow-txt">Integrate in $t$, fixing the constant with a value of $t$ where $I(t)$ is obvious (often $I(\\infty)=0$).</span></div>
+<div class="flow-step"><span class="flow-num">5</span><span class="flow-txt">Plug in the value of $t$ that returns the original problem.</span></div>
+</div></div>
+
+<div class="card"><h4>Where to put the parameter</h4>
+<table class="ref">
+<tr><th>Obstruction</th><th>Insert</th><th>Because</th></tr>
+<tr><td>$\\dfrac{1}{x}$ blocking convergence</td><td>$e^{-tx}$</td><td>$\\partial_t$ brings down $-x$, cancelling $\\frac1x$</td></tr>
+<tr><td>$\\dfrac{1}{\\ln x}$ in the denominator</td><td>$x^{t}$</td><td>$\\partial_t x^{t}=x^{t}\\ln x$ cancels it</td></tr>
+<tr><td>A fixed constant $a$</td><td>replace with $t$</td><td>Differentiating in $t$ lowers the difficulty</td></tr>
+</table></div>
+
+<div class="card"><h4>Worked: the Dirichlet integral</h4>
+<p>$I(t)=\\displaystyle\\int_{0}^{\\infty}e^{-tx}\\frac{\\sin x}{x}dx\\Rightarrow I'(t)=-\\int_{0}^{\\infty}e^{-tx}\\sin x\\,dx=-\\frac{1}{1+t^{2}}$.</p>
+<p>So $I(t)=\\frac{\\pi}{2}-\\arctan t$ using $I(\\infty)=0$, and $I(0)=\\displaystyle\\int_{0}^{\\infty}\\frac{\\sin x}{x}dx=\\frac{\\pi}{2}$.</p></div>
+
+<div class="card"><h4>Related escape hatches</h4>
+<ul>
+<li><b>Self-similarity:</b> a substitution reproduces the integral, giving an equation in $I$ (as with $\\int_0^{\\pi/2}\\ln\\sin x\\,dx$).</li>
+<li><b>Series expansion:</b> expand, integrate term by term, recognise the resulting series.</li>
+<li><b>Go up a dimension:</b> square the integral and use polar coordinates (the Gaussian).</li>
+<li><b>Swap the order:</b> write the integrand as an integral itself, then exchange the two.</li>
+</ul></div>`},
+
+{id:'reduction', tab:'Reduction', title:'Reduction formulas & standing values',
+ lede:'Recurrences that step a power down by one or two. Worth memorising the sine/cosine one — it makes a whole family of definite integrals instant.',
+ html:`
+<div class="card"><h4>Reduction formulas</h4>
+<table class="ref">
+<tr><td>$\\displaystyle\\int\\sin^{n}x\\,dx=-\\frac{\\sin^{n-1}x\\cos x}{n}+\\frac{n-1}{n}\\int\\sin^{n-2}x\\,dx$</td></tr>
+<tr><td>$\\displaystyle\\int\\cos^{n}x\\,dx=\\frac{\\cos^{n-1}x\\sin x}{n}+\\frac{n-1}{n}\\int\\cos^{n-2}x\\,dx$</td></tr>
+<tr><td>$\\displaystyle\\int\\sec^{n}x\\,dx=\\frac{\\sec^{n-2}x\\tan x}{n-1}+\\frac{n-2}{n-1}\\int\\sec^{n-2}x\\,dx$</td></tr>
+<tr><td>$\\displaystyle\\int x^{n}e^{x}dx=x^{n}e^{x}-n\\int x^{n-1}e^{x}dx$</td></tr>
+<tr><td>$\\displaystyle\\int(\\ln x)^{n}dx=x(\\ln x)^{n}-n\\int(\\ln x)^{n-1}dx$</td></tr>
+</table></div>
+
+<div class="card"><h4>Wallis' formulas — for $\\int_{0}^{\\pi/2}$</h4>
+<div class="formula">$\\displaystyle\\int_{0}^{\\pi/2}\\sin^{n}x\\,dx=\\int_{0}^{\\pi/2}\\cos^{n}x\\,dx$</div>
+<table class="ref">
+<tr><th>$n$</th><th>Value</th></tr>
+<tr><td>even</td><td>$\\dfrac{n-1}{n}\\cdot\\dfrac{n-3}{n-2}\\cdots\\dfrac{1}{2}\\cdot\\dfrac{\\pi}{2}$</td></tr>
+<tr><td>odd</td><td>$\\dfrac{n-1}{n}\\cdot\\dfrac{n-3}{n-2}\\cdots\\dfrac{2}{3}$</td></tr>
+</table>
+<p>So $\\int_{0}^{\\pi/2}\\sin^{2}=\\frac{\\pi}{4}$, $\\int_{0}^{\\pi/2}\\sin^{3}=\\frac{2}{3}$, $\\int_{0}^{\\pi/2}\\sin^{4}=\\frac{3\\pi}{16}$. Pure recall in a bee.</p></div>
+
+<div class="card"><h4>Named results worth recognising</h4>
+<table class="ref">
+<tr><td>$\\displaystyle\\int_{0}^{\\pi/2}\\ln(\\sin x)dx=-\\frac{\\pi}{2}\\ln 2$</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{1}\\frac{\\ln(1+x)}{1+x^{2}}dx=\\frac{\\pi\\ln 2}{8}$</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{1}\\frac{\\ln x}{1-x}dx=-\\frac{\\pi^{2}}{6}$</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{\\infty}\\frac{dx}{1+x^{n}}=\\frac{\\pi/n}{\\sin(\\pi/n)}$</td></tr>
+<tr><td>$\\displaystyle\\int_{0}^{1}x^{a}(1-x)^{b}dx=\\frac{a!\\,b!}{(a+b+1)!}$ (Beta)</td></tr>
+</table></div>`},
+
+{id:'noelem', tab:'No answer', title:'When there is no elementary antiderivative',
+ lede:'Sometimes you are not missing a trick. Recognising these saves you from burning a whole round on something impossible.',
+ html:`
+<div class="card"><h4>The standard list</h4>
+<table class="ref">
+<tr><td>$\\displaystyle\\int e^{-x^{2}}dx$</td><td>error function, $\\operatorname{erf}$</td></tr>
+<tr><td>$\\displaystyle\\int\\frac{\\sin x}{x}dx$</td><td>sine integral, $\\operatorname{Si}$</td></tr>
+<tr><td>$\\displaystyle\\int\\frac{e^{x}}{x}dx$</td><td>exponential integral, $\\operatorname{Ei}$</td></tr>
+<tr><td>$\\displaystyle\\int\\frac{dx}{\\ln x}$</td><td>logarithmic integral, $\\operatorname{li}$</td></tr>
+<tr><td>$\\displaystyle\\int\\sqrt{1-k^{2}\\sin^{2}x}\\,dx$</td><td>elliptic integral</td></tr>
+<tr><td>$\\displaystyle\\int x^{x}dx$, $\\displaystyle\\int\\sin(x^{2})dx$</td><td>no elementary form</td></tr>
+</table></div>
+
+<div class="card"><h4>Why this happens</h4>
+<p>Differentiation is closed on elementary functions: differentiate one and you get another. Antidifferentiation is not — reversing the process can leave the family entirely. Liouville's theorem and the Risch algorithm make this precise, and it is a <i>proof</i> of impossibility, not an admission that no one has found the answer yet.</p></div>
+
+<div class="tipbox"><b>But the definite integral may still be clean.</b> $\\int_{0}^{\\infty}e^{-x^{2}}dx=\\frac{\\sqrt\\pi}{2}$ and $\\int_{0}^{\\infty}\\frac{\\sin x}{x}dx=\\frac{\\pi}{2}$ are both exact. When you spot one of these integrands with definite limits, stop hunting for an antiderivative and switch to symmetry, Feynman, or polar coordinates.</div>
+
+<div class="card"><h4>Same signal inside a double integral</h4>
+<p>If the inner integral of an iterated integral is on this list — $\\int e^{y^{2}}dy$, $\\int\\sin(x^{2})dx$ — the problem is telling you to reverse the order of integration. It is a design cue, not a dead end.</p></div>`},
+
+{id:'multi', tab:'Calc 3', title:'Multiple integrals',
+ lede:'Same techniques, more bookkeeping. The new skills are choosing coordinates and re-reading the limits off a sketch of the region.',
+ html:`
+<div class="card"><h4>Fubini &amp; changing the order</h4>
+<p>For continuous $f$ on a region, the order of integration is free. To swap: sketch the region, then describe it the other way round.</p>
+<div class="formula">$\\displaystyle\\int_{0}^{1}\\!\\!\\int_{x}^{1}f\\,dy\\,dx=\\int_{0}^{1}\\!\\!\\int_{0}^{y}f\\,dx\\,dy$</div>
+<p>Both describe $0\\le x\\le y\\le1$. Swapping is the standard rescue when the inner integral has no elementary antiderivative.</p>
+<div class="tipbox">Separable integrand over a rectangle? The double integral factors into a product of single integrals.</div></div>
+
+<div class="card"><h4>Coordinate systems and their Jacobians</h4>
+<table class="ref">
+<tr><th>System</th><th>Element</th><th>Use for</th></tr>
+<tr><td>Polar</td><td>$dA=r\\,dr\\,d\\theta$</td><td>discs, annuli, anything with $x^{2}+y^{2}$</td></tr>
+<tr><td>Cylindrical</td><td>$dV=r\\,dr\\,d\\theta\\,dz$</td><td>cylinders, solids with an axis</td></tr>
+<tr><td>Spherical</td><td>$dV=\\rho^{2}\\sin\\varphi\\,d\\rho\\,d\\varphi\\,d\\theta$</td><td>balls, cones, $x^{2}+y^{2}+z^{2}$</td></tr>
+</table>
+<div class="warnbox">The commonest Calc 3 error by a wide margin: dropping the $r$ or the $\\rho^{2}\\sin\\varphi$. The Jacobian is not decoration — it is the area or volume distortion of the coordinate change.</div></div>
+
+<div class="card"><h4>General change of variables</h4>
+<div class="formula">$\\displaystyle\\iint_{R}f(x,y)\\,dA=\\iint_{S}f(x(u,v),y(u,v))\\left|\\frac{\\partial(x,y)}{\\partial(u,v)}\\right|du\\,dv$</div>
+<p>with $\\left|\\dfrac{\\partial(x,y)}{\\partial(u,v)}\\right|=\\left|\\det\\begin{pmatrix}x_{u}&x_{v}\\\\ y_{u}&y_{v}\\end{pmatrix}\\right|$. Choose $u,v$ to make the <i>region</i> simple — a rectangle if possible — even at the cost of a messier integrand.</p></div>
+
+<div class="card"><h4>Line and surface integrals</h4>
+<table class="ref">
+<tr><td>Scalar line</td><td>$\\displaystyle\\int_{C}f\\,ds=\\int_{a}^{b}f(\\mathbf r(t))\\,|\\mathbf r'(t)|\\,dt$</td></tr>
+<tr><td>Vector line (work)</td><td>$\\displaystyle\\int_{C}\\mathbf F\\cdot d\\mathbf r=\\int_{a}^{b}\\mathbf F(\\mathbf r(t))\\cdot\\mathbf r'(t)\\,dt$</td></tr>
+<tr><td>Surface</td><td>$\\displaystyle\\iint_{S}f\\,dS=\\iint_{D}f\\,|\\mathbf r_{u}\\times\\mathbf r_{v}|\\,dA$</td></tr>
+</table></div>
+
+<div class="card"><h4>The big theorems</h4>
+<table class="ref">
+<tr><td>Fundamental theorem for line integrals</td><td>$\\displaystyle\\int_{C}\\nabla f\\cdot d\\mathbf r=f(B)-f(A)$</td></tr>
+<tr><td>Green</td><td>$\\displaystyle\\oint_{C}P\\,dx+Q\\,dy=\\iint_{D}(Q_{x}-P_{y})\\,dA$</td></tr>
+<tr><td>Stokes</td><td>$\\displaystyle\\oint_{C}\\mathbf F\\cdot d\\mathbf r=\\iint_{S}(\\nabla\\times\\mathbf F)\\cdot d\\mathbf S$</td></tr>
+<tr><td>Divergence</td><td>$\\displaystyle\\oiint_{S}\\mathbf F\\cdot d\\mathbf S=\\iiint_{E}(\\nabla\\cdot\\mathbf F)\\,dV$</td></tr>
+</table>
+<p>All four are the same statement: integrating a derivative over a region reduces to evaluating on its boundary. That is the Fundamental Theorem of Calculus, generalised.</p></div>`}
+
+];
+</script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const n=document.createElement(t); if(c)n.className=c; if(h!=null)n.innerHTML=h; return n;};
+
+/* ── math rendering ─────────────────────────────────────── */
+function mathify(root){
+  if(!window.katex||!root) return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+    if(!n.nodeValue.includes('$')) return NodeFilter.FILTER_REJECT;
+    if(n.parentElement&&n.parentElement.closest('.katex')) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;
+  }});
+  const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n=>{
+    const parts=n.nodeValue.split(/\$([^$]+)\$/g);
+    if(parts.length<2) return;
+    const frag=document.createDocumentFragment();
+    parts.forEach((p,i)=>{
+      if(i%2===0){ if(p) frag.appendChild(document.createTextNode(p)); }
+      else{
+        const s=document.createElement('span');
+        try{ katex.render(p,s,{throwOnError:false}); }
+        catch(e){ s.textContent='$'+p+'$'; }
+        frag.appendChild(s);
+      }
+    });
+    n.parentNode.replaceChild(frag,n);
+  });
+}
+function bigMath(node,texStr){
+  node.innerHTML='';
+  if(window.katex){
+    try{ katex.render(texStr,node,{throwOnError:false,displayMode:true}); return; }
+    catch(e){}
+  }
+  node.appendChild(el('span','fallback',texStr.replace(/</g,'&lt;')));
+}
+
+/* ── persistence ────────────────────────────────────────── */
+const KEY='intbench:v1';
+let mem=null;
+async function loadStore(){
+  try{
+    const r=localStorage.getItem(KEY);
+    if(r) return JSON.parse(r);
+  }catch(e){}
+  return null;
+}
+async function saveStore(obj){
+  mem=obj;
+  try{ localStorage.setItem(KEY,JSON.stringify(obj)); }catch(e){}
+}
+
+/* ── state ──────────────────────────────────────────────── */
+const S={
+  techs:new Set(TECHS.map(t=>t.id)),
+  diffs:new Set([1,2,3,4]),
+  mode:'up', limit:90, autoReveal:true, autoNext:false, night:true,
+  queue:[], cur:null, phase:'ask', hintLevel:0,
+  t0:0, elapsed:0, timedOut:false, ticker:null,
+  session:{log:[],times:[],streak:0,best:0},
+  stats:{}   /* techId -> {att,hit,times:[]} */
+};
+
+/* ── pool + queue ───────────────────────────────────────── */
+function pool(){
+  return BANK.filter(p=>S.techs.has(p.tech)&&S.diffs.has(p.d));
+}
+function refill(){
+  const p=pool().slice();
+  for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}
+  S.queue=p;
+}
+function nextProblem(){
+  const p=pool();
+  $('#chipPool').textContent=p.length;
+  if(!p.length){ S.cur=null; renderEmpty(); return; }
+  if(!S.queue.length) refill();
+  S.queue=S.queue.filter(q=>S.techs.has(q.tech)&&S.diffs.has(q.d));
+  if(!S.queue.length) refill();
+  let nxt=S.queue.shift();
+  if(S.cur&&nxt.id===S.cur.id&&S.queue.length){ S.queue.push(nxt); nxt=S.queue.shift(); }
+  S.cur=nxt;
+  S.phase='ask'; S.hintLevel=0; S.timedOut=false; S.elapsed=0;
+  renderProblem();
+  startClock();
+}
+
+/* ── clock ──────────────────────────────────────────────── */
+function fmt(ms){
+  const s=Math.max(0,Math.round(ms/1000));
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+function stopClock(){ if(S.ticker){clearInterval(S.ticker);S.ticker=null;} }
+function startClock(){
+  stopClock();
+  const clock=$('#clock'), drain=$('#drain');
+  clock.className='clock'; drain.className='drain';
+  if(S.mode==='off'){
+    clock.classList.add('off'); clock.textContent='--:--';
+    drain.style.transform='scaleX(0)'; return;
+  }
+  S.t0=Date.now();
+  drain.style.transform=S.mode==='down'?'scaleX(1)':'scaleX(0)';
+  const tick=()=>{
+    S.elapsed=Date.now()-S.t0;
+    if(S.mode==='up'){
+      clock.textContent=fmt(S.elapsed);
+      drain.style.transform='scaleX(0)';
+    }else{
+      const left=S.limit*1000-S.elapsed;
+      clock.textContent=fmt(left);
+      const frac=Math.max(0,left/(S.limit*1000));
+      drain.style.transform='scaleX('+frac+')';
+      const cls = frac<=.15?'crit' : frac<=.35?'warn' : '';
+      clock.className='clock'+(cls?' '+cls:'');
+      drain.className='drain'+(cls?' '+cls:'');
+      if(left<=0){
+        stopClock(); S.timedOut=true; clock.textContent='00:00';
+        if(S.autoReveal&&S.phase==='ask') reveal();
+        else toast('Time.');
+      }
+    }
+  };
+  tick(); S.ticker=setInterval(tick,200);
+}
+
+/* ── rendering: problem ─────────────────────────────────── */
+function renderEmpty(){
+  stopClock();
+  $('#mTag').textContent='—'; $('#mTag').style.setProperty('--tc','#55647a');
+  $('#mLevel').textContent=''; $('#mStars').textContent='';
+  $('#clock').textContent='--:--'; $('#clock').className='clock off';
+  $('#drain').style.transform='scaleX(0)';
+  $('#prompt').innerHTML='<span class="fallback">No problems match your filters.<br>Turn on a technique or a difficulty level.</span>';
+  $('#controls').innerHTML=''; closeReveal();
+}
+function renderProblem(){
+  const p=S.cur, t=TECH[p.tech];
+  const tag=$('#mTag');
+  tag.textContent=t.short; tag.style.setProperty('--tc',t.color);
+  $('#mLevel').textContent=LEVELS[p.d];
+  $('#mStars').innerHTML='<b>'+'\u25CF'.repeat(p.d)+'</b>'+'\u25CB'.repeat(4-p.d);
+  bigMath($('#prompt'),p.t);
+  closeReveal();
+  renderControls();
+}
+function renderControls(){
+  const c=$('#controls'); c.innerHTML='';
+  if(S.phase==='ask'){
+    const hint=el('button','btn','Hint <span class="kbd">H</span>');
+    hint.onclick=showHint; c.appendChild(hint);
+    const sol=el('button','btn solid','Show solution <span class="kbd">SPACE</span>');
+    sol.onclick=reveal; c.appendChild(sol);
+    c.appendChild(el('div','spacer'));
+    const skip=el('button','btn','Skip <span class="kbd">S</span>');
+    skip.onclick=()=>{ grade('skip'); }; c.appendChild(skip);
+  } else if(S.phase==='revealed'){
+    c.appendChild(el('div','note','How did you do?'));
+    const g=el('button','btn good','Got it <span class="kbd">1</span>');
+    g.onclick=()=>grade('hit'); c.appendChild(g);
+    const b=el('button','btn bad','Missed it <span class="kbd">2</span>');
+    b.onclick=()=>grade('miss'); c.appendChild(b);
+    c.appendChild(el('div','spacer'));
+    const sheet=el('button','btn','Cheat sheet <span class="kbd">C</span>');
+    sheet.onclick=()=>openSheet(S.cur.tech); c.appendChild(sheet);
+  } else {
+    const n=el('button','btn solid','Next problem <span class="kbd">N</span>');
+    n.onclick=nextProblem; c.appendChild(n);
+    c.appendChild(el('div','spacer'));
+    const sheet=el('button','btn','Cheat sheet <span class="kbd">C</span>');
+    sheet.onclick=()=>openSheet(S.cur.tech); c.appendChild(sheet);
+  }
+}
+function closeReveal(){ const r=$('#reveal'); r.className='reveal'; r.innerHTML=''; }
+
+function showHint(){
+  if(S.phase!=='ask') return;
+  const r=$('#reveal');
+  if(!S.hintLevel){
+    r.innerHTML='<div class="rsec"><div class="rhead">Nudge <span class="rule"></span></div>'
+      +'<div class="hintbox">'+S.cur.h+'</div></div>';
+    r.classList.add('open'); mathify(r); S.hintLevel=1;
+  } else {
+    reveal();
+  }
+}
+
+function reveal(){
+  if(S.phase!=='ask') return;
+  stopClock();
+  S.phase='revealed';
+  const p=S.cur, r=$('#reveal');
+  let html='';
+  if(S.hintLevel) html+='<div class="rsec"><div class="rhead">Nudge <span class="rule"></span></div><div class="hintbox">'+p.h+'</div></div>';
+  html+='<div class="rsec"><div class="rhead">Answer <span class="rule"></span></div>'
+      + '<div class="answer" id="ansBox"></div></div>';
+  html+='<div class="rsec"><div class="rhead">Working <span class="rule"></span></div><ol class="steps">'
+      + p.s.map(s=>'<li>'+s+'</li>').join('') + '</ol>';
+  if(p.w) html+='<div class="why"><b>Why this works</b>'+p.w+'</div>';
+  html+='</div>';
+  r.innerHTML=html; r.classList.add('open');
+  const ans=$('#ansBox');
+  if(window.katex){ try{ katex.render(p.a,ans,{throwOnError:false,displayMode:true}); }catch(e){ ans.textContent=p.a; } }
+  else ans.textContent=p.a;
+  mathify(r);
+  renderControls();
+}
+
+/* ── grading ────────────────────────────────────────────── */
+function grade(kind){
+  if(S.phase==='done') return;
+  const p=S.cur;
+  const secs = S.mode==='off' ? null : Math.round((S.elapsed||0)/1000);
+  stopClock();
+  if(kind!=='skip'){
+    const st=S.stats[p.tech]||(S.stats[p.tech]={att:0,hit:0,times:[]});
+    st.att++; if(kind==='hit') st.hit++;
+    if(secs!=null&&kind==='hit') st.times.push(secs);
+    S.session.times.push(secs);
+    if(kind==='hit'){ S.session.streak++; S.session.best=Math.max(S.session.best,S.session.streak); }
+    else S.session.streak=0;
+  }
+  S.session.log.push({k:kind,to:S.timedOut});
+  S.phase='done';
+  renderControls(); renderSession(); renderWeak(); persist();
+  if(kind==='skip'||S.autoNext) setTimeout(()=>{ if(S.phase==='done') nextProblem(); }, kind==='skip'?0:650);
+}
+
+/* ── session + weakness panels ──────────────────────────── */
+function median(a){
+  const v=a.filter(x=>x!=null).sort((x,y)=>x-y);
+  if(!v.length) return null;
+  const m=Math.floor(v.length/2);
+  return v.length%2?v[m]:Math.round((v[m-1]+v[m])/2);
+}
+function renderSession(){
+  const L=S.session.log;
+  const graded=L.filter(x=>x.k!=='skip');
+  const hits=graded.filter(x=>x.k==='hit').length;
+  const tape=$('#tape'); tape.innerHTML='';
+  L.slice(-60).forEach(x=>{
+    const cls = x.k==='skip'?'skip' : x.to?'to' : x.k==='hit'?'hit':'miss';
+    tape.appendChild(el('div','tick '+cls));
+  });
+  $('#sAtt').textContent=graded.length;
+  $('#sHit').textContent=hits;
+  $('#sAcc').textContent=graded.length?Math.round(hits/graded.length*100)+'%':'—';
+  const md=median(S.session.times);
+  $('#sMed').textContent=md==null?'—':md+'s';
+  $('#sBest').textContent=S.session.best;
+  $('#chipStreak').textContent=S.session.streak;
+}
+function renderWeak(){
+  const box=$('#weakList');
+  const rows=TECHS.filter(t=>S.stats[t.id]&&S.stats[t.id].att>0)
+    .map(t=>{const s=S.stats[t.id];return{t,acc:s.hit/s.att,att:s.att,med:median(s.times)};})
+    .sort((a,b)=>a.acc-b.acc);
+  if(!rows.length){
+    box.innerHTML='<p class="empty-note">Grade a few problems and your accuracy by technique shows up here.</p>';
+    return;
+  }
+  box.innerHTML='';
+  rows.forEach(r=>{
+    const pct=Math.round(r.acc*100);
+    const col = pct<50?'#ff7272' : pct<75?'#ffb13d' : '#57d3a2';
+    const m=el('div','meter');
+    m.innerHTML='<div class="meter-top"><span class="nm">'+r.t.name+'</span>'
+      +'<span class="val">'+pct+'% &middot; '+r.att+(r.med!=null?' &middot; '+r.med+'s':'')+'</span></div>'
+      +'<div class="track"><div class="fill" style="width:'+Math.max(3,pct)+'%;background:'+col+'"></div></div>';
+    box.appendChild(m);
+  });
+}
+
+/* ── console wiring ─────────────────────────────────────── */
+function buildTechList(){
+  const box=$('#techList');
+  TECHS.forEach(t=>{
+    const n=BANK.filter(p=>p.tech===t.id).length;
+    const row=el('label','sw');
+    row.style.setProperty('--tc',t.color);
+    row.innerHTML='<input type="checkbox" checked data-t="'+t.id+'"><span class="box"></span>'
+      +'<span class="nm">'+t.name+'</span><span class="only" role="button" tabindex="0">only</span>'
+      +'<span class="ct">'+n+'</span>';
+    const cb=row.querySelector('input');
+    cb.onchange=()=>{ cb.checked?S.techs.add(t.id):S.techs.delete(t.id); afterFilter(); };
+    const only=row.querySelector('.only');
+    const solo=e=>{ e.preventDefault(); e.stopPropagation(); S.techs=new Set([t.id]); syncTech(); afterFilter(); };
+    only.onclick=solo;
+    only.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') solo(e); };
+    box.appendChild(row);
+  });
+}
+function syncTech(){
+  document.querySelectorAll('#techList input').forEach(cb=>{ cb.checked=S.techs.has(cb.dataset.t); });
+}
+function afterFilter(){
+  refill(); persist();
+  const n=pool().length;
+  $('#chipPool').textContent=n;
+  if(!n){ renderEmpty(); return; }
+  if(S.phase!=='ask'||!S.cur) nextProblem();
+  else if(!S.techs.has(S.cur.tech)||!S.diffs.has(S.cur.d)) nextProblem();
+}
+
+function wireConsole(){
+  $('#selAll').onclick=()=>{ S.techs=new Set(TECHS.map(t=>t.id)); syncTech(); afterFilter(); };
+  $('#selNone').onclick=()=>{ S.techs=new Set(); syncTech(); afterFilter(); };
+
+  $('#diffSeg').querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      const d=+b.dataset.d;
+      if(S.diffs.has(d)) S.diffs.delete(d); else S.diffs.add(d);
+      b.setAttribute('aria-pressed',S.diffs.has(d));
+      afterFilter();
+    };
+  });
+
+  $('#modeSeg').querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      S.mode=b.dataset.m;
+      $('#modeSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+      $('#limitField').hidden = S.mode!=='down';
+      $('#autoRevealRow').hidden = S.mode!=='down';
+      persist();
+      if(S.phase==='ask') startClock(); else { stopClock(); }
+    };
+  });
+  $('#limitInput').oninput=e=>{
+    const v=parseInt(e.target.value,10);
+    if(v>=5&&v<=900){ S.limit=v; persist(); if(S.phase==='ask'&&S.mode==='down') startClock(); }
+  };
+  $('#autoReveal').onchange=e=>{ S.autoReveal=e.target.checked; persist(); };
+  $('#autoNext').onchange=e=>{ S.autoNext=e.target.checked; persist(); };
+
+  $('#drillWeak').onclick=()=>{
+    const rows=TECHS.filter(t=>S.stats[t.id]&&S.stats[t.id].att>=2)
+      .map(t=>({id:t.id,acc:S.stats[t.id].hit/S.stats[t.id].att}))
+      .sort((a,b)=>a.acc-b.acc);
+    if(rows.length<1){ toast('Grade at least two problems in a technique first.'); return; }
+    let weak=rows.filter(r=>r.acc<0.8).slice(0,3);
+    if(weak.length<2) weak=rows.slice(0,Math.min(2,rows.length));
+    const pick=weak.map(r=>r.id);
+    S.techs=new Set(pick); syncTech(); afterFilter();
+    toast('Now drilling: '+pick.map(id=>TECH[id].name).join(', '));
+  };
+
+  $('#themeBtn').onclick=()=>{ S.night=!S.night; applyTheme(); persist(); };
+
+  $('#resetStats').onclick=()=>{
+    S.stats={}; S.session={log:[],times:[],streak:0,best:0};
+    renderSession(); renderWeak(); persist(); toast('History cleared.');
+  };
+
+  const con=$('#console');
+  $('#mobileConsole').onclick=()=>con.classList.toggle('open');
+  $('#closeConsole').onclick=()=>con.classList.remove('open');
+}
+
+function applyTheme(){
+  document.body.classList.toggle('night',S.night);
+  const b=$('#themeBtn');
+  b.setAttribute('aria-pressed',S.night);
+  b.classList.toggle('key',S.night);
+  b.innerHTML = S.night ? '\u263e Night' : '\u2600 Day';
+}
+
+/* ── cheat sheet ────────────────────────────────────────── */
+const TECH2SEC={power:'core',usub:'usub',parts:'parts',trigint:'trigint',
+  trigsub:'trigsub',partial:'partial',improper:'improper',clever:'definite',multi:'multi'};
+let activeSec='triage';
+function buildSheet(){
+  const tabs=$('#sheetTabs');
+  SHEET.forEach(s=>{
+    const b=el('button',null,s.tab);
+    b.dataset.s=s.id;
+    b.setAttribute('aria-pressed',s.id===activeSec);
+    b.onclick=()=>{ $('#sheetSearch').value=''; showSec(s.id); };
+    tabs.appendChild(b);
+  });
+  showSec('triage');
+}
+function showSec(id){
+  activeSec=id;
+  $('#sheetTabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===id));
+  const s=SHEET.find(x=>x.id===id);
+  const body=$('#sheetBody');
+  body.innerHTML='<section class="sheet-sec"><h3><span class="idx">'+s.tab.toUpperCase()+'</span>'+s.title+'</h3>'
+    +'<p class="lede">'+s.lede+'</p>'+s.html+'</section>';
+  mathify(body);
+  body.scrollTop=0;
+  const btn=$('#sheetTabs').querySelector('[data-s="'+id+'"]');
+  if(btn&&btn.scrollIntoView){ try{ btn.scrollIntoView({block:'nearest',inline:'center'}); }catch(e){} }
+}
+function searchSheet(q){
+  q=q.trim().toLowerCase();
+  const body=$('#sheetBody');
+  if(!q){ showSec(activeSec); return; }
+  $('#sheetTabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',false));
+  const hits=[];
+  SHEET.forEach(s=>{
+    const plain=(s.title+' '+s.tab+' '+s.lede+' '+s.html).replace(/<[^>]+>/g,' ').toLowerCase();
+    if(plain.includes(q)) hits.push(s);
+  });
+  if(!hits.length){
+    body.innerHTML='<p class="noresult">Nothing matches “'+q.replace(/</g,'&lt;')
+      +'”. Try a technique name (parts, polar), a function (sec, arctan), or a trick (King, Feynman).</p>';
+    return;
+  }
+  body.innerHTML=hits.map(s=>'<section class="sheet-sec"><h3><span class="idx">'+s.tab.toUpperCase()+'</span>'
+    +s.title+'</h3><p class="lede">'+s.lede+'</p>'+s.html+'</section>').join('');
+  mathify(body); body.scrollTop=0;
+}
+function openSheet(techId){
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden','false');
+  $('#scrim').classList.add('open');
+  if(techId&&TECH2SEC[techId]){ $('#sheetSearch').value=''; showSec(TECH2SEC[techId]); }
+}
+function closeSheet(){
+  $('#drawer').classList.remove('open');
+  $('#drawer').setAttribute('aria-hidden','true');
+  $('#scrim').classList.remove('open');
+}
+
+/* ── toast ──────────────────────────────────────────────── */
+let toastT=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ── persistence glue ───────────────────────────────────── */
+let saveT=null;
+function persist(){
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{
+    saveStore({
+      techs:[...S.techs], diffs:[...S.diffs], mode:S.mode, limit:S.limit,
+      autoReveal:S.autoReveal, autoNext:S.autoNext, night:S.night, stats:S.stats
+    });
+  },400);
+}
+function applySaved(d){
+  if(!d) return;
+  if(Array.isArray(d.techs)&&d.techs.length) S.techs=new Set(d.techs);
+  if(Array.isArray(d.diffs)&&d.diffs.length) S.diffs=new Set(d.diffs.map(Number));
+  if(d.mode) S.mode=d.mode;
+  if(d.limit) S.limit=d.limit;
+  if(typeof d.autoReveal==='boolean') S.autoReveal=d.autoReveal;
+  if(typeof d.autoNext==='boolean') S.autoNext=d.autoNext;
+  if(typeof d.night==='boolean') S.night=d.night;
+  if(d.stats) S.stats=d.stats;
+  syncTech(); applyTheme();
+  $('#diffSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',S.diffs.has(+b.dataset.d)));
+  $('#modeSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.mode));
+  $('#limitField').hidden=S.mode!=='down';
+  $('#autoRevealRow').hidden=S.mode!=='down';
+  $('#limitInput').value=S.limit;
+  $('#autoReveal').checked=S.autoReveal;
+  $('#autoNext').checked=S.autoNext;
+}
+
+/* ── keyboard ───────────────────────────────────────────── */
+function keys(e){
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='select'||tag==='textarea'){
+    if(e.key==='Escape') e.target.blur();
+    return;
+  }
+  const k=e.key.toLowerCase();
+  if(k==='escape'){ closeSheet(); $('#console').classList.remove('open'); return; }
+  if(k==='d'){ e.preventDefault(); S.night=!S.night; applyTheme(); persist(); return; }
+  if(k==='c'){ e.preventDefault(); $('#drawer').classList.contains('open')?closeSheet():openSheet(S.cur&&S.cur.tech); return; }
+  if($('#drawer').classList.contains('open')){
+    if(k==='/'){ e.preventDefault(); $('#sheetSearch').focus(); }
+    return;
+  }
+  if(k===' '||k==='enter'){
+    e.preventDefault();
+    if(S.phase==='ask') reveal();
+    else if(S.phase==='done') nextProblem();
+    return;
+  }
+  if(k==='h'){ e.preventDefault(); showHint(); return; }
+  if(k==='s'){ e.preventDefault(); if(S.phase!=='done') grade('skip'); return; }
+  if(k==='n'){ e.preventDefault(); nextProblem(); return; }
+  if(k==='1'&&S.phase==='revealed'){ e.preventDefault(); grade('hit'); return; }
+  if(k==='2'&&S.phase==='revealed'){ e.preventDefault(); grade('miss'); return; }
+}
+
+/* ── boot ───────────────────────────────────────────────── */
+async function boot(){
+  buildTechList();
+  wireConsole();
+  applyTheme();
+  buildSheet();
+  $('#openSheet').onclick=()=>openSheet(S.cur&&S.cur.tech);
+  $('#closeSheet').onclick=closeSheet;
+  $('#scrim').onclick=closeSheet;
+  $('#sheetSearch').oninput=e=>searchSheet(e.target.value);
+  document.addEventListener('keydown',keys);
+
+  const saved=await loadStore();
+  applySaved(saved);
+  renderWeak(); renderSession();
+  refill(); nextProblem();
+}
+if(window.katex) boot();
+else{
+  let tries=0;
+  const wait=setInterval(()=>{
+    if(window.katex||++tries>40){ clearInterval(wait); boot(); }
+  },80);
+}
+})();
+</script>
+</body>
+</html>

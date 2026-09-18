@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Limits Trainer</title>
+<style>
+html{background:#0b0d11}
+body{margin:0;padding:20px;max-width:760px;margin-inline:auto;background:#0b0d11}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--tx:#e8eaef;--dim:#9aa2b1;--acc:#7f77dd;--ok:#63991a;--bad:#e24b4a;--warn:#ef9f27}
+#app{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);padding:20px;border-radius:14px;line-height:1.6}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{background:transparent;border:1px solid var(--line);color:var(--tx);padding:9px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
+.btn:hover{background:#1f232c;border-color:#3a4150}
+.btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}
+.q{font-size:20px;margin:6px 0 16px;font-family:'Cambria','Georgia',serif}
+.opt{display:block;width:100%;text-align:left;background:#1b1f27;border:1px solid var(--line);color:var(--tx);padding:11px 14px;border-radius:8px;margin:7px 0;cursor:pointer;font-size:16px;font-family:'Cambria','Georgia',serif}
+.opt:hover{border-color:#4a5265}
+.opt.correct{border-color:var(--ok);background:#1c2a12}
+.opt.wrong{border-color:var(--bad);background:#2a1414}
+.stat{display:inline-block;margin-right:20px;font-size:13px;color:var(--dim)}
+.stat b{color:var(--tx);font-size:19px;display:block;font-weight:500}
+.tag{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.expl{background:#1b1f27;border-left:3px solid var(--acc);padding:12px 14px;margin-top:14px;font-size:14px;border-radius:0 8px 8px 0;white-space:pre-wrap}
+h1{font-size:21px;font-weight:500;margin:0 0 4px}
+h3{font-size:15px;font-weight:500;margin:16px 0 8px;color:var(--dim)}
+.bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;background:var(--acc)}
+.mini{font-size:12px;color:var(--dim)}
+.streak{color:var(--warn);font-weight:500}
+</style>
+<script>
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const P=a=>a[Math.floor(Math.random()*a.length)];
+const NZ=(a,b)=>{let x=0;while(x===0)x=R(a,b);return x};
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a}
+function frac(n,d){if(d===0)return n>0?"+∞":"−∞";if(n===0)return "0";const g=gcd(n,d);n/=g;d/=g;if(d<0){n=-n;d=-d}return d===1?""+n:n+"/"+d}
+function sg(n,t){if(n===0)return "";const s=n<0?" − ":" + ";const a=Math.abs(n);return s+(a===1&&t?"":a)+(t||"")}
+function poly(c,v){let s="",f=1;for(let i=c.length-1;i>=0;i--){const p=i,k=c[c.length-1-i]||c[i];}return s}
+
+/* ---------- GENERATORS ---------- */
+const G={};
+
+// 1. TWO-SIDED LIMITS
+G.twosided=[
+ ()=>{const a=NZ(-6,6),b=NZ(-6,6);if(a===b)return null;
+  return{q:`lim<sub>x→${a}</sub> (x² ${sg(-(a+b),"x")} ${sg(a*b)}) / (x ${sg(-a,"")})`,
+  a:""+(a-b),w:[""+(b-a),"0","DNE"],
+  e:`Factor: (x−${a})(x−${b})/(x−${a}). Cancel (x−${a}) → x−${b}. Sub x=${a}: ${a}−${b} = ${a-b}.`,t:"Factor & cancel"}},
+ ()=>{const a=R(1,9),s=a*a;
+  return{q:`lim<sub>x→0</sub> (√(x + ${s}) − ${a}) / x`,a:frac(1,2*a),w:[frac(1,a),"0","DNE"],
+  e:`Multiply by conjugate (√(x+${s})+${a}): numerator → (x+${s})−${s} = x. So x/(x(√(x+${s})+${a})) = 1/(√(x+${s})+${a}) → 1/${2*a}.`,t:"Rationalize"}},
+ ()=>{const a=NZ(2,7);
+  return{q:`lim<sub>x→${a}</sub> (1/x − 1/${a}) / (x − ${a})`,a:frac(-1,a*a),w:[frac(1,a*a),"0",frac(-1,a)],
+  e:`Combine top: (${a}−x)/(${a}x). Divide by (x−${a}): −1/(${a}x). Sub x=${a} → −1/${a*a}.`,t:"Common denominator"}},
+ ()=>{const a=R(2,6),n=R(2,4);
+  const d=n*Math.pow(a,n-1);
+  return{q:`lim<sub>h→0</sub> ((${a}+h)<sup>${n}</sup> − ${Math.pow(a,n)}) / h`,a:""+d,w:[""+Math.pow(a,n),"0",""+(n*a)],
+  e:`This is the derivative of x^${n} at x=${a}. Expand or use ${n}x^${n-1} → ${n}·${a}^${n-1} = ${d}.`,t:"Expand / difference quotient"}},
+ ()=>{const a=NZ(2,9),b=NZ(2,9);
+  return{q:`lim<sub>x→0</sub> sin(${a}x) / (${b}x)`,a:frac(a,b),w:[frac(b,a),"1","0"],
+  e:`Rewrite as (${a}/${b})·sin(${a}x)/(${a}x). Inner → 1, so limit = ${a}/${b}.`,t:"sinθ/θ"}},
+ ()=>{const a=NZ(2,9),b=NZ(2,9);
+  return{q:`lim<sub>x→0</sub> sin(${a}x) / sin(${b}x)`,a:frac(a,b),w:[frac(b,a),"0","1"],
+  e:`Split: [sin(${a}x)/(${a}x)]·[(${b}x)/sin(${b}x)]·(${a}/${b}) → 1·1·${a}/${b}.`,t:"sinθ/θ paired"}},
+ ()=>{const a=NZ(2,7);
+  return{q:`lim<sub>x→0</sub> (1 − cos(${a}x)) / x²`,a:frac(a*a,2),w:[""+a,"0",frac(a,2)],
+  e:`Use (1−cos u)/u² → 1/2 with u=${a}x. Multiply and divide by ${a}²: ${a}²·(1/2) = ${frac(a*a,2)}.`,t:"1−cos"}},
+ ()=>{const a=NZ(2,8);
+  return{q:`lim<sub>x→0</sub> tan(${a}x) / x`,a:""+a,w:["1","0",frac(1,a)],
+  e:`tan(${a}x)/(${a}x) → 1, so tan(${a}x)/x = ${a}·[tan(${a}x)/(${a}x)] → ${a}.`,t:"tan"}},
+ ()=>{const a=NZ(2,8);
+  return{q:`lim<sub>x→0</sub> (e<sup>${a}x</sup> − 1) / x`,a:""+a,w:["1","0",frac(1,a)],
+  e:`(e^u−1)/u → 1 with u=${a}x. Scale by ${a} → ${a}.`,t:"Exponential"}},
+ ()=>{const a=R(2,8),b=R(2,8),c=a*b;
+  return{q:`lim<sub>x→${a}</sub> (x² ${sg(-a-b,"x")} ${sg(c)}) / (x² ${sg(-2*a,"x")} ${sg(a*a)})`,a:"DNE (±∞)",w:[""+(a-b),"0","1"],
+  e:`Top: (x−${a})(x−${b}). Bottom: (x−${a})². Cancel once → (x−${b})/(x−${a}). Denominator → 0, numerator → ${a-b} ≠ 0, so it blows up. One-sided signs differ → DNE.`,t:"Partial cancel"}},
+ ()=>{const a=NZ(2,9),b=R(1,9);
+  return{q:`lim<sub>x→${a}</sub> (x³ ${sg(-a*a*a)}) / (x ${sg(-a)})`,a:""+(3*a*a),w:[""+(a*a),""+(a*a*a),"0"],
+  e:`x³−${a*a*a} = (x−${a})(x²+${a}x+${a*a}). Cancel → x²+${a}x+${a*a} at x=${a}: 3·${a}² = ${3*a*a}.`,t:"Difference of cubes"}},
+ ()=>{const a=R(2,9);
+  return{q:`lim<sub>x→0</sub> x² · sin(1/x)`,a:"0",w:["1","DNE","∞"],
+  e:`Bounded × →0. −x² ≤ x²sin(1/x) ≤ x², both bounds → 0. Squeeze gives 0.`,t:"Squeeze"}},
+ ()=>{const a=NZ(1,8),b=NZ(1,8);
+  return{q:`lim<sub>x→0</sub> (√(${a}x + 1) − 1) / (${b}x)`,a:frac(a,2*b),w:[frac(b,2*a),"0",frac(a,b)],
+  e:`Conjugate: numerator → ${a}x. Get ${a}x/(${b}x(√(${a}x+1)+1)) = ${a}/(${b}·2) = ${frac(a,2*b)}.`,t:"Rationalize"}},
+];
+
+// 2. ONE-SIDED
+G.onesided=[
+ ()=>{const a=NZ(-6,6),s=P([-1,1]);
+  return{q:`lim<sub>x→${a}<sup>${s>0?"+":"−"}</sup></sub> 1 / (x ${sg(-a,"")})`,a:s>0?"+∞":"−∞",w:[s>0?"−∞":"+∞","0","1"],
+  e:`As x→${a}${s>0?"⁺":"⁻"}, (x−${a}) is a small ${s>0?"positive":"negative"} number, so the reciprocal → ${s>0?"+∞":"−∞"}.`,t:"Vertical asymptote sign"}},
+ ()=>{const a=NZ(-6,6),k=NZ(-9,9),s=P([-1,1]);
+  const ans=(k*s>0)?"+∞":"−∞";
+  return{q:`lim<sub>x→${a}<sup>${s>0?"+":"−"}</sup></sub> ${k} / (x ${sg(-a,"")})`,a:ans,w:[ans==="+∞"?"−∞":"+∞","0",""+k],
+  e:`Denominator is small ${s>0?"positive":"negative"}; numerator ${k} is ${k>0?"positive":"negative"}. Quotient sign: ${ans}.`,t:"Signed asymptote"}},
+ ()=>{const a=NZ(-6,6),s=P([-1,1]);
+  return{q:`lim<sub>x→${a}<sup>${s>0?"+":"−"}</sup></sub> |x ${sg(-a,"")}| / (x ${sg(-a,"")})`,a:s>0?"1":"−1",w:[s>0?"−1":"1","0","DNE"],
+  e:`For x ${s>0?">":"<"} ${a}, |x−${a}| = ${s>0?"(x−"+a+")":"−(x−"+a+")"}. Ratio = ${s>0?1:-1} constantly.`,t:"Absolute value"}},
+ ()=>{const a=NZ(-5,5),m=NZ(2,6),b=NZ(-8,8),c=NZ(-8,8),s=P([-1,1]);
+  const L=m*a+b, Rv=a*a+c;
+  return{q:`f(x) = ${m}x ${sg(b)} if x < ${a};  x² ${sg(c)} if x ≥ ${a}. Find lim<sub>x→${a}<sup>${s>0?"+":"−"}</sup></sub> f(x)`,
+  a:""+(s>0?Rv:L),w:[""+(s>0?L:Rv),"DNE","0"],
+  e:`x→${a}${s>0?"⁺":"⁻"} uses the ${s>0?"second (x²"+sg(c)+")":"first ("+m+"x"+sg(b)+")"} branch. Sub x=${a} → ${s>0?Rv:L}.`,t:"Piecewise branch"}},
+ ()=>{const a=NZ(-5,5);
+  return{q:`lim<sub>x→${a}<sup>−</sup></sub> 1 / (x ${sg(-a,"")})²`,a:"+∞",w:["−∞","0","DNE"],
+  e:`The square makes the denominator positive from BOTH sides. Small positive → +∞ regardless of side.`,t:"Even power denominator"}},
+ ()=>{const a=R(2,9);
+  return{q:`lim<sub>x→${a}<sup>+</sup></sub> √(x − ${a})`,a:"0",w:["DNE","+∞",""+a],
+  e:`Domain requires x ≥ ${a}, so only the right-hand limit exists. √(small positive) → 0.`,t:"Domain edge"}},
+ ()=>{const n=R(2,9),s=P([-1,1]);
+  return{q:`lim<sub>x→${n}<sup>${s>0?"+":"−"}</sup></sub> ⌊x⌋`,a:""+(s>0?n:n-1),w:[""+(s>0?n-1:n),"DNE",""+(n+1)],
+  e:`Just ${s>0?"above":"below"} ${n}, ⌊x⌋ = ${s>0?n:n-1}. Floor jumps at integers.`,t:"Floor function"}},
+ ()=>{const a=NZ(-5,5),b=NZ(-5,5);if(a===b)return null;const s=P([-1,1]);
+  const sign=(s>0?1:-1)*Math.sign(a-b);
+  return{q:`lim<sub>x→${a}<sup>${s>0?"+":"−"}</sup></sub> (x ${sg(-b,"")}) / (x ${sg(-a,"")})`,
+  a:sign>0?"+∞":"−∞",w:[sign>0?"−∞":"+∞","0","1"],
+  e:`Numerator → ${a-b} (${a-b>0?"positive":"negative"}). Denominator → 0 from the ${s>0?"positive":"negative"} side. Result: ${sign>0?"+∞":"−∞"}.`,t:"Sign analysis"}},
+ ()=>{const a=NZ(-6,6),m=NZ(2,7),b=NZ(-9,9);
+  const L=m*a+b,Rv=b-m*a;
+  return{q:`f(x) = ${m}x ${sg(b)} if x ≤ ${a}; ${-m}x ${sg(b)} if x > ${a}. Does lim<sub>x→${a}</sub> f(x) exist?`,
+  a:L===Rv?"Yes":"No — jump discontinuity",w:[L===Rv?"No — jump discontinuity":"Yes","Only from the left","Limit is 0"],
+  e:`Left: ${L}. Right: ${Rv}. ${L===Rv?"Equal, so the limit exists.":"Unequal → jump, limit DNE."}`,t:"Existence test"}},
+ ()=>{const a=R(1,6);
+  return{q:`lim<sub>x→0<sup>+</sup></sub> ln(${a}x)`,a:"−∞",w:["+∞","0",""+a],
+  e:`As x→0⁺, ${a}x → 0⁺, and ln of a small positive number → −∞.`,t:"Log at edge"}},
+ ()=>{const s=P([-1,1]);
+  return{q:`lim<sub>x→0<sup>${s>0?"+":"−"}</sup></sub> e<sup>1/x</sup>`,a:s>0?"+∞":"0",w:[s>0?"0":"+∞","1","DNE"],
+  e:`1/x → ${s>0?"+∞":"−∞"}, so e^(1/x) → ${s>0?"+∞":"0"}.`,t:"Exponential composite"}},
+];
+
+// 3. CONTINUITY
+G.continuity=[
+ ()=>{const a=NZ(-6,6),b=NZ(-6,6);if(a===b)return null;
+  return{q:`Classify the discontinuity of f(x) = (x ${sg(-a,"")})(x ${sg(-b,"")}) / (x ${sg(-a,"")}) at x = ${a}`,
+  a:"Removable",w:["Jump","Infinite","Continuous there"],
+  e:`The (x−${a}) cancels, so the limit exists (= ${a-b}) but f(${a}) is undefined. That's a hole → removable.`,t:"Classification"}},
+ ()=>{const a=NZ(-6,6);
+  return{q:`Classify the discontinuity of f(x) = 1 / (x ${sg(-a,"")}) at x = ${a}`,
+  a:"Infinite",w:["Removable","Jump","Oscillatory"],
+  e:`Denominator → 0 with a nonzero numerator, so f → ±∞. Vertical asymptote → infinite discontinuity.`,t:"Classification"}},
+ ()=>{const a=NZ(-5,5),m=NZ(2,6),b=NZ(-9,9);
+  const k=m*a+b-a*a;
+  return{q:`f(x) = ${m}x ${sg(b)} for x < ${a}; x² + c for x ≥ ${a}. Find c making f continuous.`,
+  a:""+k,w:[""+(-k),"0",""+(k+a)],
+  e:`Left limit: ${m}(${a})${sg(b)} = ${m*a+b}. Right: ${a}² + c = ${a*a} + c. Set equal: c = ${m*a+b} − ${a*a} = ${k}.`,t:"Solve for constant"}},
+ ()=>{const a=NZ(-5,5),m=NZ(2,7);
+  const k=m*a;
+  return{q:`f(x) = (x² ${sg(-a*a)})/(x ${sg(-a,"")}) for x ≠ ${a}; k for x = ${a}. Find k making f continuous.`,
+  a:""+(2*a),w:[""+a,"0",""+(a*a)],
+  e:`Simplify to x+${a} for x≠${a}. Limit = ${2*a}. Continuity requires k = ${2*a}.`,t:"Fill the hole"}},
+ ()=>{const a=NZ(-6,6),b=NZ(1,8);
+  return{q:`Where is f(x) = (x ${sg(b,"")}) / (x² ${sg(-a*a)}) discontinuous?`,
+  a:`x = ${a} and x = ${-a}`,w:[`x = ${-b} only`,`x = ${a} only`,"Nowhere"],
+  e:`Denominator x²−${a*a} = (x−${a})(x+${a}) = 0 at x = ±${Math.abs(a)}. Rational functions are continuous except where the denominator vanishes.`,t:"Domain"}},
+ ()=>{const a=NZ(-4,4),m=NZ(2,6),b=NZ(-8,8);
+  const L=m*a+b,Rv=a*a+b;
+  const same=L===Rv;
+  return{q:`f(x) = ${m}x ${sg(b)} for x < ${a}; x² ${sg(b)} for x ≥ ${a}. Is f continuous at x = ${a}?`,
+  a:same?"Yes":"No — jump discontinuity",w:[same?"No — jump discontinuity":"Yes","No — removable","No — infinite"],
+  e:`Left: ${L}. Right: ${Rv}. ${same?"They match and equal f("+a+"), so continuous.":"Both one-sided limits exist but differ ("+L+" vs "+Rv+") → jump."}`,t:"3-condition check"}},
+ ()=>{const c=[1,-R(1,5),-R(1,9)];const f=x=>x**3+c[1]*x+c[2];
+  let lo=-4,hi=4;
+  return{q:`Using the IVT, f(x) = x³ ${sg(c[1],"x")} ${sg(c[2])} has a root on [0, 4] because…`,
+  a:"f is continuous and f(0), f(4) have opposite signs",
+  w:["f is differentiable everywhere","f is increasing","the degree is odd"],
+  e:`IVT needs: continuity on the closed interval, plus a sign change. f(0) = ${f(0)}, f(4) = ${f(4)}. Opposite signs ⇒ some c in (0,4) with f(c)=0.`,t:"IVT"}},
+ ()=>({q:`Which is NOT required for f to be continuous at x = a?`,
+  a:"f must be differentiable at a",w:["f(a) must be defined","lim<sub>x→a</sub> f(x) must exist","the limit must equal f(a)"],
+  e:`Differentiability implies continuity, not the reverse. |x| at 0 is continuous but not differentiable.`,t:"Definition"}),
+ ()=>({q:`f(x) = sin(1/x) for x ≠ 0, f(0) = 0. What kind of discontinuity is at x = 0?`,
+  a:"Oscillatory (limit DNE)",w:["Removable","Jump","None — it's continuous"],
+  e:`sin(1/x) oscillates infinitely fast near 0; no limit exists, and it isn't ±∞ or a two-sided jump. Note x·sin(1/x) WOULD be removable.`,t:"Oscillatory"}),
+ ()=>{const a=NZ(2,6);
+  return{q:`On what interval is f(x) = √(x ${sg(-a,"")}) continuous?`,a:`[${a}, ∞)`,w:[`(${a}, ∞)`,`(−∞, ${a}]`,"All reals"],
+  e:`Domain is x ≥ ${a}. At the endpoint only right-continuity is needed, so the interval is closed on the left: [${a}, ∞).`,t:"Interval continuity"}},
+];
+
+// 4. LIMITS AT INFINITY
+G.infinity=[
+ ()=>{const a=NZ(2,9),b=NZ(2,9),n=R(1,3);
+  return{q:`lim<sub>x→∞</sub> (${a}x<sup>${n}</sup> ${sg(R(-9,9),"x")} ${sg(R(-9,9))}) / (${b}x<sup>${n}</sup> ${sg(R(-9,9))})`,
+  a:frac(a,b),w:[frac(b,a),"0","∞"],
+  e:`Equal degrees → ratio of leading coefficients = ${a}/${b} = ${frac(a,b)}.`,t:"Equal degree"}},
+ ()=>{const a=NZ(2,9),b=NZ(2,9),n=R(1,2);
+  return{q:`lim<sub>x→∞</sub> (${a}x<sup>${n}</sup> ${sg(NZ(-9,9))}) / (${b}x<sup>${n+R(1,2)}</sup> ${sg(NZ(-9,9),"x")})`,
+  a:"0",w:[frac(a,b),"∞","DNE"],
+  e:`Denominator degree is higher, so the quotient → 0. Divide top and bottom by the highest denominator power to confirm.`,t:"Bottom-heavy"}},
+ ()=>{const a=NZ(2,9),b=NZ(2,9),d=R(1,2);
+  const ans=a>0?"+∞":"−∞";
+  return{q:`lim<sub>x→∞</sub> (${a}x<sup>${d+2}</sup> ${sg(NZ(-9,9),"x")}) / (${b}x<sup>${d}</sup> ${sg(NZ(-9,9))})`,
+  a:b>0?ans:(ans==="+∞"?"−∞":"+∞"),w:[frac(a,b),"0","DNE"],
+  e:`Top degree exceeds bottom → grows without bound. Leading behavior ~ (${a}/${b})x², sign of ${a}/${b} is ${a/b>0?"positive":"negative"}.`,t:"Top-heavy"}},
+ ()=>{const a=R(2,9),b=NZ(1,9),s=P([1,-1]);
+  const v=Math.sqrt(a)===Math.floor(Math.sqrt(a))?Math.sqrt(a):null;
+  const A=a*a;
+  return{q:`lim<sub>x→${s>0?"∞":"−∞"}</sub> √(${A}x² + ${b}) / x`,
+  a:s>0?""+a:""+(-a),w:[s>0?""+(-a):""+a,"0",""+A],
+  e:`√(${A}x²+${b}) ≈ ${a}|x|. For x→${s>0?"+∞, |x| = x":"−∞, |x| = −x"}, the ratio → ${s>0?a:-a}. This sign trap is the #1 error here.`,t:"Radical sign trap"}},
+ ()=>{const b=NZ(1,9);
+  return{q:`lim<sub>x→∞</sub> (√(x² + ${b}x) − x)`,a:frac(b,2),w:["0","∞",""+b],
+  e:`Rationalize: (x²+${b}x−x²)/(√(x²+${b}x)+x) = ${b}x/(√(x²+${b}x)+x). Divide by x → ${b}/(1+1) = ${frac(b,2)}.`,t:"Difference of radicals"}},
+ ()=>({q:`lim<sub>x→∞</sub> sin(x) / x`,a:"0",w:["1","DNE","∞"],
+  e:`|sin x| ≤ 1, so −1/x ≤ sin(x)/x ≤ 1/x. Both bounds → 0. Squeeze gives 0.`,t:"Squeeze at ∞"}),
+ ()=>({q:`lim<sub>x→∞</sub> sin(x)`,a:"DNE",w:["0","1","∞"],
+  e:`sin x oscillates between −1 and 1 forever without settling. No limit.`,t:"Oscillation"}),
+ ()=>{const a=R(2,8);
+  return{q:`lim<sub>x→−∞</sub> e<sup>${a}x</sup>`,a:"0",w:["+∞","1","−∞"],
+  e:`${a}x → −∞, and e^(−∞) → 0.`,t:"Exponential"}},
+ ()=>{const n=R(2,6);
+  return{q:`lim<sub>x→∞</sub> x<sup>${n}</sup> / e<sup>x</sup>`,a:"0",w:["∞","1",""+n],
+  e:`Exponentials beat any polynomial. Hierarchy: ln x ≪ x^p ≪ e^x. So this → 0.`,t:"Growth hierarchy"}},
+ ()=>{const n=R(2,5);
+  return{q:`lim<sub>x→∞</sub> ln(x) / x<sup>${n}</sup>`,a:"0",w:["∞","1",frac(1,n)],
+  e:`Logs grow slower than any positive power of x → 0.`,t:"Growth hierarchy"}},
+ ()=>{const a=NZ(2,9),b=NZ(2,9);
+  return{q:`Horizontal asymptote(s) of f(x) = ${a}x / √(${b*b}x² + 1)`,
+  a:`y = ${frac(a,b)} and y = ${frac(-a,b)}`,w:[`y = ${frac(a,b)} only`,`y = 0`,"None"],
+  e:`As x→+∞: ${a}x/(${b}x) = ${frac(a,b)}. As x→−∞: √ gives ${b}|x| = −${b}x, so → ${frac(-a,b)}. Two different HAs.`,t:"Two asymptotes"}},
+ ()=>{const a=R(1,9);
+  return{q:`lim<sub>x→∞</sub> (1 + ${a}/x)<sup>x</sup>`,a:`e<sup>${a}</sup>`,w:["1","e","∞"],
+  e:`Standard form (1 + a/x)^x → e^a. Here a = ${a}.`,t:"e-limit"}},
+ ()=>({q:`lim<sub>x→∞</sub> arctan(x)`,a:"π/2",w:["π","0","∞"],
+  e:`arctan has horizontal asymptotes at ±π/2. Going to +∞ gives π/2.`,t:"Bounded inverse trig"}),
+];
+
+// 5. SQUEEZE
+G.squeeze=[
+ ()=>{const n=R(2,4);
+  return{q:`lim<sub>x→0</sub> x<sup>${n}</sup> · cos(1/x)`,a:"0",w:["1","DNE","∞"],
+  e:`−1 ≤ cos(1/x) ≤ 1. Multiply by x^${n} (using ±|x^${n}| to be safe): −|x^${n}| ≤ f ≤ |x^${n}|. Both → 0. Squeeze gives 0.`,t:"Bounded × →0"}},
+ ()=>{const a=R(2,9);
+  return{q:`lim<sub>x→0</sub> x · sin(${a}/x)`,a:"0",w:[""+a,"DNE","1"],
+  e:`|sin(${a}/x)| ≤ 1 so −|x| ≤ x·sin(${a}/x) ≤ |x|. Both bounds → 0.`,t:"Bounded × →0"}},
+ ()=>{const a=R(2,9);
+  return{q:`lim<sub>x→∞</sub> cos(${a}x) / x`,a:"0",w:["DNE","1",""+a],
+  e:`−1/x ≤ cos(${a}x)/x ≤ 1/x for x>0. Both → 0.`,t:"Bounded / →∞"}},
+ ()=>({q:`If 3 − x² ≤ f(x) ≤ 3 + x² for all x, find lim<sub>x→0</sub> f(x)`,a:"3",w:["0","DNE","6"],
+  e:`Both bounds → 3 as x→0. Squeeze forces f → 3.`,t:"Given bounds"}),
+ ()=>{const L=R(2,9),a=NZ(-4,4);
+  return{q:`If ${L} ${sg(-1,"")}(x ${sg(-a,"")})² ≤ f(x) ≤ ${L} + (x ${sg(-a,"")})², find lim<sub>x→${a}</sub> f(x)`,
+  a:""+L,w:["0","DNE",""+(L+1)],
+  e:`At x=${a} both bounds equal ${L}. Squeeze gives ${L}.`,t:"Given bounds"}},
+ ()=>({q:`Why does the squeeze theorem FAIL for lim<sub>x→0</sub> sin(1/x)?`,
+  a:"There's no shrinking factor — the bounds stay −1 and 1",
+  w:["sin isn't continuous","The function is undefined at 0","1/x → ∞"],
+  e:`Squeeze needs both bounds to converge to the SAME value. Here −1 ≤ sin(1/x) ≤ 1 with no x-factor to collapse them. Limit genuinely DNE.`,t:"When it fails"}),
+ ()=>({q:`lim<sub>x→0</sub> x² · tan(1/x) — can the squeeze theorem be used directly?`,
+  a:"No — tan is unbounded",w:["Yes, limit is 0","Yes, limit is 1","Yes, limit is ∞"],
+  e:`Squeeze requires a BOUNDED factor. tan(1/x) has vertical asymptotes accumulating near 0, so it isn't bounded on any neighborhood of 0. The standard trick doesn't apply.`,t:"Bounded requirement"}),
+ ()=>{const a=R(2,9);
+  return{q:`lim<sub>x→∞</sub> (${a} + sin x) / x`,a:"0",w:[""+a,"DNE","1"],
+  e:`Numerator is trapped in [${a-1}, ${a+1}]. So ${a-1}/x ≤ f ≤ ${a+1}/x, both → 0.`,t:"Shifted bounded"}},
+ ()=>({q:`lim<sub>n→∞</sub> sin(n!) / n`,a:"0",w:["DNE","1","∞"],
+  e:`No matter how wild sin(n!) is, it lives in [−1,1]. Divide by n → 0 by squeeze.`,t:"Wild bounded"}),
+ ()=>{const a=R(2,5);
+  return{q:`lim<sub>x→0</sub> √(x) · sin(${a}/x), for x > 0`,a:"0",w:["DNE",""+a,"∞"],
+  e:`0 ≤ |√x·sin(${a}/x)| ≤ √x → 0. Squeeze on the absolute value forces the limit to 0.`,t:"Root × bounded"}},
+];
+
+const CATS=[["twosided","Two-sided limits"],["onesided","One-sided limits"],["continuity","Continuity"],["infinity","Limits at infinity"],["squeeze","Squeeze theorem"]];
+
+let mode="mixed",cur=null,ans=false,st={n:0,c:0,streak:0,best:0,byCat:{}};
+CATS.forEach(([k])=>st.byCat[k]={n:0,c:0});
+
+function gen(){
+ const key = mode==="mixed" ? P(CATS)[0] : mode;
+ let p=null,guard=0;
+ while(!p && guard++<40) p = P(G[key])();
+ p.cat=key;
+ p.opts=[p.a,...p.w].filter((v,i,a)=>a.indexOf(v)===i).slice(0,4);
+ for(let i=p.opts.length-1;i>0;i--){const j=R(0,i);[p.opts[i],p.opts[j]]=[p.opts[j],p.opts[i]]}
+ return p;
+}
+
+function pick(v,el){
+ if(ans)return;ans=true;
+ const ok = v===cur.a;
+ st.n++;st.byCat[cur.cat].n++;
+ if(ok){st.c++;st.byCat[cur.cat].c++;st.streak++;if(st.streak>st.best)st.best=st.streak}
+ else st.streak=0;
+ document.querySelectorAll(".opt").forEach(b=>{
+   if(b.dataset.v===cur.a)b.className="opt correct";
+   else if(b===el)b.className="opt wrong";
+ });
+ document.getElementById("expl").style.display="block";
+ document.getElementById("next").style.display="inline-block";
+ draw(true);
+}
+
+function nextQ(){cur=gen();ans=false;draw()}
+
+function draw(keep){
+ const pct=st.n?Math.round(100*st.c/st.n):0;
+ let catRows=CATS.map(([k,n])=>{
+   const c=st.byCat[k];const p=c.n?Math.round(100*c.c/c.n):0;
+   return `<div style="margin:6px 0"><div class="mini">${n} — ${c.c}/${c.n}</div><div class="bar"><i style="width:${p}%"></i></div></div>`;
+ }).join("");
+ const el=document.getElementById("app");
+ if(!keep){
+ el.innerHTML=`
+ <h1>Limits trainer</h1>
+ <div class="mini">Infinite randomized problems. Pick a category or grind mixed.</div>
+ <div class="row" style="margin:14px 0">
+   <button class="btn ${mode==="mixed"?"on":""}" onclick="setMode('mixed')">Mixed</button>
+   ${CATS.map(([k,n])=>`<button class="btn ${mode===k?"on":""}" onclick="setMode('${k}')">${n}</button>`).join("")}
+ </div>
+ <div class="card">
+   <div class="tag">${CATS.find(c=>c[0]===cur.cat)[1]} · ${cur.t}</div>
+   <div class="q">${cur.q}</div>
+   <div id="opts">${cur.opts.map(o=>`<button class="opt" data-v="${o.replace(/"/g,'&quot;')}" onclick="pick(this.dataset.v,this)">${o}</button>`).join("")}</div>
+   <div class="expl" id="expl" style="display:none">${cur.e}</div>
+   <button class="btn" id="next" style="display:none;margin-top:14px" onclick="nextQ()">Next →</button>
+ </div>
+ <div class="card">
+   <span class="stat">Attempted<b>${st.n}</b></span>
+   <span class="stat">Correct<b>${st.c}</b></span>
+   <span class="stat">Accuracy<b>${pct}%</b></span>
+   <span class="stat">Streak<b class="streak">${st.streak}</b></span>
+   <span class="stat">Best<b>${st.best}</b></span>
+   <h3>By category</h3>${catRows}
+ </div>`;
+ } else {
+   // just refresh stats block
+   const cards=document.querySelectorAll(".card");
+   cards[1].innerHTML=`<span class="stat">Attempted<b>${st.n}</b></span>
+   <span class="stat">Correct<b>${st.c}</b></span>
+   <span class="stat">Accuracy<b>${pct}%</b></span>
+   <span class="stat">Streak<b class="streak">${st.streak}</b></span>
+   <span class="stat">Best<b>${st.best}</b></span>
+   <h3>By category</h3>${catRows}`;
+ }
+}
+function setMode(m){mode=m;nextQ()}
+nextQ();
+</script>
+</body>
+</html>
