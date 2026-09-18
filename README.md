@@ -74,6 +74,24 @@ lists two forms of one answer they become separate cards, and neither is ever a
 distractor on the other. Answers are rationalized; inverse-secant forms use |x|.
 Distractors are hand-written common mistakes, not random wrong answers.
 
+## Deploying
+
+The live site is served by GitHub Pages (Deploy from a branch: `main` / root),
+so **a push to `main` redeploys it** — no build step, no Actions workflow. A
+`post-commit` hook in `.git/hooks/` pushes automatically, so committing on
+`main` is all it takes; the rebuild lands in about a minute (hard-refresh if a
+change doesn't show — Pages caches).
+
+Design edits (e.g. a colour scheme) live in the CSS variables at the top of
+`index.html` (hub), `recall/index.html` (Recall), and each `trainers/*.html`.
+Editing those files and committing is enough — the one-file `dist/` build is a
+separate artifact and is not what the live site serves. Content edits still go
+through `src/data/` + `npm run build` (see above), which regenerates
+`recall/cards.json`.
+
+Git hooks are not copied by clone. After a fresh clone, re-create the auto-push
+hook from the header comment in `.git/hooks/post-commit`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
