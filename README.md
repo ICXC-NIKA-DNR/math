@@ -77,20 +77,27 @@ Distractors are hand-written common mistakes, not random wrong answers.
 ## Deploying
 
 The live site is served by GitHub Pages (Deploy from a branch: `main` / root),
-so **a push to `main` redeploys it** — no build step, no Actions workflow. A
-`post-commit` hook in `.git/hooks/` pushes automatically, so committing on
-`main` is all it takes; the rebuild lands in about a minute (hard-refresh if a
-change doesn't show — Pages caches).
+so **a push to `main` redeploys it** — no build step, no Actions workflow.
+Deploying is deliberately gated on a push, *not* on a commit: you can commit
+work in progress freely without touching the live site, and it goes live only
+when you push.
+
+    # iterate: edit, then preview locally (modules need a real server)
+    python3 -m http.server 8000        # from the repo root → http://localhost:8000/
+    git commit -am "wip: recolour Recall"   # checkpoint — does NOT deploy
+
+    # when you're happy, ship it:
+    git ship        # alias for `git push origin main`; Pages redeploys in ~1 min
+
+`git ship` is a local alias (`git config alias.ship …`); plain
+`git push origin main` does the same. Hard-refresh if a change doesn't show —
+Pages caches.
 
 Design edits (e.g. a colour scheme) live in the CSS variables at the top of
 `index.html` (hub), `recall/index.html` (Recall), and each `trainers/*.html`.
-Editing those files and committing is enough — the one-file `dist/` build is a
-separate artifact and is not what the live site serves. Content edits still go
-through `src/data/` + `npm run build` (see above), which regenerates
-`recall/cards.json`.
-
-Git hooks are not copied by clone. After a fresh clone, re-create the auto-push
-hook from the header comment in `.git/hooks/post-commit`.
+The one-file `dist/` build is a separate artifact and is not what the live site
+serves. Content edits still go through `src/data/` + `npm run build` (see
+above), which regenerates `recall/cards.json`.
 
 ## License
 
