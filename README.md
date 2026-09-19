@@ -10,7 +10,10 @@ visitor's own browser.
       app.mjs             view layer: DOM, KaTeX, clock, localStorage
       engine.mjs          selection, filtering, sessions, scoring — no DOM
       cards.json          the 443-card bank (generated; do not hand-edit)
-    trainers/             earlier standalone trainers
+    trainers/             the standalone problem trainers
+    shared/               code more than one trainer uses
+      calc-engine.js      exact rationals, polynomials, rendering, answer parsing
+      scratchpad.js       the <scratch-pad> element (pannable, zoomable canvas)
     dist/                 one-file build of Recall, for hosts without sibling files
     src/                  sources and tooling for the card bank
       data/source.mjs     hand-written content: closure pairs + recall cards
@@ -32,6 +35,45 @@ that will not parse, a card without exactly three distinct distractors, a
 duplicate card, an equivalent form used as a distractor on a card with the same
 prompt, and any antiderivative whose numerical derivative does not match its
 integrand. Unit-circle values are computed, never typed.
+
+## The calculus trainers
+
+`trainers/*.html` are self-contained pages that generate problems rather than
+store them, so the bank is effectively unbounded. They share `shared/`:
+`scratchpad.js` gives every problem page the same scratch paper, and
+`calc-engine.js` holds the arithmetic three of them are built on.
+
+`calc-engine.js` exists because Revolution, Arc Length and Surface Area are the
+same computation with a different integrand:
+
+    revolution   V = π ∫ R² dv     or  2π ∫ (radius)(height) dv
+    arc length   L =   ∫ ds            ds = √(1 + [y′]²) dv
+    surface      S = 2π ∫ (radius) ds
+
+So all three reduce to: build a polynomial with rational exponents, integrate it
+exactly, render it. The module provides BigInt rational arithmetic, polynomials
+in rational powers (`x^(3/2)` and `1/x²` live in one object), exact definite
+integration including the `x⁻¹ → ln` case, the shared math-rendering vocabulary,
+and the typed-answer parser.
+
+It also provides `conj(a, p)`, the conjugate family — the reason textbook
+arc-length curves all look like `x³/6 + 1/(2x)`. When
+
+    y′ = a·xᵖ − (1/4a)·x⁻ᵖ
+
+the cross terms in `1 + [y′]²` cancel to exactly +½, so the radicand is a
+perfect square and `ds` is an ordinary polynomial. Arc Length integrates it;
+Surface Area multiplies it by a radius first. One construction, both trainers,
+both orientations.
+
+Everything else — trig and hyperbolic substitution, parametric, polar — supplies
+its own closed form, checked against numerical integration of the curve.
+
+Answers are graded numerically with a relative tolerance, so any equivalent form
+passes: `17/12`, `1.41666`, `pi/6(17sqrt(17)-1)` and `2pi(15/8+ln(2)/2)` all
+parse. Implicit multiplication by a bare number binds tighter than division
+(`1/2pi` is `1/(2π)`) but a parenthesised group does not (`pi/6(…)` is
+`(π/6)·(…)`), which is how the printed exact answers read.
 
 ## The three layers
 
@@ -95,6 +137,9 @@ Pages caches.
 
 Design edits (e.g. a colour scheme) live in the CSS variables at the top of
 `index.html` (hub), `recall/index.html` (Recall), and each `trainers/*.html`.
+Every `var()` in those files must resolve in the same file — an undefined custom
+property is *invalid at computed-value time* and paints transparent rather than
+falling back to an earlier rule, which is how a page can silently turn white.
 The one-file `dist/` build is a separate artifact and is not what the live site
 serves. Content edits still go through `src/data/` + `npm run build` (see
 above), which regenerates `recall/cards.json`.

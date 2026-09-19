@@ -137,9 +137,13 @@ a.card:hover .m-bench .tq:nth-child(4){animation-delay:1.5s}
 a.card:hover .m-bench .tq:nth-child(5){animation-delay:2s}
 a.card:hover .m-bench .tq:nth-child(6){animation-delay:2.5s}
 
-/* Revolution: a type-the-answer problem, same shape as Derivative Gym */
-.m-rev .about{display:block; font-size:10px; color:#8A8A8A; margin-top:3px;
+/* A one-line note under the equation — Revolution, Arc Length and Surface Area
+   all need to say what is being done to the curve. */
+.mini .about{display:block; font-size:10px; color:#8A8A8A; margin-top:3px;
   font-family:ui-sans-serif,-apple-system,sans-serif; letter-spacing:.02em}
+
+/* Arc Length: the integrand is the story, so the still shows ds mid-collapse */
+.m-arc .ds{display:block; margin-top:4px; font-size:11px; color:var(--accent)}
 
 @media (prefers-reduced-motion:reduce){
   a.card:hover .mini *{animation:none !important}
@@ -298,6 +302,57 @@ footer a:hover{color:var(--page-accent); border-color:var(--page-accent)}
           <div>
             <div class="name">Revolution Trainer</div>
             <div class="desc">Area between curves, and volumes by disks, washers and shells.</div>
+          </div>
+        </div>
+      </a>
+
+      <a class="card" href="trainers/arc-length.html" style="--accent:#57B894; --glow:rgba(87,184,148,.42)">
+        <div class="thumb">
+          <div class="mini m-arc">
+            <div class="lbl"><span>Perfect square &middot; medium</span><span class="t">0:21</span></div>
+            <div class="stage">
+              <div class="eq" style="font-size:15px">y = x&#179;/6 + 1/(2x)
+                <span class="ds">1 + [y&prime;]&#178; is a perfect square</span>
+                <span class="about">arc length on [1, 2]</span></div>
+            </div>
+            <div class="field">
+              <div class="input"><span class="typed">17/12</span></div>
+              <div class="check"></div>
+            </div>
+          </div>
+          <span class="badge">7 techniques</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Arc Length</div>
+            <div class="desc">Perfect squares, trig and hyperbolic substitution,
+              parametric and polar curves.</div>
+          </div>
+        </div>
+      </a>
+
+      <a class="card" href="trainers/surface-area.html" style="--accent:#C87BD0; --glow:rgba(200,123,208,.42)">
+        <div class="thumb">
+          <div class="mini m-surf">
+            <div class="lbl"><span>u-substitution &middot; medium</span><span class="t">0:18</span></div>
+            <div class="stage">
+              <div class="eq" style="font-size:15px">y = &radic;x&#773;, 0 &le; x &le; 2
+                <span class="about">revolved about the x-axis</span></div>
+            </div>
+            <div class="field">
+              <div class="input"><span class="typed">13&#960;/3</span></div>
+              <div class="check"></div>
+            </div>
+          </div>
+          <span class="badge">7 techniques</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Surface Area</div>
+            <div class="desc">Every arc-length integrand again, this time carrying
+              a radius: cones, zones, catenoids, tori.</div>
           </div>
         </div>
       </a>
