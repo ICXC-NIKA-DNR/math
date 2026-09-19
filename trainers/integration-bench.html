@@ -33,6 +33,7 @@
   --r:3px;
 }
 *{box-sizing:border-box}
+html{background:var(--ink)}
 html,body{margin:0;padding:0}
 body{
   background:
@@ -464,7 +465,7 @@ body{
   --paper-rule:#1E1E1E;
   --on-paper:#F4F4F4;
   --on-paper-dim:#A0A0A0;
-  background:var(--bg);
+  background:var(--ink);
 }
 body .paper{box-shadow:0 16px 38px -20px rgba(0,0,0,.9)}
 body .strip{background:#1E1E1E}
@@ -582,7 +583,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <label class="toggle-row">
         <input type="checkbox" id="autoNext"> Auto-advance after grading
       </label>
-      <label class="chk">
+      <label class="toggle-row">
         <input type="checkbox" id="examMode"> Exam mode
       </label>
       <p class="empty-note" id="examNote" hidden style="margin-top:6px">
