@@ -1,15 +1,18 @@
 /* <scratch-pad> — a window onto an endless sheet of graph paper.
  *
  * Scratch paper for working a problem out on one device. The element is a
- * fixed-size viewport; the paper underneath is unbounded. Two-finger scroll
- * (or a mouse wheel) pans the sheet, dragging draws on it.
+ * fixed-size viewport; the paper underneath is unbounded and zoomable.
+ *
+ *   one finger / mouse / stylus ....... draw
+ *   two fingers ....................... pan and pinch-zoom
+ *   two-finger trackpad scroll ........ pan
+ *   ctrl/⌘ + scroll, or pinch ......... zoom about the cursor
+ *   − / + buttons ..................... zoom about the centre
  *
  *   <script src="../shared/scratchpad.js" defer></script>
  *   <scratch-pad accent="#EBD9A8" height="330"></scratch-pad>
  *
- * Attributes
- *   accent   pen colour and UI highlight; defaults to a soft white
- *   height   viewport height in px (default 330)
+ * Attributes: accent (pen colour), height (viewport px, default 330).
  *
  * Shadow DOM keeps its styles from colliding with whatever page hosts it,
  * which matters here: the five trainers share no CSS.
@@ -18,9 +21,10 @@
   'use strict';
   if (customElements.get('scratch-pad')) return;
 
-  const GRID = 26;          // paper ruling, in world units
-  const MAJOR = 5;          // every Nth line is a heavier rule
-  const MAX_STROKES = 4000; // generous; guards runaway memory
+  const GRID = 26;            // paper ruling, world units
+  const MAJOR = 5;            // every Nth line is heavier
+  const MAX_STROKES = 4000;
+  const MIN_SCALE = 0.25, MAX_SCALE = 5;
 
   const CSS = `
 :host{ display:block; --sp-accent:#E8E8E8; }
@@ -35,11 +39,13 @@
   padding:9px 12px; border-bottom:1px solid var(--sp-rule2,#1E1E1E);
   background:var(--sp-panel2,#141414);
 }
-.ttl{
-  font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
-  color:var(--sp-faint,#666); margin-right:2px;
-}
-.sp{flex:1}
+.ttl{ font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--sp-faint,#666); margin-right:2px; }
+.sp{ flex:1 }
+.zoom{ display:flex; align-items:center; gap:4px; }
+.zoom .pct{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11px;
+  color:var(--sp-faint,#666); min-width:38px; text-align:center;
+  font-variant-numeric:tabular-nums; }
 button{
   font:inherit; font-size:12px; padding:5px 10px; border-radius:5px; cursor:pointer;
   border:1px solid var(--sp-rule,#242424); background:transparent;
@@ -49,22 +55,19 @@ button:hover:enabled{ color:var(--sp-tx,#F4F4F4); border-color:var(--sp-accent);
 button:disabled{ opacity:.32; cursor:not-allowed; }
 button.on{ border-color:var(--sp-accent); color:var(--sp-accent);
   background:color-mix(in srgb, var(--sp-accent) 12%, transparent); }
-button.ghost{ border-color:transparent; }
-.hint{ font-size:11px; color:var(--sp-faint,#666); }
+button.sq{ padding:5px 9px; font-family:ui-monospace,Menlo,Consolas,monospace; }
 .stage{ position:relative; }
-canvas{ display:block; width:100%; touch-action:none; cursor:crosshair; }
-canvas.panning{ cursor:grabbing; }
-/* the viewport edge — makes it read as a window onto something larger */
-.stage::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  box-shadow:inset 0 0 22px rgba(0,0,0,.55);
-}
+canvas{ display:block; width:100%; touch-action:none; cursor:crosshair;
+  -webkit-user-select:none; user-select:none; }
+canvas.gesture{ cursor:grabbing; }
+.stage::after{ content:""; position:absolute; inset:0; pointer-events:none;
+  box-shadow:inset 0 0 22px rgba(0,0,0,.55); }
 .recenter{
   position:absolute; right:10px; bottom:10px; z-index:2;
   opacity:0; transform:translateY(4px); transition:opacity .18s, transform .18s;
-  background:rgba(0,0,0,.72); backdrop-filter:blur(3px);
+  background:rgba(0,0,0,.72); backdrop-filter:blur(3px); pointer-events:none;
 }
-.recenter.show{ opacity:1; transform:none; }
+.recenter.show{ opacity:1; transform:none; pointer-events:auto; }
 @media (prefers-reduced-motion:reduce){ .recenter{ transition:none } }
 `;
 
@@ -85,34 +88,45 @@ canvas.panning{ cursor:grabbing; }
             <button id="pen" class="on" title="Draw">Pen</button>
             <button id="era" title="Erase">Eraser</button>
             <span class="sp"></span>
+            <span class="zoom">
+              <button id="zout" class="sq" title="Zoom out">&minus;</button>
+              <span class="pct" id="pct">100%</span>
+              <button id="zin" class="sq" title="Zoom in">+</button>
+            </span>
             <button id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
             <button id="redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
             <button id="clear" title="Clear the sheet" disabled>Clear</button>
           </div>
           <div class="stage">
             <canvas id="c" style="height:${height}px"></canvas>
-            <button id="recenter" class="recenter" title="Back to the middle">Recenter</button>
+            <button id="recenter" class="recenter" title="Back to the middle at 100%">Recenter</button>
           </div>
         </div>`;
 
       this._c = root.getElementById('c');
       this._ctx = this._c.getContext('2d');
       this._accent = accent;
-      this._strokes = [];      // committed strokes, in world coordinates
-      this._undone = [];       // redo stack
-      this._live = null;       // stroke in progress
+      this._strokes = [];
+      this._undone = [];
+      this._live = null;
       this._off = { x: 0, y: 0 };   // world coord at the viewport's top-left
+      this._scale = 1;
       this._tool = 'pen';
       this._dpr = 1;
+      this._pointers = new Map();   // active pointers, for multi-touch gestures
+      this._gesture = null;         // {dist, mid} from the previous move
 
       this._wire(root);
       this._fit();
-      // keep the bitmap in step with layout changes and zoom
       this._ro = new ResizeObserver(() => this._fit());
       this._ro.observe(this._c);
     }
 
-    disconnectedCallback() { this._ro && this._ro.disconnect(); }
+    disconnectedCallback() {
+      this._ro && this._ro.disconnect();
+      if (this._raf) cancelAnimationFrame(this._raf);
+      document.removeEventListener('keydown', this._hot);
+    }
 
     /* ---------- geometry ---------- */
     _fit() {
@@ -125,59 +139,76 @@ canvas.panning{ cursor:grabbing; }
       this._w = r.width; this._h = r.height;
       this._draw();
     }
-    _toWorld(ev) {
+    _local(ev) {
       const r = this._c.getBoundingClientRect();
-      return { x: ev.clientX - r.left + this._off.x, y: ev.clientY - r.top + this._off.y };
+      return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    }
+    _toWorld(ev) {
+      const p = this._local(ev);
+      return { x: p.x / this._scale + this._off.x, y: p.y / this._scale + this._off.y };
+    }
+    /** Zoom so the world point under (sx,sy) stays under (sx,sy). */
+    _zoomAt(sx, sy, next) {
+      next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, next));
+      if (next === this._scale) return;
+      const wx = sx / this._scale + this._off.x;
+      const wy = sy / this._scale + this._off.y;
+      this._scale = next;
+      this._off.x = wx - sx / next;
+      this._off.y = wy - sy / next;
+      this._draw();
+    }
+    _zoomCentre(mult) {
+      this._zoomAt(this._w / 2, this._h / 2, this._scale * mult);
     }
 
     /* ---------- painting ---------- */
     _draw() {
-      const ctx = this._ctx, dpr = this._dpr, w = this._w, h = this._h;
+      const ctx = this._ctx, dpr = this._dpr, w = this._w, h = this._h, k = this._scale;
       if (!w) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
-
-      // paper
       ctx.fillStyle = '#0C0C0C';
       ctx.fillRect(0, 0, w, h);
 
-      // ruling, drawn in world space so panning is visible
-      const ox = this._off.x, oy = this._off.y;
-      const x0 = Math.floor(ox / GRID) * GRID, y0 = Math.floor(oy / GRID) * GRID;
+      // ruling — drawn in screen space from world positions, so lines stay
+      // 1px crisp at any zoom. Step widens when zoomed out so it never turns
+      // into a solid wash.
+      let step = GRID;
+      while (step * k < 7) step *= MAJOR;
+      const left = this._off.x, top = this._off.y;
+      const right = left + w / k, bottom = top + h / k;
+      const x0 = Math.floor(left / step) * step, y0 = Math.floor(top / step) * step;
       ctx.lineWidth = 1;
-      for (let x = x0; x < ox + w + GRID; x += GRID) {
-        const major = Math.round(x / GRID) % MAJOR === 0;
+      for (let x = x0; x <= right; x += step) {
+        const major = Math.round(x / step) % MAJOR === 0;
         ctx.strokeStyle = major ? 'rgba(150,160,185,.14)' : 'rgba(150,160,185,.06)';
-        ctx.beginPath();
-        ctx.moveTo(Math.round(x - ox) + .5, 0);
-        ctx.lineTo(Math.round(x - ox) + .5, h);
-        ctx.stroke();
+        const sx = Math.round((x - left) * k) + .5;
+        ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, h); ctx.stroke();
       }
-      for (let y = y0; y < oy + h + GRID; y += GRID) {
-        const major = Math.round(y / GRID) % MAJOR === 0;
+      for (let y = y0; y <= bottom; y += step) {
+        const major = Math.round(y / step) % MAJOR === 0;
         ctx.strokeStyle = major ? 'rgba(150,160,185,.14)' : 'rgba(150,160,185,.06)';
-        ctx.beginPath();
-        ctx.moveTo(0, Math.round(y - oy) + .5);
-        ctx.lineTo(w, Math.round(y - oy) + .5);
-        ctx.stroke();
+        const sy = Math.round((y - top) * k) + .5;
+        ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(w, sy); ctx.stroke();
       }
 
-      // the origin, so "recenter" means something
+      // origin marker, so Recenter means something
+      const ox = (0 - left) * k, oy = (0 - top) * k;
       ctx.strokeStyle = 'rgba(150,160,185,.22)';
-      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(-ox - 7, -oy); ctx.lineTo(-ox + 7, -oy);
-      ctx.moveTo(-ox, -oy - 7); ctx.lineTo(-ox, -oy + 7);
+      ctx.moveTo(ox - 7, oy); ctx.lineTo(ox + 7, oy);
+      ctx.moveTo(ox, oy - 7); ctx.lineTo(ox, oy + 7);
       ctx.stroke();
 
-      // ink
+      // ink, in world space
       ctx.save();
-      ctx.translate(-ox, -oy);
+      ctx.scale(k, k);
+      ctx.translate(-left, -top);
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       const all = this._live ? this._strokes.concat([this._live]) : this._strokes;
       for (const s of all) {
         if (s.pts.length < 2) {
-          // a tap should still leave a dot
           ctx.fillStyle = s.color;
           ctx.beginPath();
           ctx.arc(s.pts[0].x, s.pts[0].y, s.width / 2, 0, Math.PI * 2);
@@ -192,8 +223,10 @@ canvas.panning{ cursor:grabbing; }
       }
       ctx.restore();
 
-      const away = Math.abs(ox) > 40 || Math.abs(oy) > 40;
-      this.shadowRoot.getElementById('recenter').classList.toggle('show', away);
+      this.shadowRoot.getElementById('pct').textContent = Math.round(k * 100) + '%';
+      const moved = Math.abs(this._off.x) > 40 || Math.abs(this._off.y) > 40
+                 || Math.abs(k - 1) > 0.01;
+      this.shadowRoot.getElementById('recenter').classList.toggle('show', moved);
     }
 
     _sync() {
@@ -203,58 +236,126 @@ canvas.panning{ cursor:grabbing; }
       r.getElementById('clear').disabled = !this._strokes.length;
     }
 
+    /* ---------- gestures ---------- */
+    _twoFinger() {
+      const pts = [...this._pointers.values()];
+      const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+      return {
+        dist: Math.hypot(dx, dy) || 1,
+        mid: { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 },
+      };
+    }
+    /** Pointer moves arrive one at a time, so reading the pair mid-update
+     *  measures a distance that is briefly wrong and makes a straight pan
+     *  drift in zoom. Coalescing to one update per frame pairs both fingers'
+     *  latest positions; the deadzone absorbs what is left. */
+    _scheduleGesture() {
+      if (this._raf) return;
+      this._raf = requestAnimationFrame(() => {
+        this._raf = null;
+        if (this._pointers.size < 2) return;
+        const now = this._twoFinger(), prev = this._gesture;
+        if (prev) {
+          const ratio = now.dist / prev.dist;
+          if (Math.abs(ratio - 1) > 0.004) {
+            this._zoomAt(prev.mid.x, prev.mid.y, this._scale * ratio);
+          }
+          this._off.x -= (now.mid.x - prev.mid.x) / this._scale;
+          this._off.y -= (now.mid.y - prev.mid.y) / this._scale;
+          this._draw();
+        }
+        this._gesture = now;
+      });
+    }
+
+    /** A second finger means this was never a stroke — drop it, don't commit. */
+    _abandonStroke() {
+      if (!this._live) return;
+      this._live = null;
+      this._draw();
+    }
+
     /* ---------- input ---------- */
     _wire(root) {
       const c = this._c;
 
-      // two-finger scroll / wheel pans the sheet
       c.addEventListener('wheel', (e) => {
         e.preventDefault();
-        this._off.x += e.deltaX;
-        this._off.y += e.deltaY;
-        this._draw();
+        const p = this._local(e);
+        if (e.ctrlKey || e.metaKey) {
+          // trackpad pinch and ctrl+wheel both arrive here
+          this._zoomAt(p.x, p.y, this._scale * Math.exp(-e.deltaY * 0.01));
+        } else {
+          this._off.x += e.deltaX / this._scale;
+          this._off.y += e.deltaY / this._scale;
+          this._draw();
+        }
       }, { passive: false });
 
       c.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         c.setPointerCapture(e.pointerId);
+        this._pointers.set(e.pointerId, this._local(e));
+
+        if (this._pointers.size >= 2) {
+          this._abandonStroke();              // the line-between-fingers bug
+          this._gesture = this._twoFinger();
+          c.classList.add('gesture');
+          return;
+        }
         const p = this._toWorld(e);
         this._live = {
           pts: [p],
           color: this._tool === 'era' ? '#0C0C0C' : this._accent,
-          width: this._tool === 'era' ? 16 : 2,
+          // keep the nib a constant size on screen whatever the zoom
+          width: (this._tool === 'era' ? 16 : 2) / this._scale,
         };
         this._draw();
       });
+
       c.addEventListener('pointermove', (e) => {
+        if (!this._pointers.has(e.pointerId)) return;
+        this._pointers.set(e.pointerId, this._local(e));
+
+        if (this._pointers.size >= 2) { this._scheduleGesture(); return; }
         if (!this._live) return;
         const p = this._toWorld(e);
         const last = this._live.pts[this._live.pts.length - 1];
-        if (Math.hypot(p.x - last.x, p.y - last.y) < 1.1) return;  // thin out
+        if (Math.hypot(p.x - last.x, p.y - last.y) * this._scale < 1.1) return;
         this._live.pts.push(p);
         this._draw();
       });
-      const end = () => {
-        if (!this._live) return;
-        if (this._strokes.length < MAX_STROKES) this._strokes.push(this._live);
-        this._live = null;
-        this._undone.length = 0;   // a new mark forks the history
-        this._sync(); this._draw();
+
+      const lift = (e) => {
+        this._pointers.delete(e.pointerId);
+        if (this._pointers.size < 2) {
+          this._gesture = null;
+          c.classList.remove('gesture');
+        }
+        // only commit when the last pointer leaves, and only if it was a stroke
+        if (this._pointers.size === 0 && this._live) {
+          if (this._strokes.length < MAX_STROKES) this._strokes.push(this._live);
+          this._live = null;
+          this._undone.length = 0;
+          this._sync(); this._draw();
+        }
       };
-      c.addEventListener('pointerup', end);
-      c.addEventListener('pointercancel', end);
-      c.addEventListener('pointerleave', end);
+      c.addEventListener('pointerup', lift);
+      c.addEventListener('pointercancel', lift);
 
       const on = (id, fn) => root.getElementById(id).addEventListener('click', fn);
       on('pen', () => this._setTool('pen'));
       on('era', () => this._setTool('era'));
+      on('zin', () => this._zoomCentre(1.25));
+      on('zout', () => this._zoomCentre(1 / 1.25));
       on('undo', () => this.undo());
       on('redo', () => this.redo());
       on('clear', () => this.clear());
-      on('recenter', () => { this._off.x = this._off.y = 0; this._draw(); });
+      on('recenter', () => {
+        this._off.x = this._off.y = 0; this._scale = 1; this._draw();
+      });
 
-      // Ctrl/Cmd+Z / Ctrl+Shift+Z, but only while the pad has the pointer,
-      // so the trainers' own single-key shortcuts keep working.
+      // scoped to hover so the trainers' own single-key shortcuts still work
       this._hot = (e) => {
         if (!this.matches(':hover')) return;
         const k = e.key.toLowerCase();
