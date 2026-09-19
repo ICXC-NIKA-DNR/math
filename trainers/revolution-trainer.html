@@ -121,9 +121,12 @@ button:disabled{opacity:.38;cursor:not-allowed}
 .clockline{margin-left:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;
   color:var(--dim2);letter-spacing:.02em}
 .clockline.warn{color:#E8B75C}.clockline.crit{color:var(--bad)}
-.meters{display:flex;flex-direction:column;gap:9px;
-  border:1px solid var(--rule);background:var(--panel);border-radius:6px;padding:14px 20px}
+.meters{display:flex;flex-direction:column;gap:9px}
 .meters:empty{display:none}
+.console .group:has(.meters:empty){display:none}
+.console details{border:0;background:none;padding:0;margin:0}
+.console details .ref{font-size:12.5px;line-height:1.5}
+.console summary{font-size:12px;color:var(--dim)}
 .meter .mtop{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
 .meter .mtop .nm{color:var(--dim)}
 .meter .mtop .val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:var(--faint)}
@@ -234,6 +237,22 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     <h2>Records</h2>
     <div class="chips"><button class="chip" id="resetBtn">Reset all progress</button></div>
   </div>
+  <div class="group">
+    <h2>By topic</h2>
+    <div class="meters" id="meters"></div>
+  </div>
+  <div class="group">
+    <details>
+  <summary>Setup reference</summary>
+  <div class="ref">
+    <div>Area between curves: <span class="hl">A = ∫<sub>a</sub><sup>b</sup> (top − bottom) dx</span>, or ∫ (right − left) dy.</div>
+    <div>Disk: <span class="hl">V = π ∫ [R]² d(var)</span>, slices perpendicular to the axis, no gap.</div>
+    <div>Washer: <span class="hl">V = π ∫ ([R<sub>out</sub>]² − [R<sub>in</sub>]²) d(var)</span>, radii measured from the axis.</div>
+    <div>Shell: <span class="hl">V = 2π ∫ (radius)(height) d(var)</span>, slices parallel to the axis.</div>
+    <div>Slices ⟂ to the axis ⇒ disk/washer. Slices ∥ to the axis ⇒ shells. Rotating about a vertical line: disks want dy, shells want dx.</div>
+  </div>
+</details>
+  </div>
 </div>
   </aside>
 
@@ -271,19 +290,6 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   <div><b id="sBest">0</b>best streak</div>
   <div><b id="sTime">—</b>median time</div>
 </div>
-<div class="meters" id="meters"></div>
-
-<details>
-  <summary>Setup reference</summary>
-  <div class="ref">
-    <div>Area between curves: <span class="hl">A = ∫<sub>a</sub><sup>b</sup> (top − bottom) dx</span>, or ∫ (right − left) dy.</div>
-    <div>Disk: <span class="hl">V = π ∫ [R]² d(var)</span>, slices perpendicular to the axis, no gap.</div>
-    <div>Washer: <span class="hl">V = π ∫ ([R<sub>out</sub>]² − [R<sub>in</sub>]²) d(var)</span>, radii measured from the axis.</div>
-    <div>Shell: <span class="hl">V = 2π ∫ (radius)(height) d(var)</span>, slices parallel to the axis.</div>
-    <div>Slices ⟂ to the axis ⇒ disk/washer. Slices ∥ to the axis ⇒ shells. Rotating about a vertical line: disks want dy, shells want dx.</div>
-  </div>
-</details>
-
     <scratch-pad accent="#C2483B" height="330"></scratch-pad>
   </main>
 </div>
