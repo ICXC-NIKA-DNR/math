@@ -35,8 +35,8 @@
   color:var(--sp-dim,#A0A0A0);
 }
 .bar{
-  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
-  padding:9px 12px; border-bottom:1px solid var(--sp-rule2,#1E1E1E);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  padding:9px 11px; border-bottom:1px solid var(--sp-rule2,#1E1E1E);
   background:var(--sp-panel2,#141414);
 }
 .ttl{ font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
@@ -44,10 +44,10 @@
 .sp{ flex:1 }
 .zoom{ display:flex; align-items:center; gap:4px; }
 .zoom .pct{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11px;
-  color:var(--sp-faint,#666); min-width:38px; text-align:center;
+  color:var(--sp-faint,#666); min-width:34px; text-align:center;
   font-variant-numeric:tabular-nums; }
 button{
-  font:inherit; font-size:12px; padding:5px 10px; border-radius:5px; cursor:pointer;
+  font:inherit; font-size:12px; padding:5px 9px; border-radius:5px; cursor:pointer;
   border:1px solid var(--sp-rule,#242424); background:transparent;
   color:var(--sp-dim,#A0A0A0); transition:color .15s,border-color .15s,background .15s;
 }
@@ -56,6 +56,20 @@ button:disabled{ opacity:.32; cursor:not-allowed; }
 button.on{ border-color:var(--sp-accent); color:var(--sp-accent);
   background:color-mix(in srgb, var(--sp-accent) 12%, transparent); }
 button.sq{ padding:5px 9px; font-family:ui-monospace,Menlo,Consolas,monospace; }
+.size{ display:flex; align-items:center; gap:6px; }
+.size .px{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11px;
+  color:var(--sp-faint,#666); min-width:22px; text-align:right;
+  font-variant-numeric:tabular-nums; }
+input[type=range]{ -webkit-appearance:none; appearance:none; width:58px; height:16px;
+  background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track{ height:3px; border-radius:2px;
+  background:var(--sp-rule,#242424); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px;
+  border-radius:50%; background:var(--sp-accent); margin-top:-4px; }
+input[type=range]::-moz-range-track{ height:3px; border-radius:2px;
+  background:var(--sp-rule,#242424); }
+input[type=range]::-moz-range-thumb{ width:11px; height:11px; border:0; border-radius:50%;
+  background:var(--sp-accent); }
 .stage{ position:relative; }
 canvas{ display:block; width:100%; touch-action:none; cursor:crosshair;
   -webkit-user-select:none; user-select:none; }
@@ -87,6 +101,11 @@ canvas.gesture{ cursor:grabbing; }
             <span class="ttl">Scratch paper</span>
             <button id="pen" class="on" title="Draw">Pen</button>
             <button id="era" title="Erase">Eraser</button>
+            <span class="size">
+              <input type="range" id="size" min="1" max="24" step="1" value="2"
+                     title="Line thickness" aria-label="Line thickness">
+              <span class="px" id="sizepx">2px</span>
+            </span>
             <span class="sp"></span>
             <span class="zoom">
               <button id="zout" class="sq" title="Zoom out">&minus;</button>
@@ -112,6 +131,7 @@ canvas.gesture{ cursor:grabbing; }
       this._off = { x: 0, y: 0 };   // world coord at the viewport's top-left
       this._scale = 1;
       this._tool = 'pen';
+      this._size = { pen: 2, era: 16 };   // screen px, not world units
       this._dpr = 1;
       this._pointers = new Map();   // active pointers, for multi-touch gestures
       this._gesture = null;         // {dist, mid} from the previous move
@@ -211,11 +231,11 @@ canvas.gesture{ cursor:grabbing; }
         if (s.pts.length < 2) {
           ctx.fillStyle = s.color;
           ctx.beginPath();
-          ctx.arc(s.pts[0].x, s.pts[0].y, s.width / 2, 0, Math.PI * 2);
+          ctx.arc(s.pts[0].x, s.pts[0].y, s.width / (2 * k), 0, Math.PI * 2);
           ctx.fill();
           continue;
         }
-        ctx.strokeStyle = s.color; ctx.lineWidth = s.width;
+        ctx.strokeStyle = s.color; ctx.lineWidth = s.width / k;
         ctx.beginPath();
         ctx.moveTo(s.pts[0].x, s.pts[0].y);
         for (let i = 1; i < s.pts.length; i++) ctx.lineTo(s.pts[i].x, s.pts[i].y);
@@ -307,8 +327,9 @@ canvas.gesture{ cursor:grabbing; }
         this._live = {
           pts: [p],
           color: this._tool === 'era' ? '#0C0C0C' : this._accent,
-          // keep the nib a constant size on screen whatever the zoom
-          width: (this._tool === 'era' ? 16 : 2) / this._scale,
+          // screen px; divided by the zoom at paint time so a line keeps the
+          // same on-screen thickness no matter what zoom it was drawn at
+          width: this._size[this._tool],
         };
         this._draw();
       });
@@ -346,6 +367,11 @@ canvas.gesture{ cursor:grabbing; }
       const on = (id, fn) => root.getElementById(id).addEventListener('click', fn);
       on('pen', () => this._setTool('pen'));
       on('era', () => this._setTool('era'));
+      const size = root.getElementById('size');
+      size.addEventListener('input', () => {
+        this._size[this._tool] = +size.value;
+        root.getElementById('sizepx').textContent = size.value + 'px';
+      });
       on('zin', () => this._zoomCentre(1.25));
       on('zout', () => this._zoomCentre(1 / 1.25));
       on('undo', () => this.undo());
@@ -369,6 +395,9 @@ canvas.gesture{ cursor:grabbing; }
 
     _setTool(t) {
       this._tool = t;
+      const size = this.shadowRoot.getElementById('size');
+      size.value = this._size[t];
+      this.shadowRoot.getElementById('sizepx').textContent = this._size[t] + 'px';
       this.shadowRoot.getElementById('pen').classList.toggle('on', t === 'pen');
       this.shadowRoot.getElementById('era').classList.toggle('on', t === 'era');
     }
