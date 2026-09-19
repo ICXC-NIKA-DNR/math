@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Surfaces — cones, zones, perfect squares, parametric and polar</title>
+<style>
+:root{
+  /* Base tokens are shared with the rest of the site so the pages read as one product. */
+  --bg:#080808; --panel:#111111; --rule:#242424; --rule2:#1E1E1E;
+  --tx:#F4F4F4; --dim:#A0A0A0; --dim2:#8A8A8A; --faint:#666666;
+
+  /* Orchid ramp — this trainer's identity. */
+  --a0:#3A1E3E;
+  --a1:#7A3F82; --a2:#C87BD0; --a3:#E6B8EB;
+  --a1b:#1C0F1E; --a2b:#241326; --a3b:#2E182F;
+  --a1t:#D49FDA; --a2t:#E4C0E8; --a3t:#F2DCF4;
+
+  --axis:#D08AD8;          /* the curve / interval rule */
+  --good:#7CCBA6;
+  --bad:#F09E92;
+
+  --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);
+  background-image:linear-gradient(rgba(188,140,196,.05) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(188,140,196,.05) 1px, transparent 1px);
+  background-size:28px 28px;
+  background-position:-1px -1px;
+  color:var(--tx);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 24px 56px}
+
+.home-link{display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;
+  font:500 12.5px/1 var(--sans);letter-spacing:.02em;color:var(--dim);text-decoration:none;
+  border:1px solid var(--rule);padding:7px 12px;border-radius:999px;background:none;
+  transition:color .15s,border-color .15s,background .15s}
+.home-link:hover{color:var(--a3t);border-color:var(--a2);background:var(--a1b)}
+
+header{border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:24px}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;color:var(--tx)}
+header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:66ch}
+
+/* ── console left, stage right — the shape every trainer uses ─────────── */
+.grid{display:grid;grid-template-columns:268px minmax(0,1fr);gap:22px;align-items:start}
+.console{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;
+  overscroll-behavior:contain;scrollbar-width:thin;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:16px 18px}
+.stage{display:flex;flex-direction:column;gap:16px;min-width:0}
+.stage > *{margin:0}
+.controls{display:flex;flex-direction:column;gap:20px;align-items:stretch}
+.controls .chips{gap:6px}
+.console .group h2{margin-bottom:8px}
+.console #clocks{align-items:center}
+@media (max-width:860px){
+  .grid{grid-template-columns:1fr}
+  .console{position:static;max-height:none}
+}
+.group{display:flex;flex-direction:column;gap:8px}
+.group h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:400;
+  color:var(--faint);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:13px;height:34px;padding:0 14px;border:1px solid var(--a0);
+  background:none;color:var(--faint);cursor:pointer;border-radius:17px;
+  transition:color .15s,border-color .15s,background .15s}
+.chip:hover{color:var(--a2t);border-color:var(--a1)}
+.chip[aria-pressed="true"]{background:var(--a3b);border-color:var(--a3);color:var(--a3t)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+
+/* ── problem card ────────────────────────────────────────────── */
+.problem{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:0;position:relative;overflow:hidden}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  border-bottom:1px solid var(--rule2);padding:10px 18px;font-size:12px;color:var(--faint)}
+.meta .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--a2t)}
+.body{padding:20px 18px 18px;position:relative}
+.stem{font-family:var(--serif);font-size:1.12rem;line-height:1.6;margin:0 0 .5em;
+  max-width:66ch;color:var(--tx)}
+.ask{font-family:var(--serif);font-size:1.12rem;margin:0;color:var(--tx)}
+
+/* the axis of revolution, drawn as a machinist's centreline */
+.axisline{margin:16px 0 4px;display:flex;align-items:center;gap:10px;color:var(--axis);font-size:12px}
+.axisline .line{flex:1;height:0;border-top:1.5px dashed var(--axis)}
+.axisline.vert{align-items:stretch;gap:10px}
+.axisline.vert .line{border-top:none;border-left:1.5px dashed var(--axis);flex:none;width:0;min-height:22px}
+
+/* ── answer row ──────────────────────────────────────────────── */
+.answer{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 6px}
+input[type=text]{font-family:var(--serif);font-size:1.02rem;padding:9px 12px;
+  border:1px solid var(--rule);background:var(--bg);color:var(--tx);
+  width:min(320px,100%);border-radius:4px}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus{border-color:var(--a2);outline:none}
+button{font:inherit;font-size:13px;padding:9px 16px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--a3);background:var(--a3b);color:var(--a3t);
+  transition:border-color .15s,background .15s,color .15s}
+button:hover:enabled{background:var(--a2b);border-color:var(--a3)}
+button.ghost{background:none;color:var(--dim);border-color:var(--rule)}
+button.ghost:hover:enabled{color:var(--tx);border-color:var(--a1);background:var(--a1b)}
+button:disabled{opacity:.38;cursor:not-allowed}
+.hintnote{font-size:12.5px;color:var(--faint);margin:0}
+.pal{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0}
+.pal button{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;padding:5px 9px;
+  border-radius:4px;border:1px solid var(--rule2);background:var(--panel);color:var(--dim);
+  cursor:pointer}
+.pal button:hover{color:var(--a3t);border-color:var(--a1)}
+.clockline{margin-left:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;
+  color:var(--dim2);letter-spacing:.02em}
+.clockline.warn{color:#E8B75C}.clockline.crit{color:var(--bad)}
+.meters{display:flex;flex-direction:column;gap:9px}
+.meters:empty{display:none}
+.console .group:has(.meters:empty){display:none}
+.console details{border:0;background:none;padding:0;margin:0}
+.console details .ref{font-size:12.5px;line-height:1.5}
+.console summary{font-size:12px;color:var(--dim)}
+.meter .mtop{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
+.meter .mtop .nm{color:var(--dim)}
+.meter .mtop .val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:var(--faint)}
+.track{height:4px;background:var(--rule2);border-radius:9px;overflow:hidden}
+.fill{height:100%;border-radius:9px;background:var(--a2);transition:width .35s ease}
+
+.verdict{font-family:var(--serif);font-size:1.02rem;margin:12px 0 0;padding-left:12px;
+  border-left:3px solid transparent}
+.verdict.ok{border-color:var(--good);color:var(--good)}
+.verdict.no{border-color:var(--bad);color:var(--bad)}
+
+/* ── worked solution ─────────────────────────────────────────── */
+.work{border-top:1px solid var(--rule2);margin-top:18px;padding-top:14px}
+.work ol{margin:0;padding-left:1.25em}
+.work li{margin:.55em 0;font-family:var(--serif);font-size:1rem;color:var(--tx)}
+.work li::marker{color:var(--faint)}
+.work li .label{font-family:var(--sans);font-size:11.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint);display:block}
+
+.stats{display:flex;flex-wrap:wrap;gap:34px;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;padding:16px 20px;
+  font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.stats b{display:block;font-family:var(--serif);font-size:1.5rem;font-weight:400;
+  color:var(--tx);letter-spacing:0;text-transform:none}
+
+details{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:12px 16px;margin-top:22px}
+summary{cursor:pointer;font-size:13px;color:var(--dim)}
+summary:hover{color:var(--tx)}
+details .ref{font-family:var(--serif);font-size:1rem;color:var(--dim2)}
+details .ref div{margin:.5em 0}
+
+/* ── math bits — the shared typographic vocabulary ───────────── */
+.fr{display:inline-flex;flex-direction:column;vertical-align:-0.42em;text-align:center;line-height:1.1;font-size:.86em}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em}
+.fr>span:last-child{padding:0 .2em}
+.itg{font-size:1.6em;line-height:0;vertical-align:-.28em;font-family:var(--serif)}
+.lims{display:inline-flex;flex-direction:column;font-size:.52em;line-height:1.05;vertical-align:.1em;margin:0 .25em 0 1px}
+.rad{border-top:1px solid currentColor;padding:0 .12em}
+i{font-family:var(--serif);font-style:italic}
+sup,sub{font-size:.68em}
+.hl{color:var(--a3)}
+
+@media (max-width:520px){
+  .wrap{padding:18px 16px 44px}
+  h1{font-size:22px}
+  .controls{gap:14px}
+}
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #C87BD0 0%, transparent 68%);
+  opacity:.16}
+.wrap{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="home-link" href="../index.html">&#8592; all trainers</a>
+
+<header>
+  <h1>Surfaces</h1>
+  <p>Randomly generated Calculus II surface-of-revolution problems. Every one is an arc-length integrand carrying a radius: <b>S = 2π ∫ (radius) ds</b>. Cones and frustums, spherical zones, the perfect-square family, u-substitution, catenoids, parametric and polar curves. Type an exact answer like <code>15pi</code>, <code>32pi/5</code> or <code>pi(10sqrt(10)-1)/27</code>, or a decimal.</p>
+</header>
+
+<div class="grid">
+  <aside class="console">
+<div class="controls">
+  <div class="group">
+    <h2>Techniques</h2>
+    <div class="chips" id="topics">
+      <button class="chip" data-topic="cone"   aria-pressed="true">Cone &amp; frustum</button>
+      <button class="chip" data-topic="sphere" aria-pressed="true">Sphere &amp; zones</button>
+      <button class="chip" data-topic="psq"    aria-pressed="true">Perfect square</button>
+      <button class="chip" data-topic="usub"   aria-pressed="true">u-substitution</button>
+      <button class="chip" data-topic="hyp"    aria-pressed="true">Hyperbolic</button>
+      <button class="chip" data-topic="param"  aria-pressed="true">Parametric</button>
+      <button class="chip" data-topic="polar"  aria-pressed="true">Polar</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Difficulty</h2>
+    <div class="chips" id="diffs">
+      <button class="chip" data-diff="1">Easy</button>
+      <button class="chip" data-diff="2">Medium</button>
+      <button class="chip" data-diff="3">Hard</button>
+      <button class="chip" data-diff="mix" aria-pressed="true">Mixed</button>
+      <button class="chip" data-diff="ramp">Ramp up</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Mode</h2>
+    <div class="chips" id="modes">
+      <button class="chip" data-mode="exam">Exam mode</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Clock</h2>
+    <div class="chips" id="clocks">
+      <button class="chip" data-clock="off" aria-pressed="true">Off</button>
+      <button class="chip" data-clock="up">Stopwatch</button>
+      <button class="chip" data-clock="down">Countdown</button>
+      <input type="number" id="clockSecs" min="15" max="900" step="15" value="180"
+             aria-label="Seconds per problem"
+             style="width:70px;padding:6px 8px;border-radius:4px;border:1px solid var(--rule);
+                    background:var(--bg);color:var(--tx);font:inherit;font-size:13px">
+    </div>
+  </div>
+  <div class="group">
+    <h2>Records</h2>
+    <div class="chips"><button class="chip" id="resetBtn">Reset all progress</button></div>
+  </div>
+  <div class="group">
+    <h2>By technique</h2>
+    <div class="meters" id="meters"></div>
+  </div>
+  <div class="group">
+    <details>
+  <summary>Setup reference</summary>
+  <div class="ref">
+    <div>About the x-axis: <span class="hl">S = ∫<sub>a</sub><sup>b</sup> 2π<i>y</i> ds</span>. About the y-axis: <span class="hl">S = ∫ 2π<i>x</i> ds</span>. The radius is the distance from the strip to the axis — nothing else changes.</div>
+    <div>ds is the arc-length element: √<span class="rad">1 + [<i>y′</i>]²</span> <i>dx</i>, or √<span class="rad">[<i>x′</i>]² + [<i>y′</i>]²</span> <i>dt</i>, or √<span class="rad"><i>r</i>² + [<i>dr/dθ</i>]²</span> <i>dθ</i>.</div>
+    <div>Polar about the polar axis: the radius is <span class="hl"><i>y</i> = <i>r</i> sin θ</span>.</div>
+    <div>Archimedes' hat-box: for a sphere <i>y</i>·ds = <i>R dx</i> exactly, so a zone's area is <span class="hl">2π<i>R</i>·(width along the axis)</span> — independent of where the zone sits.</div>
+    <div>Perfect-square family: when 1 + [<i>y′</i>]² collapses to a square, radius × ds is an ordinary polynomial and the whole integral is exact.</div>
+    <div>Checks worth keeping: cone π<i>Rl</i> · frustum π(<i>R</i><sub>1</sub>+<i>R</i><sub>2</sub>)<i>l</i> · sphere 4π<i>R</i>² · torus 4π²<i>Rr</i>.</div>
+  </div>
+</details>
+  </div>
+</div>
+  </aside>
+
+  <main class="stage">
+<section class="problem">
+  <div class="meta">
+    <span><span class="tag" id="tagMethod">—</span> <span id="tagDiff"></span></span>
+    <span id="tagCount">Problem 1</span>
+    <span class="clockline" id="clockOut" hidden>00:00</span>
+  </div>
+  <div class="body">
+    <p class="stem" id="stem"></p>
+    <p class="ask" id="ask"></p>
+    <div class="axisline" id="axisline"><span class="line"></span><span id="axisLabel"></span><span class="line"></span></div>
+
+    <div class="answer">
+      <input type="text" id="input" placeholder="e.g. 15pi or pi(10sqrt(10)-1)/27" autocomplete="off" spellcheck="false" aria-label="Your answer">
+      <button id="check">Check answer</button>
+      <button class="ghost" id="hint">Show setup</button>
+      <button class="ghost" id="solve">Show solution</button>
+      <button class="ghost" id="next">Next problem</button>
+    </div>
+    <div class="pal" id="pal"></div>
+    <p class="hintnote" id="timer"></p>
+    <p class="verdict" id="verdict" hidden></p>
+    <div class="work" id="work" hidden></div>
+  </div>
+</section>
+
+<div class="stats">
+  <div><b id="sAtt">0</b>attempted</div>
+  <div><b id="sCor">0</b>solved</div>
+  <div><b id="sPct">—</b>accuracy</div>
+  <div><b id="sStreak">0</b>streak</div>
+  <div><b id="sBest">0</b>best streak</div>
+  <div><b id="sTime">—</b>median time</div>
+</div>
+    <scratch-pad accent="#C87BD0" height="330"></scratch-pad>
+  </main>
+</div>
+
+</div>
+
+<script src="../shared/calc-engine.js"></script>
+<script>
+"use strict";
+const {f,ZERO,ONE,T,conj,pdef,pdefL,pmul,padd,psub,psq,pk,pnorm,pint,pintL,pev,pscale,
+       ratPow,fsqrt,fmtPoly,fmtLim,fmtCoef,fmtExact,terms,intHTML,RAD,SQ,
+       ri,pick,pickTwo,TRIPLES,evalNum,sameNum} = CALC;
+
+/* ============================ shared shorthands ============================ */
+const St=(label,html)=>({label,html});
+const TH="<i>θ</i>";
+const V=v=>"<i>"+v+"</i>";
+const iv=(v,a,b)=>V(v)+" = "+a+" to "+V(v)+" = "+b;
+const cf=q=>q.eqInt(1)?"":fmtLim(q);      /* a unit coefficient should not print */
+const DSX=v=>RAD("1 + [<i>d"+(v==="x"?"y/dx":"x/dy")+"</i>]<sup>2</sup>");
+
+/* √n in lowest terms */
+function simpRad(n){
+  let out=1,inn=n;
+  for(let k=2;k*k<=inn;k++){ while(inn%(k*k)===0){ out*=k; inn/=k*k; } }
+  return {out:out,inn:inn};
+}
+function radHTML(c,n){                      /* c·√n, lowest terms, c=1 vanishes */
+  const r=simpRad(n), lead=c*r.out;
+  if(r.inn===1) return String(lead);
+  return (lead===1?"":String(lead))+RAD(String(r.inn));
+}
+const pow32HTML=n=>radHTML(n,n);            /* n^{3/2} = n·√n */
+
+/* The surface integral, by what is being revolved about what. The radius is
+   the only thing that changes — ds is exactly the arc-length integrand. */
+const FORMULA={
+  x:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>y</i> "+DSX("x"),"x")+" &nbsp;— the radius of a band is its height above the axis",
+  y:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>x</i> "+DSX("x"),"x")+" &nbsp;— about a vertical axis the radius is <i>x</i>",
+  ydy:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>x</i> "+DSX("y"),"y")+" &nbsp;— the curve is written x = g(y)",
+  t:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>y</i> "+RAD("[<i>x′</i>(t)]<sup>2</sup> + [<i>y′</i>(t)]<sup>2</sup>"),"t"),
+  tY:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>x</i> "+RAD("[<i>x′</i>(t)]<sup>2</sup> + [<i>y′</i>(t)]<sup>2</sup>"),"t"),
+  r:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>r</i> sin "+TH+" "+RAD("<i>r</i><sup>2</sup> + [<i>dr/dθ</i>]<sup>2</sup>"),"θ")
+             +" &nbsp;— the distance to the polar axis is <i>y</i> = <i>r</i> sin "+TH
+};
+
+function P(o){
+  o.ask = o.ask || "Find the exact area of the surface.";
+  o.setup=[
+    St("Surface area formula", FORMULA[o.kind](o.loL,o.hiL)),
+    St("Radius", o.radius),
+    St(o.dLabel||"Build ds", o.d),
+    St("Set up the integral", "S = "+intHTML(o.loL,o.hiL,"2π"+o.body,o.v))
+  ];
+  o.solve=(o.extra||[]).concat([
+    St("Antidifferentiate", o.anti),
+    St("Evaluate", "S = <b>"+o.exact+"</b> ≈ "+o.value.toFixed(4))
+  ]);
+  return o;
+}
+
+/* When radius·ds is a polynomial the engine finishes the job exactly — this is
+   the same pdefL that Arc Length uses, with the 2π carried outside. */
+function polyFinishS(o){
+  const IL=pintL(o.intPoly), hasLog=!IL.lg.isZero();
+  const lnA=o.lo.eqInt(1)?fmtLim(o.hi):"("+fmtLim(o.hi)+"/"+fmtLim(o.lo)+")";
+  o.anti="2π[ "+fmtPoly(IL.P,o.v)
+        +(hasLog?" + "+fmtCoef(IL.lg,"&thinsp;ln "+V(o.v)):"")
+        +" ]<sub>"+o.loL+"</sub><sup>"+o.hiL+"</sup>";
+  const d=pdefL(o.intPoly,o.lo,o.hi);
+  o.value=2*Math.PI*d.value;
+  o.exact=hasLog
+    ? "2π("+terms([{q:d.rat,sym:""},{q:d.lg,sym:"&thinsp;ln "+lnA}])+")"
+    : fmtExact(d.rat.mul(f(2)),true);
+  return o;
+}
+
+/* ============================ problem templates ============================ */
+
+/* The conjugate family again — identical construction to Arc Length, only the
+   integrand gains a radius. p = 2 about the y-axis produces an x^-1 term, so
+   these surfaces can carry a logarithm. */
+function conjSurface(id,diff,pOpts,aOpts,limitPool,about){
+  return {id:id,topic:"psq",diff:diff,gen(){
+    const c=conj(pick(aOpts),pick(pOpts));
+    const [lo,hi]=pickTwo(limitPool).map(n=>f(n));
+    const dH=fmtPoly(c.dy,"x"), dsH="("+fmtPoly(c.ds,"x")+")";
+    const yH=fmtPoly(c.y,"x");
+    const rad = about==="x" ? V("y")+" = "+yH : V("x");
+    const intPoly = about==="x" ? pmul(c.y,c.ds) : pmul([T(1,1)],c.ds);
+    const bodyH = about==="x" ? "("+yH+")"+dsH : V("x")+dsH;
+    return P(polyFinishS({kind:about==="x"?"x":"y", v:"x", lo:lo, hi:hi,
+      loL:fmtLim(lo), hiL:fmtLim(hi),
+      stem:"The arc <span class='hl'><i>y</i> = "+yH+"</span> on "+iv("x",fmtLim(lo),fmtLim(hi))
+        +" is revolved about the <span class='hl'>"+(about==="x"?"x":"y")+"-axis</span>.",
+      axis:{t:about==="x"?"h":"v",label:"axis of revolution:  "+(about==="x"?"y = 0":"x = 0")},
+      radius:rad+".",
+      d:V("y′")+" = "+dH+", and the cross terms cancel so 1 + ["+V("y′")+"]<sup>2</sup> = "
+        +fmtPoly(psq(c.ds),"x")+" = "+dsH+"<sup>2</sup>. Hence ds = "+dsH+" <i>dx</i>"
+        +" — a polynomial, which is the whole point of this family.",
+      body:bodyH, intPoly:intPoly}));
+  }};
+}
+
+const TEMPLATES=[
+
+/* ---------------- CONE & FRUSTUM ---------------- */
+{id:"C1",topic:"cone",diff:1,gen(){
+  const [p,q,r]=pick(TRIPLES), b=q*ri(1,3);
+  const m=f(p,q), mH=fmtLim(m), sH=fmtLim(f(r,q));
+  const R=f(p*b,q), L=f(r*b,q);
+  return P(polyFinishS({kind:"x", v:"x", lo:ZERO, hi:f(b), loL:"0", hiL:String(b),
+    stem:"The segment <span class='hl'><i>y</i> = "+mH+V("x")+"</span> on "+iv("x","0",String(b))
+      +" is revolved about the <span class='hl'>x-axis</span>, sweeping out a cone.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+mH+V("x")+".",
+    d:V("y′")+" = "+mH+", so 1 + ["+V("y′")+"]<sup>2</sup> = "+fmtLim(f(r*r,q*q))
+      +" and ds = "+sH+" <i>dx</i>. (A "+p+"–"+q+"–"+r+" triple keeps the slant rational.)",
+    body:"("+mH+V("x")+")("+sH+")",
+    intPoly:pmul([T(m,1)],[T(f(r,q),0)]),
+    extra:[St("Sanity check","The cone has base radius "+fmtLim(R)+" and slant height "+fmtLim(L)
+      +", and the lateral area formula π<i>Rl</i> gives the same number.")]}));
+}},
+
+{id:"C2",topic:"cone",diff:2,gen(){
+  const [p,q,r]=pick(TRIPLES), c=ri(1,4), a=q*ri(0,1), b=a+q*ri(1,3);
+  const m=f(p,q), mH=fmtLim(m), sH=fmtLim(f(r,q));
+  const yH=mH+V("x")+" + "+c;
+  return P(polyFinishS({kind:"x", v:"x", lo:f(a), hi:f(b), loL:String(a), hiL:String(b),
+    stem:"The segment <span class='hl'><i>y</i> = "+yH+"</span> on "+iv("x",String(a),String(b))
+      +" is revolved about the <span class='hl'>x-axis</span>, sweeping out a frustum.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+yH+" — the intercept lifts the whole band away from the axis.",
+    d:V("y′")+" = "+mH+", so ds = "+sH+" <i>dx</i>, constant along the segment.",
+    body:"("+yH+")("+sH+")",
+    intPoly:pmul([T(m,1),T(c,0)],[T(f(r,q),0)]),
+    extra:[St("Sanity check","A frustum's lateral area is π(<i>R</i><sub>1</sub> + <i>R</i><sub>2</sub>)<i>l</i>: "
+      +"the average radius times the slant, times 2π.")]}));
+}},
+
+{id:"C3",topic:"cone",diff:2,gen(){
+  const [p,q,r]=pick(TRIPLES), c=ri(1,4), a=q*ri(0,1), b=a+q*ri(1,3);
+  const m=f(p,q), mH=fmtLim(m), sH=fmtLim(f(r,q));
+  const yH=mH+V("x")+" + "+c;
+  return P(polyFinishS({kind:"y", v:"x", lo:f(a), hi:f(b), loL:String(a), hiL:String(b),
+    stem:"The segment <span class='hl'><i>y</i> = "+yH+"</span> on "+iv("x",String(a),String(b))
+      +" is revolved about the <span class='hl'>y-axis</span>.",
+    axis:{t:"v",label:"axis of revolution:  x = 0"},
+    radius:V("x")+" — measured horizontally to the vertical axis, so the height of the line never enters.",
+    d:V("y′")+" = "+mH+", so ds = "+sH+" <i>dx</i>.",
+    body:V("x")+"("+sH+")",
+    intPoly:pmul([T(1,1)],[T(f(r,q),0)]),
+    extra:[St("Notice what dropped out","The intercept "+c+" does not appear anywhere in the answer. "
+      +"Revolving about a vertical axis, only the horizontal distance matters.")]}));
+}},
+
+/* ---------------- SPHERE & ZONES ---------------- */
+{id:"S1",topic:"sphere",diff:1,gen(){
+  const R=ri(2,6);
+  const CASES=[
+    {a:-R,b:R,what:"the whole sphere",note:"the full sphere, 4π<i>R</i><sup>2</sup>"},
+    {a:0,b:R,what:"a hemisphere",note:"exactly half the sphere"},
+    {a:0,b:ri(1,R-1),what:"a cap",note:"a spherical cap"},
+    {a:-ri(1,R-1),b:ri(1,R-1),what:"a zone",note:"a zone between two parallel planes"}
+  ];
+  const C=pick(CASES);
+  const diff=f(C.b-C.a);
+  return P(polyFinishS({kind:"x", v:"x", lo:f(C.a), hi:f(C.b), loL:String(C.a), hiL:String(C.b),
+    stem:"The arc <span class='hl'><i>y</i> = "+RAD(R*R+" − <i>x</i><sup>2</sup>")+"</span> on "
+      +iv("x",String(C.a),String(C.b))+" is revolved about the <span class='hl'>x-axis</span>, giving "+C.what+".",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+RAD(R*R+" − <i>x</i><sup>2</sup>")+".",
+    d:V("y′")+" = <span class='fr'><span>−"+V("x")+"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")+"</span></span>, so "
+      +"1 + ["+V("y′")+"]<sup>2</sup> = <span class='fr'><span>"+(R*R)+"</span><span>"+(R*R)+" − "+V("x")+"<sup>2</sup></span></span>"
+      +" and ds = <span class='fr'><span>"+R+"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")+"</span></span> <i>dx</i>."
+      +" Multiplying by the radius, <i>y</i>·ds = "+RAD(R*R+" − <i>x</i><sup>2</sup>")+" · <span class='fr'><span>"+R
+      +"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")+"</span></span> = "+R+" — the radical cancels outright.",
+    body:String(R),
+    intPoly:[T(R,0)],
+    extra:[St("Archimedes' hat-box theorem","The radical cancels completely: the integrand is the constant "+R+". "
+      +"So the area of a zone depends only on its width along the axis, not on where it sits — "
+      +"a sphere and its circumscribing cylinder have equal band areas. Here: "+C.note+".")]}));
+}},
+
+{id:"S2",topic:"sphere",diff:2,gen(){
+  const R=ri(2,6), a=ri(0,R-2), b=a+ri(1,R-a);
+  return P(polyFinishS({kind:"ydy", v:"y", lo:f(a), hi:f(b), loL:String(a), hiL:String(b),
+    stem:"The arc <span class='hl'><i>x</i> = "+RAD(R*R+" − <i>y</i><sup>2</sup>")+"</span> on "
+      +iv("y",String(a),String(b))+" is revolved about the <span class='hl'>y-axis</span>.",
+    axis:{t:"v",label:"axis of revolution:  x = 0"},
+    radius:V("x")+" = "+RAD(R*R+" − <i>y</i><sup>2</sup>")+" — the same curve, turned on its side.",
+    dLabel:"Build ds in y",
+    d:V("dx/dy")+" = <span class='fr'><span>−"+V("y")+"</span><span>"+RAD(R*R+" − "+V("y")+"<sup>2</sup>")+"</span></span>, so "
+      +"ds = <span class='fr'><span>"+R+"</span><span>"+RAD(R*R+" − "+V("y")+"<sup>2</sup>")+"</span></span> <i>dy</i>, and again the radical cancels.",
+    body:String(R),
+    intPoly:[T(R,0)],
+    extra:[St("Same theorem, other axis","2π<i>R</i> times the width of the band, whichever way you orient it.")]}));
+}},
+
+/* ---------------- u-SUBSTITUTION ---------------- */
+{id:"U1",topic:"usub",diff:2,gen(){
+  const c=pick([1,4,9]), sc=Math.sqrt(c);
+  const XS={1:[0,2,6,12,20],4:[0,3,8,15],9:[0,4,10,18]};
+  const [x0,x1]=pickTwo(XS[c]);
+  const s0=Math.sqrt(4*x0+c), s1=Math.sqrt(4*x1+c);
+  const val=f(sc*(s1*s1*s1-s0*s0*s0),6);
+  const cH=c===1?"":String(c);
+  return P({kind:"x", v:"x", lo:f(x0), hi:f(x1), loL:String(x0), hiL:String(x1),
+    stem:"The arc <span class='hl'><i>y</i> = "+RAD(cH+"<i>x</i>")+"</span> on "+iv("x",String(x0),String(x1))
+      +" is revolved about the <span class='hl'>x-axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+RAD(cH+"<i>x</i>")+".",
+    d:V("y′")+" = <span class='fr'><span>"+(sc===1?"1":String(sc))+"</span><span>2"+RAD(V("x"))+"</span></span>, so 1 + ["+V("y′")+"]<sup>2</sup> = "
+      +"<span class='fr'><span>4"+V("x")+" + "+c+"</span><span>4"+V("x")+"</span></span> and ds = "
+      +"<span class='fr'><span>"+RAD("4"+V("x")+" + "+c)+"</span><span>2"+RAD(V("x"))+"</span></span> <i>dx</i>.",
+    body:"<span class='fr'><span>"+(sc===1?"":String(sc))+RAD("4"+V("x")+" + "+c)+"</span><span>2</span></span>",
+    extra:[St("Watch the root cancel",
+      RAD(cH+V("x"))+" ÷ 2"+RAD(V("x"))+" leaves "+fmtLim(f(sc,2))+" — the awkward part of the radical disappears "
+      +"before you integrate anything, which is what makes "+V("y")+" = "+RAD(cH+V("x"))+" a friendly surface.")],
+    anti:fmtCoef(f(sc,6),"π")+"[ (4"+V("x")+" + "+c+")<sup>3/2</sup> ]<sub>"+x0+"</sub><sup>"+x1+"</sup>",
+    exact:fmtCoef(val,"π"), value:Math.PI*val.num()});
+}},
+
+{id:"U2",topic:"usub",diff:2,gen(){
+  const c=pick([f(1,2),ONE,f(2)]), b=ri(1,3);
+  const k=f(4).mul(c).mul(c);                    /* 1 + k x² under the radical */
+  const inner=1+k.num()*b*b;
+  const q=ONE.div(f(6).mul(c).mul(c));           /* the π coefficient out front */
+  const val=q.num()*Math.PI*(Math.pow(inner,1.5)-1);
+  const kH=cf(k), cH=cf(c);
+  return P({kind:"y", v:"x", lo:ZERO, hi:f(b), loL:"0", hiL:String(b),
+    stem:"The arc <span class='hl'><i>y</i> = "+cH+"<i>x</i><sup>2</sup></span> on "+iv("x","0",String(b))
+      +" is revolved about the <span class='hl'>y-axis</span>.",
+    axis:{t:"v",label:"axis of revolution:  x = 0"},
+    radius:V("x")+" — about a vertical axis, so the parabola's height is not the radius.",
+    d:V("y′")+" = "+cf(c.mul(f(2)))+V("x")+", so ds = "+RAD("1 + "+kH+V("x")+"<sup>2</sup>")+" <i>dx</i>.",
+    body:V("x")+RAD("1 + "+kH+V("x")+"<sup>2</sup>"),
+    extra:[St("Why this one works","The stray <i>x</i> out front is a constant multiple of the derivative of 1 + "
+      +kH+V("x")+"<sup>2</sup>, which is "+fmtLim(k.mul(f(2)))+V("x")+". Put <i>u</i> = 1 + "+kH+V("x")+"<sup>2</sup>.")],
+    anti:fmtCoef(q,"π")+"[ (1 + "+kH+V("x")+"<sup>2</sup>)<sup>3/2</sup> ]<sub>0</sub><sup>"+b+"</sup>",
+    exact:fmtCoef(q,"π")+"("+pow32HTML(inner)+" − 1)",
+    value:val});
+}},
+
+{id:"U3",topic:"usub",diff:3,gen(){
+  const c=pick([ONE,f(2),f(1,3)]), b=ri(1,2);
+  const k=f(9).mul(c).mul(c);
+  const inner=1+k.num()*Math.pow(b,4);
+  const q=ONE.div(f(27).mul(c));
+  const val=q.num()*Math.PI*(Math.pow(inner,1.5)-1);
+  const kH=cf(k), cH=cf(c);
+  return P({kind:"x", v:"x", lo:ZERO, hi:f(b), loL:"0", hiL:String(b),
+    stem:"The arc <span class='hl'><i>y</i> = "+cH+"<i>x</i><sup>3</sup></span> on "+iv("x","0",String(b))
+      +" is revolved about the <span class='hl'>x-axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+cH+"<i>x</i><sup>3</sup>.",
+    d:V("y′")+" = "+cf(c.mul(f(3)))+V("x")+"<sup>2</sup>, so ds = "+RAD("1 + "+kH+V("x")+"<sup>4</sup>")+" <i>dx</i>.",
+    body:"("+cH+V("x")+"<sup>3</sup>)"+RAD("1 + "+kH+V("x")+"<sup>4</sup>"),
+    extra:[St("The cubic is the substitution","<i>d</i>(1 + "+kH+V("x")+"<sup>4</sup>) = "
+      +fmtLim(k.mul(f(4)))+V("x")+"<sup>3</sup> <i>dx</i>, and an <i>x</i><sup>3</sup> is exactly what the radius supplies. "
+      +"Cubes are the one power for which this closes: any other exponent leaves a mismatch.")],
+    anti:fmtCoef(q,"π")+"[ (1 + "+kH+V("x")+"<sup>4</sup>)<sup>3/2</sup> ]<sub>0</sub><sup>"+b+"</sup>",
+    exact:fmtCoef(q,"π")+"("+pow32HTML(inner)+" − 1)",
+    value:val});
+}},
+
+{id:"U4",topic:"usub",diff:3,gen(){
+  const b=pick([1,2]);
+  const u=Math.exp(b), r1=Math.sqrt(1+u*u), r0=Math.SQRT2;
+  const val=Math.PI*(u*r1+Math.log(u+r1)-r0-Math.log(1+r0));
+  const uH=b===1?"e":"e<sup>"+b+"</sup>";
+  return P({kind:"x", v:"x", lo:null, hi:null, loL:"0", hiL:String(b),
+    stem:"The arc <span class='hl'><i>y</i> = e<sup>x</sup></span> on "+iv("x","0",String(b))
+      +" is revolved about the <span class='hl'>x-axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = e<sup>x</sup>.",
+    d:V("y′")+" = e<sup>x</sup>, so ds = "+RAD("1 + e<sup>2x</sup>")+" <i>dx</i>.",
+    body:"e<sup>x</sup>"+RAD("1 + e<sup>2x</sup>"),
+    extra:[St("Substitute","<i>u</i> = e<sup>x</sup> turns the whole thing into 2π∫"+RAD("1 + <i>u</i><sup>2</sup>")
+      +" <i>du</i> from 1 to "+uH+" — the standard radical integral."),
+      St("The standard integral","∫"+RAD("1 + <i>u</i><sup>2</sup>")+" <i>du</i> = <span class='fr'><span>1</span><span>2</span></span>"
+      +"(<i>u</i>"+RAD("1 + <i>u</i><sup>2</sup>")+" + ln|<i>u</i> + "+RAD("1 + <i>u</i><sup>2</sup>")+"|).")],
+    anti:"π[ <i>u</i>"+RAD("1 + <i>u</i><sup>2</sup>")+" + ln(<i>u</i> + "+RAD("1 + <i>u</i><sup>2</sup>")
+      +") ]<sub>1</sub><sup>"+uH+"</sup>",
+    exact:"π("+uH+RAD("1 + e<sup>"+(2*b)+"</sup>")+" + ln("+uH+" + "+RAD("1 + e<sup>"+(2*b)+"</sup>")+") − "
+      +RAD("2")+" − ln(1 + "+RAD("2")+"))",
+    value:val});
+}},
+
+/* ---------------- HYPERBOLIC ---------------- */
+{id:"H1",topic:"hyp",diff:3,gen(){
+  const k=pick([2,3]);
+  const rat=f(k*k*k*k-1,4*k*k);
+  const val=Math.PI*(Math.log(k)+rat.num());
+  return P({kind:"x", v:"x", lo:null, hi:null, loL:"0", hiL:"ln "+k,
+    stem:"The catenary <span class='hl'><i>y</i> = cosh <i>x</i></span> on "+iv("x","0","ln "+k)
+      +" is revolved about the <span class='hl'>x-axis</span>, sweeping out a catenoid.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = cosh <i>x</i>.",
+    d:V("y′")+" = sinh <i>x</i> and 1 + sinh<sup>2</sup> = cosh<sup>2</sup>, so ds = cosh <i>x</i> <i>dx</i> — "
+      +"the radius and the arc element are the same function.",
+    body:"cosh<sup>2</sup><i>x</i>",
+    extra:[St("Power reduction","cosh<sup>2</sup><i>x</i> = <span class='fr'><span>1 + cosh 2<i>x</i></span><span>2</span></span>.")],
+    anti:"π[ <i>x</i> + <span class='fr'><span>sinh 2<i>x</i></span><span>2</span></span> ]<sub>0</sub><sup>ln "+k+"</sup>",
+    exact:"π(ln "+k+" + "+fmtLim(rat)+")", value:val});
+}},
+
+{id:"H2",topic:"hyp",diff:3,gen(){
+  const k=pick([2,3,4]);
+  const sh=f(k*k-1,2*k), ch=f(k*k+1,2*k);
+  const val=2*Math.PI*(Math.log(k)*sh.num()-ch.num()+1);
+  return P({kind:"y", v:"x", lo:null, hi:null, loL:"0", hiL:"ln "+k,
+    stem:"The catenary <span class='hl'><i>y</i> = cosh <i>x</i></span> on "+iv("x","0","ln "+k)
+      +" is revolved about the <span class='hl'>y-axis</span>.",
+    axis:{t:"v",label:"axis of revolution:  x = 0"},
+    radius:V("x")+".",
+    d:V("y′")+" = sinh <i>x</i>, so ds = cosh <i>x</i> <i>dx</i> as before. Only the radius changed.",
+    body:"<i>x</i> cosh <i>x</i>",
+    extra:[St("Integrate by parts","∫<i>x</i> cosh <i>x</i> <i>dx</i> = <i>x</i> sinh <i>x</i> − cosh <i>x</i>."),
+      St("Evaluate the hyperbolics","sinh(ln "+k+") = "+fmtLim(sh)+" and cosh(ln "+k+") = "+fmtLim(ch)
+        +"; at 0 the bracket is −1.")],
+    anti:"2π[ <i>x</i> sinh <i>x</i> − cosh <i>x</i> ]<sub>0</sub><sup>ln "+k+"</sup>",
+    exact:"<span class='fr'><span>π("+(k*k-1)+" ln "+k+" − "+((k-1)*(k-1))+")</span><span>"+k+"</span></span>",
+    value:val});
+}},
+
+/* ---------------- PARAMETRIC ---------------- */
+{id:"M1",topic:"param",diff:3,gen(){
+  const a=ri(1,3);
+  const val=64*Math.PI*a*a/3;
+  return P({kind:"t", v:"t", lo:null, hi:null, loL:"0", hiL:"2π",
+    stem:"One arch of the cycloid <span class='hl'><i>x</i> = "+a+"(<i>t</i> − sin <i>t</i>), <i>y</i> = "+a+"(1 − cos <i>t</i>)</span>"
+      +" is revolved about the <span class='hl'>x-axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+a+"(1 − cos <i>t</i>) = "+(2*a)+" sin<sup>2</sup>(<i>t</i>/2).",
+    dLabel:"Build ds from both derivatives",
+    d:"["+V("x′")+"]<sup>2</sup> + ["+V("y′")+"]<sup>2</sup> = "+(2*a*a)+"(1 − cos <i>t</i>)·2 = "+(4*a*a)
+      +" sin<sup>2</sup>(<i>t</i>/2), so ds = "+(2*a)+" sin(<i>t</i>/2) <i>dt</i>. Radius times ds is "
+      +(2*a)+" sin<sup>2</sup>(<i>t</i>/2) · "+(2*a)+" sin(<i>t</i>/2) = "+(4*a*a)+" sin<sup>3</sup>(<i>t</i>/2).",
+    body:(4*a*a)+" sin<sup>3</sup>(<i>t</i>/2)",
+    extra:[St("An odd power of sine","Split off one factor: sin<sup>3</sup>u = (1 − cos<sup>2</sup>u) sin u, then put "
+      +"<i>w</i> = cos u. Over a full arch ∫<sub>0</sub><sup>2π</sup>sin<sup>3</sup>(<i>t</i>/2) <i>dt</i> = "
+      +"<span class='fr'><span>8</span><span>3</span></span>.")],
+    anti:"2π·"+(4*a*a)+"·<span class='fr'><span>8</span><span>3</span></span>",
+    exact:fmtCoef(f(64*a*a,3),"π"), value:val});
+}},
+
+{id:"M2",topic:"param",diff:3,gen(){
+  const a=ri(1,3), aH=a===1?"":String(a)+" ";
+  const val=12*Math.PI*a*a/5;
+  return P({kind:"t", v:"t", lo:null, hi:null, loL:"0", hiL:"π/2",
+    stem:"The astroid <span class='hl'><i>x</i> = "+aH+"cos<sup>3</sup><i>t</i>, <i>y</i> = "+aH+"sin<sup>3</sup><i>t</i></span>"
+      +" is revolved about the <span class='hl'>x-axis</span>. Set up the first-quadrant quarter on "
+      +iv("t","0","π/2")+" and use symmetry.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+aH+"sin<sup>3</sup><i>t</i>.",
+    dLabel:"Build ds from both derivatives",
+    d:"The sum of squares is "+(9*a*a)+" sin<sup>2</sup><i>t</i> cos<sup>2</sup><i>t</i>, so ds = "
+      +(3*a)+" sin <i>t</i> cos <i>t</i> <i>dt</i> on this quarter. The radius times ds is then "
+      +(3*a*a)+" sin<sup>4</sup><i>t</i> cos <i>t</i> <i>dt</i>.",
+    body:(3*a*a===1?"":String(3*a*a))+" sin<sup>4</sup><i>t</i> cos <i>t</i>",
+    extra:[St("Substitute","<i>w</i> = sin <i>t</i> gives ∫<sub>0</sub><sup>1</sup><i>w</i><sup>4</sup> <i>dw</i> = "
+      +"<span class='fr'><span>1</span><span>5</span></span>."),
+      St("Double it","The left half of the astroid sweeps the mirror image, so the quarter's surface is half of the total.")],
+    anti:"2 × 2π·"+(3*a*a)+"·<span class='fr'><span>1</span><span>5</span></span>",
+    exact:fmtCoef(f(12*a*a,5),"π"), value:val});
+}},
+
+{id:"M3",topic:"param",diff:1,gen(){
+  const R=ri(2,6);
+  return P({kind:"t", v:"t", lo:null, hi:null, loL:"0", hiL:"π",
+    stem:"The upper half of the circle <span class='hl'><i>x</i> = "+R+" cos <i>t</i>, <i>y</i> = "+R+" sin <i>t</i></span>, "
+      +iv("t","0","π")+", is revolved about the <span class='hl'>x-axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = 0"},
+    radius:V("y")+" = "+R+" sin <i>t</i>.",
+    dLabel:"Build ds from both derivatives",
+    d:"["+V("x′")+"]<sup>2</sup> + ["+V("y′")+"]<sup>2</sup> = "+(R*R)+", so ds = "+R+" <i>dt</i>, "
+      +"and radius times ds is "+(R*R)+" sin <i>t</i> <i>dt</i>.",
+    body:(R*R)+" sin <i>t</i>",
+    extra:[St("The calibration problem","∫<sub>0</sub><sup>π</sup>sin <i>t</i> <i>dt</i> = 2, so S = 4π<i>R</i><sup>2</sup> — "
+      +"the sphere formula, recovered.")],
+    anti:"2π·"+(R*R)+"[ −cos <i>t</i> ]<sub>0</sub><sup>π</sup>",
+    exact:fmtCoef(f(4*R*R),"π"), value:4*Math.PI*R*R});
+}},
+
+{id:"M4",topic:"param",diff:3,gen(){
+  const a=ri(1,3);
+  const val=16*Math.PI*Math.PI*a*a;
+  return P({kind:"tY", v:"t", lo:null, hi:null, loL:"0", hiL:"2π",
+    stem:"One arch of the cycloid <span class='hl'><i>x</i> = "+a+"(<i>t</i> − sin <i>t</i>), <i>y</i> = "+a+"(1 − cos <i>t</i>)</span>"
+      +" is revolved about the <span class='hl'>y-axis</span>.",
+    axis:{t:"v",label:"axis of revolution:  x = 0"},
+    radius:V("x")+" = "+a+"(<i>t</i> − sin <i>t</i>) — the radius is now the horizontal coordinate.",
+    dLabel:"Build ds from both derivatives",
+    d:"As before, ds = "+(2*a)+" sin(<i>t</i>/2) <i>dt</i>. Only the radius has changed.",
+    body:a+"(<i>t</i> − sin <i>t</i>) · "+(2*a)+" sin(<i>t</i>/2)",
+    extra:[St("Two pieces","∫<sub>0</sub><sup>2π</sup><i>t</i> sin(<i>t</i>/2) <i>dt</i> = 4π by parts. "
+      +"And ∫<sub>0</sub><sup>2π</sup>sin <i>t</i> sin(<i>t</i>/2) <i>dt</i> = 0, since sin <i>t</i> = 2 sin(<i>t</i>/2)cos(<i>t</i>/2) "
+      +"makes it a perfect substitution that returns to its start.")],
+    anti:"2π·"+(2*a*a)+"·4π",
+    exact:fmtCoef(f(16*a*a),"π<sup>2</sup>"), value:val});
+}},
+
+/* ---------------- POLAR ---------------- */
+{id:"R1",topic:"polar",diff:3,gen(){
+  const a=ri(1,3), plus=pick([true,false]);
+  const rH=a+"(1 "+(plus?"+":"−")+" cos "+TH+")";
+  const half=plus?"cos":"sin";
+  const val=32*Math.PI*a*a/5;
+  return P({kind:"r", v:"θ", lo:null, hi:null, loL:"0", hiL:"π",
+    stem:"The cardioid <span class='hl'><i>r</i> = "+rH+"</span>, "+iv("θ","0","π")
+      +", is revolved about the <span class='hl'>polar axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  the polar axis (y = 0)"},
+    radius:V("y")+" = <i>r</i> sin "+TH+" = "+rH+" sin "+TH+".",
+    dLabel:"Build ds in polar form",
+    d:"<i>r</i><sup>2</sup> + ["+V("dr/dθ")+"]<sup>2</sup> = "+(a*a)+"(2 "+(plus?"+":"−")+" 2 cos "+TH+") = "
+      +(4*a*a)+" "+half+"<sup>2</sup>("+TH+"/2), so ds = "+(2*a)+" "+half+"("+TH+"/2) <i>dθ</i>.",
+    body:"<i>r</i> sin "+TH+" · "+(2*a)+" "+half+"("+TH+"/2)",
+    extra:[St("Half-angle everything","Write 1 "+(plus?"+":"−")+" cos "+TH+" = 2 "+half+"<sup>2</sup>("+TH+"/2) and "
+      +"sin "+TH+" = 2 sin("+TH+"/2) cos("+TH+"/2). The integrand collapses to "
+      +(16*a*a)+" "+half+"<sup>4</sup>("+TH+"/2)·"+(plus?"sin":"cos")+"("+TH+"/2), one substitution away from finished."),
+      St("Substitute","<i>w</i> = "+half+"("+TH+"/2) leaves ∫<i>w</i><sup>4</sup> <i>dw</i>, worth "
+      +"<span class='fr'><span>2</span><span>5</span></span> after the factor of 2 from <i>dθ</i>.")],
+    anti:"2π·"+(16*a*a)+"·<span class='fr'><span>2</span><span>5</span></span> ÷ 2",
+    exact:fmtCoef(f(32*a*a,5),"π"), value:val});
+}},
+
+{id:"R2",topic:"polar",diff:1,gen(){
+  const a=ri(1,5);
+  return P({kind:"r", v:"θ", lo:null, hi:null, loL:"0", hiL:"π/2",
+    stem:"The circle <span class='hl'><i>r</i> = "+(2*a)+" cos "+TH+"</span>, "+iv("θ","0","π/2")
+      +", is revolved about the <span class='hl'>polar axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  the polar axis (y = 0)"},
+    radius:V("y")+" = <i>r</i> sin "+TH+" = "+(2*a)+" cos "+TH+" sin "+TH+" = "+a+" sin 2"+TH+".",
+    dLabel:"Build ds in polar form",
+    d:"<i>r</i><sup>2</sup> + ["+V("dr/dθ")+"]<sup>2</sup> = "+(4*a*a)+"(cos<sup>2</sup> + sin<sup>2</sup>) = "+(4*a*a)
+      +", so ds = "+(2*a)+" <i>dθ</i> — this circle has radius "+a+", so that is just its own arc element. "
+      +"Radius times ds is "+(2*a*a)+" sin 2"+TH+" <i>dθ</i>.",
+    body:(2*a*a===1?"":String(2*a*a))+" sin 2"+TH,
+    extra:[St("The calibration problem","∫<sub>0</sub><sup>π/2</sup>sin 2"+TH+" <i>dθ</i> = 1, so S = 4π<i>a</i><sup>2</sup> — "
+      +"the sphere of radius "+a+", as it must be.")],
+    anti:"2π·"+(2*a*a)+"[ −<span class='fr'><span>cos 2"+TH+"</span><span>2</span></span> ]<sub>0</sub><sup>π/2</sup>",
+    exact:fmtCoef(f(4*a*a),"π"), value:4*Math.PI*a*a});
+}},
+
+{id:"R3",topic:"polar",diff:3,gen(){
+  const a=ri(1,4);
+  const val=Math.PI*a*a*(2-Math.SQRT2);
+  return P({kind:"r", v:"θ", lo:null, hi:null, loL:"0", hiL:"π/4",
+    stem:"The upper half of the right-hand loop of the lemniscate <span class='hl'><i>r</i><sup>2</sup> = "
+      +(a*a)+" cos 2"+TH+"</span>, "+iv("θ","0","π/4")+", is revolved about the <span class='hl'>polar axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  the polar axis (y = 0)"},
+    radius:V("y")+" = <i>r</i> sin "+TH+".",
+    dLabel:"Build ds implicitly",
+    d:"Differentiating <i>r</i><sup>2</sup> = "+(a*a)+" cos 2"+TH+" gives <i>r</i>·"+V("dr/dθ")+" = −"+(a*a)+" sin 2"+TH
+      +". Then <i>r</i><sup>2</sup> + ["+V("dr/dθ")+"]<sup>2</sup> = <span class='fr'><span>"+(a*a*a*a)
+      +"</span><span><i>r</i><sup>2</sup></span></span>, so ds = <span class='fr'><span>"+(a*a)
+      +"</span><span><i>r</i></span></span> <i>dθ</i>. The radius is <i>r</i> sin "+TH
+      +", so radius times ds is "+(a*a)+" sin "+TH+" <i>dθ</i> — every <i>r</i> cancels.",
+    body:(a*a===1?"":String(a*a))+" sin "+TH,
+    extra:[St("The r cancels","That is the whole trick — you never have to write <i>r</i> as a square root at all.")],
+    anti:"2π·"+(a*a)+"[ −cos "+TH+" ]<sub>0</sub><sup>π/4</sup>",
+    exact:fmtCoef(f(2*a*a),"π")+"(1 − <span class='fr'><span>"+RAD("2")+"</span><span>2</span></span>)",
+    value:val});
+}},
+
+{id:"R4",topic:"polar",diff:2,gen(){
+  const a=ri(1,4);
+  const val=4*Math.PI*Math.PI*a*a;
+  return P({kind:"r", v:"θ", lo:null, hi:null, loL:"0", hiL:"π",
+    stem:"The circle <span class='hl'><i>r</i> = "+(2*a)+" sin "+TH+"</span>, "+iv("θ","0","π")
+      +" — radius "+a+", centred at (0, "+a+") — is revolved about the <span class='hl'>polar axis</span>.",
+    axis:{t:"h",label:"axis of revolution:  the polar axis (y = 0)"},
+    radius:V("y")+" = <i>r</i> sin "+TH+" = "+(2*a)+" sin<sup>2</sup>"+TH+".",
+    dLabel:"Build ds in polar form",
+    d:"<i>r</i><sup>2</sup> + ["+V("dr/dθ")+"]<sup>2</sup> = "+(4*a*a)+", so ds = "+(2*a)+" <i>dθ</i>, "
+      +"and radius times ds is "+(4*a*a)+" sin<sup>2</sup>"+TH+" <i>dθ</i>.",
+    body:(4*a*a)+" sin<sup>2</sup>"+TH,
+    extra:[St("Power reduction","∫<sub>0</sub><sup>π</sup>sin<sup>2</sup>"+TH+" <i>dθ</i> = "
+      +"<span class='fr'><span>π</span><span>2</span></span>."),
+      St("What you just built","The circle touches the axis of revolution at the origin, so the solid is a horn torus — "
+      +"and 4π<sup>2</sup><i>a</i><sup>2</sup> is the torus formula 4π<sup>2</sup><i>Rr</i> with <i>R</i> = <i>r</i> = "+a+".")],
+    anti:"2π·"+(4*a*a)+"·<span class='fr'><span>π</span><span>2</span></span>",
+    exact:fmtCoef(f(4*a*a),"π<sup>2</sup>"), value:val});
+}}
+
+];
+
+TEMPLATES.push(
+  conjSurface("P1",3,[f(2),f(3)],       [f(1,2),ONE,f(2),f(1,4)], [1,2,3], "x"),
+  conjSurface("P2",3,[f(2)],            [f(1,2),ONE,f(2)],        [1,2,3], "y"),
+  conjSurface("P3",3,[f(3),f(3,2)],     [f(1,2),ONE,f(2)],        [1,4,9], "y")
+);
+
+/* ============================ engine ============================ */
+const METHOD_NAME={cone:"Cone & frustum",sphere:"Sphere & zones",psq:"Perfect square",
+  usub:"u-substitution",hyp:"Hyperbolic",param:"Parametric",polar:"Polar"};
+const DIFF_NAME={1:"easy",2:"medium",3:"hard"};
+
+function build(t){
+  const q=t.gen();
+  return Object.assign(q,{id:t.id,topic:t.topic,diff:t.diff});
+}
+
+const state={
+  topics:new Set(Object.keys(METHOD_NAME)),
+  diff:"mix", exam:false, clock:"off", limit:180, tick:null,
+  byTopic:{}, n:0, att:0, cor:0, streak:0, best:0, level:1, miss:0, times:[], t0:0,
+  cur:null, answered:false, hinted:false
+};
+Object.keys(METHOD_NAME).forEach(k=>state.byTopic[k]={n:0,c:0});
+
+function poolFor(){
+  let want;
+  if(state.diff==="mix") want=[1,2,3];
+  else if(state.diff==="ramp") want=[state.level];
+  else want=[Number(state.diff)];
+  let p=TEMPLATES.filter(t=>state.topics.has(t.topic)&&want.includes(t.diff));
+  if(!p.length) p=TEMPLATES.filter(t=>state.topics.has(t.topic));
+  if(!p.length) p=TEMPLATES;
+  return p;
+}
+
+let lastId=null;
+function newProblem(){
+  const pool=poolFor();
+  let q,guard=0;
+  do{ q=build(pick(pool)); guard++; }while(pool.length>1 && q.id===lastId && guard<12);
+  lastId=q.id;
+  state.cur=q; state.n++; state.answered=false; state.hinted=false; state.t0=Date.now();
+  startClock();
+  render();
+}
+
+/* ============================ view ============================ */
+const $=id=>document.getElementById(id);
+
+function render(){
+  const q=state.cur;
+  $("tagMethod").textContent=METHOD_NAME[q.topic];
+  $("tagDiff").textContent="· "+DIFF_NAME[q.diff];
+  $("tagCount").textContent="Problem "+state.n;
+  $("stem").innerHTML=q.stem;
+  $("ask").innerHTML=q.ask;
+
+  const al=$("axisline");
+  if(q.axis){
+    al.hidden=false;
+    al.className="axisline"+(q.axis.t==="v"?" vert":"");
+    $("axisLabel").textContent=q.axis.label;
+  } else al.hidden=true;
+
+  $("input").value=""; $("input").disabled=false; $("input").focus();
+  $("verdict").hidden=true; $("verdict").className="verdict";
+  $("work").hidden=true; $("work").innerHTML="";
+  $("check").disabled=false;
+  $("hint").disabled=state.exam; $("solve").disabled=state.exam;
+  $("timer").textContent=state.exam?"Exam mode: hints and solutions are off until you check.":"";
+  updateStats();
+}
+
+const liOf=s=>"<li><span class='label'>"+s.label+"</span>"+s.html+"</li>";
+function setupHTML(){ return "<ol>"+state.cur.setup.map(liOf).join("")+"</ol>"; }
+function solutionHTML(){
+  const q=state.cur;
+  return "<ol>"+q.setup.concat(q.solve).map(liOf).join("")+"</ol>";
+}
+
+function check(){
+  if(state.answered)return;
+  const q=state.cur, got=evalNum($("input").value);
+  const v=$("verdict"); v.hidden=false;
+  if(got===null){
+    v.className="verdict no";
+    v.innerHTML="That input didn't parse. Use digits, <code>pi</code>, <code>e</code>, "
+      +"<code>sqrt( )</code>, <code>ln( )</code>, <code>^</code> and + − * / ( ) — "
+      +"for example <code>32pi/5</code>.";
+    return;
+  }
+  const ok=sameNum(got,q.value);
+  state.answered=true; state.att++;
+  stopClock();
+  const tp=state.byTopic[q.topic]; if(tp) tp.n++;
+  state.times.push((Date.now()-state.t0)/1000);
+  $("check").disabled=true; $("input").disabled=true;
+  $("hint").disabled=false; $("solve").disabled=false;
+
+  if(ok){
+    state.cor++; state.streak++; state.best=Math.max(state.best,state.streak); state.miss=0;
+    if(tp) tp.c++;
+    if(state.diff==="ramp"&&state.streak%3===0&&state.level<3)state.level++;
+    v.className="verdict ok";
+    v.innerHTML="Correct — S = "+q.exact+" ≈ "+q.value.toFixed(4)+".";
+  }else{
+    state.streak=0; state.miss++;
+    if(state.diff==="ramp"&&state.miss>=2&&state.level>1){state.level--;state.miss=0;}
+    v.className="verdict no";
+    v.innerHTML="Not quite. You gave "+got.toFixed(4)+"; the surface area is "+q.exact+" ≈ "+q.value.toFixed(4)+".";
+    showWork(true);
+  }
+  save(); updateStats();
+}
+
+function showWork(full){
+  const w=$("work");
+  w.hidden=false;
+  w.innerHTML=full?solutionHTML():setupHTML();
+}
+
+function updateStats(){
+  $("sAtt").textContent=state.att;
+  $("sCor").textContent=state.cor;
+  $("sPct").textContent=state.att?Math.round(100*state.cor/state.att)+"%":"—";
+  $("sStreak").textContent=state.streak;
+  $("sBest").textContent=state.best;
+  const t=state.times;
+  drawMeters();
+  $("sTime").textContent=t.length?Math.round([...t].sort((a,b)=>a-b)[Math.floor(t.length/2)])+"s":"—";
+}
+
+/* light persistence — falls back to memory if storage is unavailable */
+function save(){
+  try{
+    localStorage.setItem("surfacearea",JSON.stringify({
+      att:state.att,cor:state.cor,best:state.best,times:state.times.slice(-40),
+      clock:state.clock,limit:state.limit,byTopic:state.byTopic}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem("surfacearea")||"null");
+    if(d){state.att=d.att||0;state.cor=d.cor||0;state.best=d.best||0;state.times=d.times||[];
+      if(typeof d.clock==="string")state.clock=d.clock;
+      if(typeof d.limit==="number")state.limit=d.limit;
+      if(d.byTopic)Object.keys(state.byTopic).forEach(k=>{if(d.byTopic[k])state.byTopic[k]=d.byTopic[k]});}
+  }catch(e){}
+}
+
+/* ============================ wiring ============================ */
+function stopClock(){ if(state.tick){clearInterval(state.tick);state.tick=null;} }
+function startClock(){
+  stopClock();
+  const el=$("clockOut");
+  if(state.clock==="off"){ el.hidden=true; return; }
+  el.hidden=false;
+  const paint=()=>{
+    const sec=(Date.now()-state.t0)/1000;
+    const shown=state.clock==="down"?Math.max(0,state.limit-sec):sec;
+    const m=Math.floor(shown/60),ss=Math.floor(shown%60);
+    el.textContent=String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+    el.className="clockline"+(state.clock==="down"&&shown<=10?" crit":state.clock==="down"&&shown<=30?" warn":"");
+    if(state.clock==="down"&&shown<=0&&!state.answered){
+      stopClock();
+      const v=$("verdict"); v.hidden=false; v.className="verdict no";
+      v.innerHTML="Time. The surface area is "+state.cur.exact+".";
+      state.answered=true; state.att++; state.streak=0;
+      const tp=state.byTopic[state.cur.topic]; if(tp) tp.n++;
+      $("check").disabled=true; $("input").disabled=true;
+      $("hint").disabled=false; $("solve").disabled=false;
+      showWork(true); save(); updateStats();
+    }
+  };
+  paint(); state.tick=setInterval(paint,250);
+}
+
+function drawMeters(){
+  const rows=Object.entries(state.byTopic).filter(([,c])=>c.n);
+  $("meters").innerHTML = rows.length ? rows.map(([k,c])=>{
+    const pct=Math.round(100*c.c/c.n);
+    return `<div class="meter"><div class="mtop"><span class="nm">${METHOD_NAME[k]}</span>`+
+           `<span class="val">${pct}% · ${c.n}</span></div>`+
+           `<div class="track"><div class="fill" style="width:${pct}%"></div></div></div>`;
+  }).join("") : "";
+}
+
+(function buildPalette(){
+  const toks=["pi","e","^","/","sqrt(","ln(","(",")"];
+  $("pal").innerHTML=toks.map(t=>`<button type="button" data-ins="${t}">${t}</button>`).join("");
+  $("pal").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-ins]"); if(!b)return;
+    const i=$("input"); if(i.disabled)return;
+    i.value+=b.dataset.ins; i.focus();
+  });
+})();
+
+$("clocks").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-clock]"); if(!b)return;
+  state.clock=b.dataset.clock;
+  $("clocks").querySelectorAll("button[data-clock]").forEach(x=>
+    x.setAttribute("aria-pressed",String(x===b)));
+  save(); startClock();
+});
+$("clockSecs").addEventListener("change",e=>{
+  state.limit=Math.max(15,Math.min(900,+e.target.value||180)); save();
+});
+$("resetBtn").addEventListener("click",()=>{
+  state.att=state.cor=state.streak=state.best=0; state.times=[];
+  Object.keys(state.byTopic).forEach(k=>state.byTopic[k]={n:0,c:0});
+  try{ localStorage.removeItem("surfacearea"); }catch(e){}
+  save(); updateStats();
+});
+
+/* H hint · SPACE solution · S skip — the standard set */
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"){
+    if(e.key==="Enter"&&e.target.id==="input"){ e.preventDefault(); check(); }
+    return;
+  }
+  const k=e.key.toLowerCase();
+  if(k==="h"){ e.preventDefault(); if(!$("hint").disabled) $("hint").click(); }
+  else if(k===" "){ e.preventDefault(); if(!$("solve").disabled) $("solve").click(); }
+  else if(k==="s"){ e.preventDefault(); newProblem(); }
+});
+
+$("topics").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  const t=b.dataset.topic, on=b.getAttribute("aria-pressed")==="true";
+  if(on&&state.topics.size===1)return;
+  if(on){state.topics.delete(t);b.setAttribute("aria-pressed","false");}
+  else{state.topics.add(t);b.setAttribute("aria-pressed","true");}
+  newProblem();
+});
+$("diffs").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");
+  state.diff=b.dataset.diff;
+  if(state.diff==="ramp"){state.level=1;state.miss=0;}
+  newProblem();
+});
+$("modes").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  state.exam=!state.exam;
+  b.setAttribute("aria-pressed",String(state.exam));
+  render();
+});
+$("check").addEventListener("click",check);
+$("next").addEventListener("click",newProblem);
+$("hint").addEventListener("click",()=>{state.hinted=true;showWork(false);});
+$("solve").addEventListener("click",()=>{
+  if(!state.answered){state.answered=true;state.att++;state.streak=0;$("check").disabled=true;$("input").disabled=true;save();updateStats();}
+  showWork(true);
+});
+$("input").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); state.answered?newProblem():check(); }
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&state.answered&&document.activeElement!==$("input")) newProblem();
+});
+
+load();
+$("clocks").querySelectorAll("button[data-clock]").forEach(x=>
+  x.setAttribute("aria-pressed",String(x.dataset.clock===state.clock)));
+$("clockSecs").value=state.limit;
+newProblem();
+</script>
+<script src="../shared/scratchpad.js" defer></script>
+</body>
+</html>

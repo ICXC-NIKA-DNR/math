@@ -11,6 +11,8 @@ visitor's own browser.
       engine.mjs          selection, filtering, sessions, scoring — no DOM
       cards.json          the 443-card bank (generated; do not hand-edit)
     trainers/             the standalone problem trainers
+                          limits · derivatives · integrals · volumes · arcs · surfaces
+                          (the old filenames are kept as redirect stubs)
     shared/               code more than one trainer uses
       calc-engine.js      exact rationals, polynomials, rendering, answer parsing
       scratchpad.js       the <scratch-pad> element (pannable, zoomable canvas)

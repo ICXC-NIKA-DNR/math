@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Volumes — area, disks, washers, shells</title>
+<style>
+:root{
+  /* Base tokens are shared with Recall so the two read as one product. */
+  --bg:#080808; --panel:#111111; --rule:#242424; --rule2:#1E1E1E;
+  --tx:#F4F4F4; --dim:#A0A0A0; --dim2:#8A8A8A; --faint:#666666;
+
+  /* Red ramp — this trainer's identity, mirroring Recall's blue ramp. */
+  --r0:#3A2320;
+  --r1:#8A4038; --r2:#C2483B; --r3:#F09E92;
+  --r1b:#24140F; --r2b:#2E1611; --r3b:#3A1C16;
+  --r1t:#D2897E; --r2t:#EFA79B; --r3t:#FFD0C7;
+
+  --axis:#E0645A;          /* axis of revolution / centerline */
+  --good:#7CCBA6;          /* verdict: correct */
+  --bad:#F09E92;           /* verdict: wrong */
+
+  --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);
+  /* the engineering grid is kept, but taken down to a whisper */
+  background-image:linear-gradient(rgba(130,152,188,.05) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(130,152,188,.05) 1px, transparent 1px);
+  background-size:28px 28px;
+  background-position:-1px -1px;
+  color:var(--tx);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 24px 56px}
+
+.home-link{display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;
+  font:500 12.5px/1 var(--sans);letter-spacing:.02em;color:var(--dim);text-decoration:none;
+  border:1px solid var(--rule);padding:7px 12px;border-radius:999px;background:none;
+  transition:color .15s,border-color .15s,background .15s}
+.home-link:hover{color:var(--r3t);border-color:var(--r2);background:var(--r1b)}
+
+header{border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:24px}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;color:var(--tx)}
+header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:64ch}
+
+/* ── controls: Recall's card + pill language ─────────────────── */
+/* Console left, stage right — the shape Integration Bench and Derivative Gym
+   use. The console is sticky so the settings stay reachable while the stage
+   grows with the worked solution and the scratch paper. */
+.grid{display:grid;grid-template-columns:268px minmax(0,1fr);gap:22px;align-items:start}
+.console{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;
+  overscroll-behavior:contain;scrollbar-width:thin;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:16px 18px}
+.stage{display:flex;flex-direction:column;gap:16px;min-width:0}
+.stage > *{margin:0}
+.controls{display:flex;flex-direction:column;gap:20px;align-items:stretch}
+.controls .chips{gap:6px}
+.console .group h2{margin-bottom:8px}
+.console #clocks{align-items:center}
+@media (max-width:860px){
+  .grid{grid-template-columns:1fr}
+  .console{position:static;max-height:none}
+}
+.group{display:flex;flex-direction:column;gap:8px}
+.group h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:400;
+  color:var(--faint);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:13px;height:34px;padding:0 14px;border:1px solid var(--r0);
+  background:none;color:var(--faint);cursor:pointer;border-radius:17px;
+  transition:color .15s,border-color .15s,background .15s}
+.chip:hover{color:var(--r2t);border-color:var(--r1)}
+.chip[aria-pressed="true"]{background:var(--r3b);border-color:var(--r3);color:var(--r3t)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--r3);outline-offset:2px}
+
+/* ── problem card ────────────────────────────────────────────── */
+.problem{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:0;position:relative;overflow:hidden}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  border-bottom:1px solid var(--rule2);padding:10px 18px;font-size:12px;color:var(--faint)}
+.meta .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--r2t)}
+.body{padding:20px 18px 18px;position:relative}
+.stem{font-family:var(--serif);font-size:1.12rem;line-height:1.6;margin:0 0 .5em;
+  max-width:64ch;color:var(--tx)}
+.ask{font-family:var(--serif);font-size:1.12rem;margin:0;color:var(--tx)}
+
+/* the axis of revolution, drawn as a machinist's centerline */
+.axisline{margin:16px 0 4px;display:flex;align-items:center;gap:10px;color:var(--axis);font-size:12px}
+.axisline .line{flex:1;height:0;border-top:1.5px dashed var(--axis)}
+.axisline.vert{align-items:stretch;gap:10px}
+.axisline.vert .line{border-top:none;border-left:1.5px dashed var(--axis);flex:none;width:0;min-height:22px}
+
+/* ── answer row ──────────────────────────────────────────────── */
+.answer{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 6px}
+input[type=text]{font-family:var(--serif);font-size:1.02rem;padding:9px 12px;
+  border:1px solid var(--rule);background:var(--bg);color:var(--tx);
+  width:min(300px,100%);border-radius:4px}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus{border-color:var(--r2);outline:none}
+button{font:inherit;font-size:13px;padding:9px 16px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--r3);background:var(--r3b);color:var(--r3t);
+  transition:border-color .15s,background .15s,color .15s}
+button:hover:enabled{background:var(--r2b);border-color:var(--r3)}
+button.ghost{background:none;color:var(--dim);border-color:var(--rule)}
+button.ghost:hover:enabled{color:var(--tx);border-color:var(--r1);background:var(--r1b)}
+button:disabled{opacity:.38;cursor:not-allowed}
+.hintnote{font-size:12.5px;color:var(--faint);margin:0}
+.pal{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0}
+.pal button{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;padding:5px 9px;
+  border-radius:4px;border:1px solid var(--rule2);background:var(--panel);color:var(--dim);
+  cursor:pointer}
+.pal button:hover{color:var(--r3t);border-color:var(--r1)}
+.clockline{margin-left:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;
+  color:var(--dim2);letter-spacing:.02em}
+.clockline.warn{color:#E8B75C}.clockline.crit{color:var(--bad)}
+.meters{display:flex;flex-direction:column;gap:9px}
+.meters:empty{display:none}
+.console .group:has(.meters:empty){display:none}
+.console details{border:0;background:none;padding:0;margin:0}
+.console details .ref{font-size:12.5px;line-height:1.5}
+.console summary{font-size:12px;color:var(--dim)}
+.meter .mtop{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
+.meter .mtop .nm{color:var(--dim)}
+.meter .mtop .val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:var(--faint)}
+.track{height:4px;background:var(--rule2);border-radius:9px;overflow:hidden}
+.fill{height:100%;border-radius:9px;background:var(--r2);transition:width .35s ease}
+
+.verdict{font-family:var(--serif);font-size:1.02rem;margin:12px 0 0;padding-left:12px;
+  border-left:3px solid transparent}
+.verdict.ok{border-color:var(--good);color:var(--good)}
+.verdict.no{border-color:var(--bad);color:var(--bad)}
+
+/* ── worked solution ─────────────────────────────────────────── */
+.work{border-top:1px solid var(--rule2);margin-top:18px;padding-top:14px}
+.work ol{margin:0;padding-left:1.25em}
+.work li{margin:.55em 0;font-family:var(--serif);font-size:1rem;color:var(--tx)}
+.work li::marker{color:var(--faint)}
+.work li .label{font-family:var(--sans);font-size:11.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint);display:block}
+
+.stats{display:flex;flex-wrap:wrap;gap:34px;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;padding:16px 20px;
+  font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.stats b{display:block;font-family:var(--serif);font-size:1.5rem;font-weight:400;
+  color:var(--tx);letter-spacing:0;text-transform:none}
+
+details{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:12px 16px;margin-top:22px}
+summary{cursor:pointer;font-size:13px;color:var(--dim)}
+summary:hover{color:var(--tx)}
+details .ref{font-family:var(--serif);font-size:1rem;color:var(--dim2)}
+details .ref div{margin:.5em 0}
+
+/* ── math bits (unchanged shapes, new ink) ───────────────────── */
+.fr{display:inline-flex;flex-direction:column;vertical-align:-0.42em;text-align:center;line-height:1.1;font-size:.86em}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em}
+.fr>span:last-child{padding:0 .2em}
+.itg{font-size:1.6em;line-height:0;vertical-align:-.28em;font-family:var(--serif)}
+.lims{display:inline-flex;flex-direction:column;font-size:.52em;line-height:1.05;vertical-align:.1em;margin:0 .25em 0 1px}
+.rad{border-top:1px solid currentColor;padding:0 .12em}
+i{font-family:var(--serif);font-style:italic}
+sup,sub{font-size:.68em}
+.hl{color:var(--r3)}
+
+@media (max-width:520px){
+  .wrap{padding:18px 16px 44px}
+  h1{font-size:22px}
+  .controls{gap:14px}
+}
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #C2483B 0%, transparent 68%);
+  opacity:.16}
+.wrap{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="home-link" href="../index.html">&#8592; all trainers</a>
+
+<header>
+  <h1>Volumes</h1>
+  <p>Randomly generated Calculus II problems on area between curves and volumes by disks, washers, and shells. Type an exact answer like <code>16pi/15</code> or a decimal.</p>
+</header>
+
+<div class="grid">
+  <aside class="console">
+<div class="controls">
+  <div class="group">
+    <h2>Topics</h2>
+    <div class="chips" id="topics">
+      <button class="chip" data-topic="area" aria-pressed="true">Area</button>
+      <button class="chip" data-topic="disk" aria-pressed="true">Disk</button>
+      <button class="chip" data-topic="washer" aria-pressed="true">Washer</button>
+      <button class="chip" data-topic="shell" aria-pressed="true">Shell</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Difficulty</h2>
+    <div class="chips" id="diffs">
+      <button class="chip" data-diff="1">Easy</button>
+      <button class="chip" data-diff="2">Medium</button>
+      <button class="chip" data-diff="3">Hard</button>
+      <button class="chip" data-diff="mix" aria-pressed="true">Mixed</button>
+      <button class="chip" data-diff="ramp">Ramp up</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Mode</h2>
+    <div class="chips" id="modes">
+      <button class="chip" data-mode="exam">Exam mode</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Clock</h2>
+    <div class="chips" id="clocks">
+      <button class="chip" data-clock="off" aria-pressed="true">Off</button>
+      <button class="chip" data-clock="up">Stopwatch</button>
+      <button class="chip" data-clock="down">Countdown</button>
+      <input type="number" id="clockSecs" min="15" max="900" step="15" value="120"
+             aria-label="Seconds per problem"
+             style="width:70px;padding:6px 8px;border-radius:4px;border:1px solid var(--rule);
+                    background:var(--bg);color:var(--tx);font:inherit;font-size:13px">
+    </div>
+  </div>
+  <div class="group">
+    <h2>Records</h2>
+    <div class="chips"><button class="chip" id="resetBtn">Reset all progress</button></div>
+  </div>
+  <div class="group">
+    <h2>By topic</h2>
+    <div class="meters" id="meters"></div>
+  </div>
+  <div class="group">
+    <details>
+  <summary>Setup reference</summary>
+  <div class="ref">
+    <div>Area between curves: <span class="hl">A = ∫<sub>a</sub><sup>b</sup> (top − bottom) dx</span>, or ∫ (right − left) dy.</div>
+    <div>Disk: <span class="hl">V = π ∫ [R]² d(var)</span>, slices perpendicular to the axis, no gap.</div>
+    <div>Washer: <span class="hl">V = π ∫ ([R<sub>out</sub>]² − [R<sub>in</sub>]²) d(var)</span>, radii measured from the axis.</div>
+    <div>Shell: <span class="hl">V = 2π ∫ (radius)(height) d(var)</span>, slices parallel to the axis.</div>
+    <div>Slices ⟂ to the axis ⇒ disk/washer. Slices ∥ to the axis ⇒ shells. Rotating about a vertical line: disks want dy, shells want dx.</div>
+  </div>
+</details>
+  </div>
+</div>
+  </aside>
+
+  <main class="stage">
+<section class="problem">
+  <div class="meta">
+    <span><span class="tag" id="tagMethod">—</span> <span id="tagDiff"></span></span>
+    <span id="tagCount">Problem 1</span>
+    <span class="clockline" id="clockOut" hidden>00:00</span>
+  </div>
+  <div class="body">
+    <p class="stem" id="stem"></p>
+    <p class="ask" id="ask"></p>
+    <div class="axisline" id="axisline"><span class="line"></span><span id="axisLabel"></span><span class="line"></span></div>
+
+    <div class="answer">
+      <input type="text" id="input" placeholder="e.g. 16pi/15" autocomplete="off" spellcheck="false" aria-label="Your answer">
+      <button id="check">Check answer</button>
+      <button class="ghost" id="hint">Show setup</button>
+      <button class="ghost" id="solve">Show solution</button>
+      <button class="ghost" id="next">Next problem</button>
+    </div>
+    <div class="pal" id="pal"></div>
+    <p class="hintnote" id="timer"></p>
+    <p class="verdict" id="verdict" hidden></p>
+    <div class="work" id="work" hidden></div>
+  </div>
+</section>
+
+<div class="stats">
+  <div><b id="sAtt">0</b>attempted</div>
+  <div><b id="sCor">0</b>solved</div>
+  <div><b id="sPct">—</b>accuracy</div>
+  <div><b id="sStreak">0</b>streak</div>
+  <div><b id="sBest">0</b>best streak</div>
+  <div><b id="sTime">—</b>median time</div>
+</div>
+    <scratch-pad accent="#C2483B" height="330"></scratch-pad>
+  </main>
+</div>
+
+</div>
+
+<script>
+"use strict";
+/* ============================ exact rational arithmetic ============================ */
+function bgcd(a,b){a=a<0n?-a:a;b=b<0n?-b:b;while(b){const t=a%b;a=b;b=t;}return a;}
+class F{
+  constructor(n,d=1n){
+    n=BigInt(n); d=BigInt(d);
+    if(d===0n) throw new Error("divide by zero");
+    if(d<0n){n=-n;d=-d;}
+    const g=bgcd(n,d)||1n;
+    this.n=n/g; this.d=d/g;
+  }
+  add(o){return new F(this.n*o.d+o.n*this.d,this.d*o.d);}
+  sub(o){return new F(this.n*o.d-o.n*this.d,this.d*o.d);}
+  mul(o){return new F(this.n*o.n,this.d*o.d);}
+  div(o){return new F(this.n*o.d,this.d*o.n);}
+  neg(){return new F(-this.n,this.d);}
+  isZero(){return this.n===0n;}
+  isNeg(){return this.n<0n;}
+  cmp(o){const l=this.n*o.d,r=o.n*this.d;return l<r?-1:l>r?1:0;}
+  eqInt(k){return this.d===1n&&this.n===BigInt(k);}
+  num(){return Number(this.n)/Number(this.d);}
+  toString(){return this.d===1n?String(this.n):this.n+"/"+this.d;}
+}
+const f=(n,d=1)=>new F(BigInt(n),BigInt(d));
+const ZERO=f(0), ONE=f(1);
+
+function isqrt(n){
+  if(n<0n)return null;
+  if(n<2n)return n;
+  let x=n,y=(x+1n)/2n;
+  while(y<x){x=y;y=(x+n/x)/2n;}
+  return x*x===n?x:null;
+}
+function ratPow(base,e){                       // exact only; null if irrational
+  if(e.isZero())return ONE;
+  if(e.d===1n){
+    let k=e.n;
+    if(k<0n){ if(base.isZero())return null; return ratPow(new F(base.d,base.n),new F(-k,1n)); }
+    return new F(base.n**k, base.d**k);
+  }
+  if(e.d===2n){
+    if(base.isNeg())return null;
+    const sn=isqrt(base.n), sd=isqrt(base.d);
+    if(sn===null||sd===null)return null;
+    return ratPow(new F(sn,sd), new F(e.n,1n));
+  }
+  return null;
+}
+
+/* ============================ polynomials with rational exponents ============================ */
+const T=(c,e)=>({c:(c instanceof F)?c:f(c), e:(e instanceof F)?e:f(e)});
+function pnorm(p){
+  const m=new Map();
+  for(const t of p){
+    const k=t.e.toString(), cur=m.get(k);
+    if(cur)cur.c=cur.c.add(t.c); else m.set(k,{c:t.c,e:t.e});
+  }
+  return [...m.values()].filter(t=>!t.c.isZero()).sort((a,b)=>b.e.cmp(a.e));
+}
+const padd=(a,b)=>pnorm([...a,...b]);
+const psub=(a,b)=>pnorm([...a,...b.map(t=>({c:t.c.neg(),e:t.e}))]);
+function pmul(a,b){const o=[];for(const s of a)for(const t of b)o.push({c:s.c.mul(t.c),e:s.e.add(t.e)});return pnorm(o);}
+const psq=a=>pmul(a,a);
+const pk=k=>[T(k,0)];
+const pint=a=>a.map(t=>{const e2=t.e.add(ONE);return{c:t.c.div(e2),e:e2};});
+function pev(p,x){
+  let s=ZERO;
+  for(const t of p){
+    const v=ratPow(x,t.e);
+    if(v===null)throw new Error("non-exact evaluation");
+    s=s.add(t.c.mul(v));
+  }
+  return s;
+}
+function pdef(p,a,b){const I=pint(p);return pev(I,b).sub(pev(I,a));}
+
+/* ============================ rendering ============================ */
+function fracHTML(a){                                   // a = positive F
+  return a.d===1n ? String(a.n)
+    : '<span class="fr"><span>'+a.n+'</span><span>'+a.d+'</span></span>';
+}
+function expHTML(e){
+  const s = e.d===1n ? String(e.n) : e.n+"/"+e.d;
+  return s.replace("-","−");
+}
+function varHTML(v,e){
+  if(e.isZero())return "";
+  if(e.eqInt(1))return "<i>"+v+"</i>";
+  return "<i>"+v+"</i><sup>"+expHTML(e)+"</sup>";
+}
+function fmtPoly(p,v){
+  if(p.length===0)return "0";
+  let out="";
+  p.forEach((t,i)=>{
+    const neg=t.c.isNeg(), a=neg?t.c.neg():t.c;
+    out += i===0 ? (neg?"−":"") : (neg?" − ":" + ");
+    const unit = a.d===1n && a.n===1n;
+    if(unit && !t.e.isZero()) out += varHTML(v,t.e);
+    else out += fracHTML(a)+varHTML(v,t.e);
+  });
+  return out;
+}
+function intHTML(lo,hi,body,v,pre){
+  return (pre||"")+'<span class="itg">∫</span><span class="lims"><span>'+hi+'</span><span>'+lo+'</span></span>'
+       + body + " <i>d" + v + "</i>";
+}
+function fmtLim(x){ return x.isNeg() ? "−"+fracHTML(x.neg()) : fracHTML(x); }
+function fmtExact(q,pi){
+  if(q.isZero())return "0";
+  const neg=q.isNeg(), a=neg?q.neg():q;
+  const top = pi ? (a.n===1n?"π":a.n+"π") : String(a.n);
+  const s = a.d===1n ? top : '<span class="fr"><span>'+top+'</span><span>'+a.d+'</span></span>';
+  return (neg?"−":"")+s;
+}
+function mono(a,n,v){                                    // a·v^n as HTML
+  if(n===0)return String(a);
+  const c = a===1 ? "" : (a===-1?"−":String(a));
+  return c + varHTML(v,f(n));
+}
+const RAD = x => '√<span class="rad">'+x+'</span>';
+
+/* ============================ random helpers ============================ */
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* curves that all meet at (0,0) and (1,1) — the classic washer/shell pairs */
+const CURVES={
+  sq:{tex:RAD("<i>x</i>"), texY:RAD("<i>y</i>"), e:f(1,2), poly:[T(1,f(1,2))]},
+  x :{tex:"<i>x</i>",  e:f(1), poly:[T(1,1)]},
+  x2:{tex:"<i>x</i><sup>2</sup>", e:f(2), poly:[T(1,2)]},
+  x3:{tex:"<i>x</i><sup>3</sup>", e:f(3), poly:[T(1,3)]}
+};
+function pairUL(){                                        // {up, lo} with up ≥ lo on [0,1]
+  const keys=["sq","x","x2","x3"];
+  let i=ri(0,2), j=ri(i+1,3);
+  return {up:CURVES[keys[i]], lo:CURVES[keys[j]]};
+}
+
+/* ============================ problem templates ============================
+   each gen() returns:
+   stem, ask, axis:{type:'h'|'v', label}, method, radius:[lines],
+   v, lo, hi, body (integrand before expanding), integrand (poly), factor: 'none'|'pi'|'2pi'
+============================================================================ */
+const TEMPLATES=[
+
+/* ---------------- AREA ---------------- */
+{id:"A1",topic:"area",diff:1,gen(){
+  const a=ri(1,3),n=ri(1,3),b=ri(1,4);
+  return{
+    stem:"Consider the region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and the line x = "+b+".",
+    ask:"Find the area of the region.",
+    axis:null,
+    method:"Vertical slices: height = top − bottom = "+mono(a,n,"x")+" − 0.",
+    radius:["height h(x) = "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:mono(a,n,"x"),
+    integrand:[T(a,n)], factor:"none"
+  };
+}},
+
+{id:"A2",topic:"area",diff:1,gen(){
+  const a=ri(1,2),n=ri(2,3),b=ri(1,3), c=a*Math.pow(b,n);
+  return{
+    stem:"Consider the region bounded above by <span class='hl'>y = "+c+"</span>, below by <span class='hl'>y = "+mono(a,n,"x")+"</span>, and on the left by the y-axis.",
+    ask:"Find the area of the region.",
+    axis:null,
+    method:"The curves meet where "+mono(a,n,"x")+" = "+c+", i.e. x = "+b+".",
+    radius:["height h(x) = "+c+" − "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"("+c+" − "+mono(a,n,"x")+")",
+    integrand:psub(pk(c),[T(a,n)]), factor:"none"
+  };
+}},
+
+{id:"A3",topic:"area",diff:2,gen(){
+  const c=ri(2,5);
+  return{
+    stem:"Consider the region enclosed by <span class='hl'>y = x<sup>2</sup></span> and <span class='hl'>y = "+c+"x</span>.",
+    ask:"Find the area of the region.",
+    axis:null,
+    method:"Intersections: x² = "+c+"x ⇒ x = 0 and x = "+c+". On (0,"+c+") the line is on top.",
+    radius:["height h(x) = "+c+"x − x²"],
+    v:"x", lo:ZERO, hi:f(c),
+    body:"("+c+"<i>x</i> − <i>x</i><sup>2</sup>)",
+    integrand:psub([T(c,1)],[T(1,2)]), factor:"none"
+  };
+}},
+
+{id:"A4",topic:"area",diff:2,gen(){
+  const m=ri(2,3);
+  return{
+    stem:"Consider the region enclosed by <span class='hl'>y = "+RAD("<i>x</i>")+"</span> and <span class='hl'>y = x<sup>"+m+"</sup></span>.",
+    ask:"Find the area of the region.",
+    axis:null,
+    method:"The curves cross at x = 0 and x = 1; on (0,1) the square root is on top.",
+    radius:["height h(x) = "+RAD("<i>x</i>")+" − x<sup>"+m+"</sup>"],
+    v:"x", lo:ZERO, hi:ONE,
+    body:"("+RAD("<i>x</i>")+" − <i>x</i><sup>"+m+"</sup>)",
+    integrand:psub([T(1,f(1,2))],[T(1,m)]), factor:"none"
+  };
+}},
+
+{id:"A5",topic:"area",diff:2,gen(){
+  const c=ri(2,5);
+  return{
+    stem:"Consider the region bounded by <span class='hl'>y = "+c+"x − x<sup>2</sup></span> and the x-axis.",
+    ask:"Find the area of the region.",
+    axis:null,
+    method:"The parabola meets y = 0 at x = 0 and x = "+c+", and is above the axis between them.",
+    radius:["height h(x) = "+c+"x − x²"],
+    v:"x", lo:ZERO, hi:f(c),
+    body:"("+c+"<i>x</i> − <i>x</i><sup>2</sup>)",
+    integrand:psub([T(c,1)],[T(1,2)]), factor:"none"
+  };
+}},
+
+{id:"A6",topic:"area",diff:3,gen(){
+  const c=ri(2,4);
+  return{
+    stem:"Consider the region enclosed by <span class='hl'>x = y<sup>2</sup></span> and <span class='hl'>x = "+c+"y</span>.",
+    ask:"Find the area of the region by integrating with respect to y.",
+    axis:null,
+    method:"Horizontal slices: width = right − left. They meet at y = 0 and y = "+c+", with the line on the right.",
+    radius:["width w(y) = "+c+"y − y²"],
+    v:"y", lo:ZERO, hi:f(c),
+    body:"("+c+"<i>y</i> − <i>y</i><sup>2</sup>)",
+    integrand:psub([T(c,1)],[T(1,2)]), factor:"none"
+  };
+}},
+
+{id:"A7",topic:"area",diff:2,gen(){
+  const j=ri(1,3), k=j*j;
+  return{
+    stem:"Consider the region bounded by <span class='hl'>y = "+k+" − x<sup>2</sup></span> and the x-axis.",
+    ask:"Find the area of the region.",
+    axis:null,
+    method:"The parabola crosses y = 0 at x = ±"+j+".",
+    radius:["height h(x) = "+k+" − x²"],
+    v:"x", lo:f(-j), hi:f(j),
+    body:"("+k+" − <i>x</i><sup>2</sup>)",
+    integrand:psub(pk(k),[T(1,2)]), factor:"none"
+  };
+}},
+
+/* ---------------- DISK ---------------- */
+{id:"D1",topic:"disk",diff:1,gen(){
+  const a=ri(1,3),n=ri(1,3),b=ri(1,4);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and x = "+b+" is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"Slices ⟂ to the x-axis are solid disks, so use the disk method in x.",
+    radius:["R(x) = "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"("+mono(a,n,"x")+")<sup>2</sup>",
+    integrand:psq([T(a,n)]), factor:"pi"
+  };
+}},
+
+{id:"D2",topic:"disk",diff:1,gen(){
+  const a=ri(1,4),b=ri(1,4);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+RAD(mono(a,1,"x"))+"</span>, the x-axis, and x = "+b+" is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"Disks in x; squaring the radius clears the radical.",
+    radius:["R(x) = "+RAD(mono(a,1,"x"))],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"("+RAD(mono(a,1,"x"))+")<sup>2</sup>",
+    integrand:[T(a,1)], factor:"pi"
+  };
+}},
+
+{id:"D3",topic:"disk",diff:1,gen(){
+  const a=ri(1,3),n=ri(1,2),c=ri(1,3);
+  return{
+    stem:"The region bounded by <span class='hl'>x = "+mono(a,n,"y")+"</span>, the y-axis, and y = "+c+" is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Rotating about a vertical line with slices ⟂ to it ⇒ disks in y.",
+    radius:["R(y) = "+mono(a,n,"y")],
+    v:"y", lo:ZERO, hi:f(c),
+    body:"("+mono(a,n,"y")+")<sup>2</sup>",
+    integrand:psq([T(a,n)]), factor:"pi"
+  };
+}},
+
+{id:"D4",topic:"disk",diff:2,gen(){
+  const a=ri(1,3),m=ri(1,4),p=ri(0,2),q=p+ri(1,3);
+  return{
+    stem:"The region under <span class='hl'>y = "+RAD(mono(a,1,"x")+" + "+m)+"</span> from x = "+p+" to x = "+q+" is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"Disks in x; the square of the radius is linear.",
+    radius:["R(x) = "+RAD(mono(a,1,"x")+" + "+m)],
+    v:"x", lo:f(p), hi:f(q),
+    body:"("+mono(a,1,"x")+" + "+m+")",
+    integrand:padd([T(a,1)],pk(m)), factor:"pi"
+  };
+}},
+
+{id:"D5",topic:"disk",diff:2,gen(){
+  const j=ri(1,3),k=j*j;
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+k+" − x<sup>2</sup></span> and the x-axis, for x ≥ 0, is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Disks ⟂ to the y-axis: solve for x² = "+k+" − y, so [R(y)]² = "+k+" − y.",
+    radius:["R(y) = "+RAD(k+" − <i>y</i>")+",  y runs from 0 to "+k],
+    v:"y", lo:ZERO, hi:f(k),
+    body:"("+k+" − <i>y</i>)",
+    integrand:psub(pk(k),[T(1,1)]), factor:"pi"
+  };
+}},
+
+{id:"D6",topic:"disk",diff:2,gen(){
+  const a=ri(1,3),b=ri(2,5);
+  return{
+    stem:"The region under <span class='hl'>y = "+a+"/x</span> from x = 1 to x = "+b+" is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"Disks in x. Write the integrand with a negative exponent before antidifferentiating.",
+    radius:["R(x) = "+a+"x<sup>−1</sup>"],
+    v:"x", lo:ONE, hi:f(b),
+    body:"("+a+"<i>x</i><sup>−1</sup>)<sup>2</sup>",
+    integrand:[T(a*a,-2)], factor:"pi"
+  };
+}},
+
+/* ---------------- WASHER ---------------- */
+{id:"W1",topic:"washer",diff:2,gen(){
+  const {up,lo}=pairUL();
+  return{
+    stem:"The region enclosed by <span class='hl'>y = "+up.tex+"</span> and <span class='hl'>y = "+lo.tex+"</span> is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"The curves meet at x = 0 and x = 1. Slices ⟂ to the x-axis are washers.",
+    radius:["R<sub>out</sub>(x) = "+up.tex,"R<sub>in</sub>(x) = "+lo.tex],
+    v:"x", lo:ZERO, hi:ONE,
+    body:"[("+up.tex+")<sup>2</sup> − ("+lo.tex+")<sup>2</sup>]",
+    integrand:psub(psq(up.poly),psq(lo.poly)), factor:"pi"
+  };
+}},
+
+{id:"W2",topic:"washer",diff:2,gen(){
+  const a=ri(1,2),n=ri(1,3),b=ri(1,3),c=a*Math.pow(b,n);
+  return{
+    stem:"The region bounded above by <span class='hl'>y = "+c+"</span>, below by <span class='hl'>y = "+mono(a,n,"x")+"</span>, and on the left by the y-axis is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"The curves meet at x = "+b+". Washers: the line is farther from the axis than the curve.",
+    radius:["R<sub>out</sub>(x) = "+c,"R<sub>in</sub>(x) = "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"["+c+"<sup>2</sup> − ("+mono(a,n,"x")+")<sup>2</sup>]",
+    integrand:psub(pk(c*c),psq([T(a,n)])), factor:"pi"
+  };
+}},
+
+{id:"W3",topic:"washer",diff:2,gen(){
+  const a=ri(1,2),n=ri(1,2),b=ri(1,3),k=ri(1,3);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and x = "+b+" is revolved about the line <span class='hl'>y = −"+k+"</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = −"+k},
+    method:"Measure both radii from y = −"+k+": add "+k+" to each boundary. The hole comes from the x-axis.",
+    radius:["R<sub>out</sub>(x) = "+mono(a,n,"x")+" + "+k,"R<sub>in</sub>(x) = "+k],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"[("+mono(a,n,"x")+" + "+k+")<sup>2</sup> − "+k+"<sup>2</sup>]",
+    integrand:psub(psq(padd([T(a,n)],pk(k))),pk(k*k)), factor:"pi"
+  };
+}},
+
+{id:"W4",topic:"washer",diff:3,gen(){
+  const {up,lo}=pairUL(), k=ri(1,3);
+  return{
+    stem:"The region enclosed by <span class='hl'>y = "+up.tex+"</span> and <span class='hl'>y = "+lo.tex+"</span> is revolved about the line <span class='hl'>y = "+k+"</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = "+k+"  (above the region)"},
+    method:"The axis sits above the region, so the <em>lower</em> curve is farther from it: R = "+k+" − y.",
+    radius:["R<sub>out</sub>(x) = "+k+" − "+lo.tex,"R<sub>in</sub>(x) = "+k+" − "+up.tex],
+    v:"x", lo:ZERO, hi:ONE,
+    body:"[("+k+" − "+lo.tex+")<sup>2</sup> − ("+k+" − "+up.tex+")<sup>2</sup>]",
+    integrand:psub(psq(psub(pk(k),lo.poly)),psq(psub(pk(k),up.poly))), factor:"pi"
+  };
+}},
+
+{id:"W5",topic:"washer",diff:3,gen(){
+  const {up,lo}=pairUL(), k=ri(1,3);
+  return{
+    stem:"The region enclosed by <span class='hl'>y = "+up.tex+"</span> and <span class='hl'>y = "+lo.tex+"</span> is revolved about the line <span class='hl'>y = −"+k+"</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = −"+k+"  (below the region)"},
+    method:"The axis sits below the region, so R = y + "+k+" and the upper curve gives the outer radius.",
+    radius:["R<sub>out</sub>(x) = "+up.tex+" + "+k,"R<sub>in</sub>(x) = "+lo.tex+" + "+k],
+    v:"x", lo:ZERO, hi:ONE,
+    body:"[("+up.tex+" + "+k+")<sup>2</sup> − ("+lo.tex+" + "+k+")<sup>2</sup>]",
+    integrand:psub(psq(padd(up.poly,pk(k))),psq(padd(lo.poly,pk(k)))), factor:"pi"
+  };
+}},
+
+{id:"W6",topic:"washer",diff:3,gen(){
+  const c=ri(2,4);
+  return{
+    stem:"The region enclosed by <span class='hl'>y = "+c+"x</span> and <span class='hl'>y = x<sup>2</sup></span> is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"Intersections at x = 0 and x = "+c+"; the line is on top there, so it is the outer radius.",
+    radius:["R<sub>out</sub>(x) = "+c+"x","R<sub>in</sub>(x) = x<sup>2</sup>"],
+    v:"x", lo:ZERO, hi:f(c),
+    body:"[("+c+"<i>x</i>)<sup>2</sup> − (<i>x</i><sup>2</sup>)<sup>2</sup>]",
+    integrand:psub([T(c*c,2)],[T(1,4)]), factor:"pi"
+  };
+}},
+
+{id:"W7",topic:"washer",diff:3,gen(){
+  const c=ri(2,4);
+  return{
+    stem:"The region enclosed by <span class='hl'>x = "+c+"y</span> and <span class='hl'>x = y<sup>2</sup></span> is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Slices ⟂ to the y-axis are washers; integrate in y from 0 to "+c+", with the line as the outer radius.",
+    radius:["R<sub>out</sub>(y) = "+c+"y","R<sub>in</sub>(y) = y<sup>2</sup>"],
+    v:"y", lo:ZERO, hi:f(c),
+    body:"[("+c+"<i>y</i>)<sup>2</sup> − (<i>y</i><sup>2</sup>)<sup>2</sup>]",
+    integrand:psub([T(c*c,2)],[T(1,4)]), factor:"pi"
+  };
+}},
+
+{id:"W8",topic:"washer",diff:3,gen(){
+  const a=ri(1,2),n=ri(1,2),b=ri(1,3),h=a*Math.pow(b,n);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and x = "+b+" is revolved about the line <span class='hl'>y = "+h+"</span>.",
+    ask:"Find the volume of the solid.",
+    axis:{type:"h",label:"axis of revolution:  y = "+h+"  (touches the curve at x = "+b+")"},
+    method:"Radii are measured downward from y = "+h+". The x-axis is farthest, so it gives R<sub>out</sub>.",
+    radius:["R<sub>out</sub>(x) = "+h,"R<sub>in</sub>(x) = "+h+" − "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"["+h+"<sup>2</sup> − ("+h+" − "+mono(a,n,"x")+")<sup>2</sup>]",
+    integrand:psub(pk(h*h),psq(psub(pk(h),[T(a,n)]))), factor:"pi"
+  };
+}},
+
+/* ---------------- SHELL ---------------- */
+{id:"S1",topic:"shell",diff:1,gen(){
+  const a=ri(1,3),n=ri(1,3),b=ri(1,4);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and x = "+b+" is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Vertical slices are parallel to the axis ⇒ shells, radius x and height "+mono(a,n,"x")+".",
+    radius:["radius = x","height = "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"<i>x</i>("+mono(a,n,"x")+")",
+    integrand:pmul([T(1,1)],[T(a,n)]), factor:"2pi"
+  };
+}},
+
+{id:"S2",topic:"shell",diff:2,gen(){
+  const s=pick([1,2,3]), a=s*s, b=pick([1,4,9]);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+RAD(mono(a,1,"x"))+"</span>, the x-axis, and x = "+b+" is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Shells: "+RAD(mono(a,1,"x"))+" = "+s+RAD("<i>x</i>")+", so the integrand becomes a power of x.",
+    radius:["radius = x","height = "+s+RAD("<i>x</i>")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"<i>x</i>("+s+RAD("<i>x</i>")+")",
+    integrand:[T(s,f(3,2))], factor:"2pi"
+  };
+}},
+
+{id:"S3",topic:"shell",diff:2,gen(){
+  const {up,lo}=pairUL();
+  return{
+    stem:"The region enclosed by <span class='hl'>y = "+up.tex+"</span> and <span class='hl'>y = "+lo.tex+"</span> is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Shell height is the vertical gap between the curves on [0,1].",
+    radius:["radius = x","height = "+up.tex+" − "+lo.tex],
+    v:"x", lo:ZERO, hi:ONE,
+    body:"<i>x</i>("+up.tex+" − "+lo.tex+")",
+    integrand:pmul([T(1,1)],psub(up.poly,lo.poly)), factor:"2pi"
+  };
+}},
+
+{id:"S4",topic:"shell",diff:2,gen(){
+  const c=ri(2,5);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+c+"x − x<sup>2</sup></span> and the x-axis is revolved about the <span class='hl'>y-axis</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = 0"},
+    method:"Shells avoid solving the parabola for x. Limits: x = 0 to x = "+c+".",
+    radius:["radius = x","height = "+c+"x − x²"],
+    v:"x", lo:ZERO, hi:f(c),
+    body:"<i>x</i>("+c+"<i>x</i> − <i>x</i><sup>2</sup>)",
+    integrand:pmul([T(1,1)],psub([T(c,1)],[T(1,2)])), factor:"2pi"
+  };
+}},
+
+{id:"S5",topic:"shell",diff:3,gen(){
+  const a=ri(1,3),n=ri(1,2),b=ri(1,3),k=ri(1,3);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and x = "+b+" is revolved about the line <span class='hl'>x = −"+k+"</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = −"+k},
+    method:"The axis is to the left of the region, so the shell radius is x − (−"+k+") = x + "+k+".",
+    radius:["radius = x + "+k,"height = "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"(<i>x</i> + "+k+")("+mono(a,n,"x")+")",
+    integrand:pmul(padd([T(1,1)],pk(k)),[T(a,n)]), factor:"2pi"
+  };
+}},
+
+{id:"S6",topic:"shell",diff:3,gen(){
+  const a=ri(1,3),n=ri(1,2),b=ri(1,3),c=b+ri(1,3);
+  return{
+    stem:"The region bounded by <span class='hl'>y = "+mono(a,n,"x")+"</span>, the x-axis, and x = "+b+" is revolved about the line <span class='hl'>x = "+c+"</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = "+c+"  (right of the region)"},
+    method:"The axis is to the right of every slice, so the radius is "+c+" − x.",
+    radius:["radius = "+c+" − x","height = "+mono(a,n,"x")],
+    v:"x", lo:ZERO, hi:f(b),
+    body:"("+c+" − <i>x</i>)("+mono(a,n,"x")+")",
+    integrand:pmul(psub(pk(c),[T(1,1)]),[T(a,n)]), factor:"2pi"
+  };
+}},
+
+{id:"S7",topic:"shell",diff:3,gen(){
+  const {up,lo}=pairUL(), c=ri(2,3);
+  return{
+    stem:"The region enclosed by <span class='hl'>y = "+up.tex+"</span> and <span class='hl'>y = "+lo.tex+"</span> is revolved about the line <span class='hl'>x = "+c+"</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"v",label:"axis of revolution:  x = "+c+"  (right of the region)"},
+    method:"Radius "+c+" − x, height "+up.tex+" − "+lo.tex+", on [0,1].",
+    radius:["radius = "+c+" − x","height = "+up.tex+" − "+lo.tex],
+    v:"x", lo:ZERO, hi:ONE,
+    body:"("+c+" − <i>x</i>)("+up.tex+" − "+lo.tex+")",
+    integrand:pmul(psub(pk(c),[T(1,1)]),psub(up.poly,lo.poly)), factor:"2pi"
+  };
+}},
+
+{id:"S8",topic:"shell",diff:3,gen(){
+  const c=ri(2,4);
+  return{
+    stem:"The region bounded by <span class='hl'>x = "+c+"y − y<sup>2</sup></span> and the y-axis is revolved about the <span class='hl'>x-axis</span>.",
+    ask:"Find the volume using cylindrical shells.",
+    axis:{type:"h",label:"axis of revolution:  y = 0"},
+    method:"Horizontal slices are parallel to the x-axis ⇒ shells in y, radius y, length "+c+"y − y².",
+    radius:["radius = y","height = "+c+"y − y²"],
+    v:"y", lo:ZERO, hi:f(c),
+    body:"<i>y</i>("+c+"<i>y</i> − <i>y</i><sup>2</sup>)",
+    integrand:pmul([T(1,1)],psub([T(c,1)],[T(1,2)])), factor:"2pi"
+  };
+}}
+];
+
+/* ============================ engine ============================ */
+const FACT={none:{mult:ONE,pi:false,text:""},
+            pi:{mult:ONE,pi:true,text:"π"},
+            "2pi":{mult:f(2),pi:true,text:"2π"}};
+const METHOD_NAME={area:"Area",disk:"Disk",washer:"Washer",shell:"Shell"};
+const DIFF_NAME={1:"easy",2:"medium",3:"hard"};
+
+function build(t){
+  const q=t.gen();
+  const fa=FACT[q.factor];
+  const coef=fa.mult.mul(pdef(q.integrand,q.lo,q.hi));
+  return Object.assign(q,{id:t.id,topic:t.topic,diff:t.diff,fa:fa,
+    coef:coef, value:coef.num()*(fa.pi?Math.PI:1)});
+}
+
+const state={
+  topics:new Set(["area","disk","washer","shell"]),
+  diff:"mix", exam:false, clock:"off", limit:120, tick:null,
+  byTopic:{area:{n:0,c:0},disk:{n:0,c:0},washer:{n:0,c:0},shell:{n:0,c:0}},
+  n:0, att:0, cor:0, streak:0, best:0, level:1, miss:0, times:[], t0:0,
+  cur:null, answered:false, hinted:false
+};
+
+function poolFor(){
+  let want;
+  if(state.diff==="mix") want=[1,2,3];
+  else if(state.diff==="ramp") want=[state.level];
+  else want=[Number(state.diff)];
+  let p=TEMPLATES.filter(t=>state.topics.has(t.topic)&&want.includes(t.diff));
+  if(!p.length) p=TEMPLATES.filter(t=>state.topics.has(t.topic));
+  if(!p.length) p=TEMPLATES;
+  return p;
+}
+
+let lastId=null;
+function newProblem(){
+  const pool=poolFor();
+  let q,guard=0;
+  do{ q=build(pick(pool)); guard++; }while(pool.length>1 && q.id===lastId && guard<12);
+  lastId=q.id;
+  state.cur=q; state.n++; state.answered=false; state.hinted=false; state.t0=Date.now();
+  startClock();
+  render();
+}
+
+/* ============================ view ============================ */
+const $=id=>document.getElementById(id);
+
+function render(){
+  const q=state.cur;
+  $("tagMethod").textContent=METHOD_NAME[q.topic];
+  $("tagDiff").textContent="· "+DIFF_NAME[q.diff];
+  $("tagCount").textContent="Problem "+state.n;
+  $("stem").innerHTML=q.stem;
+  $("ask").innerHTML=q.ask;
+
+  const al=$("axisline");
+  if(q.axis){
+    al.hidden=false;
+    al.className="axisline"+(q.axis.type==="v"?" vert":"");
+    $("axisLabel").textContent=q.axis.label;
+  }else{ al.hidden=true; }
+
+  $("input").value=""; $("input").disabled=false; $("input").focus();
+  $("verdict").hidden=true; $("verdict").className="verdict";
+  $("work").hidden=true; $("work").innerHTML="";
+  $("check").disabled=false;
+  $("hint").disabled=state.exam; $("solve").disabled=state.exam;
+  $("timer").textContent=state.exam?"Exam mode: hints and solutions are off until you check.":"";
+  updateStats();
+}
+
+function setupHTML(){
+  const q=state.cur;
+  let s="<ol>";
+  s+="<li><span class='label'>Method</span>"+q.method+"</li>";
+  s+="<li><span class='label'>Pieces</span>"+q.radius.join("<br>")+"</li>";
+  s+="<li><span class='label'>Set up the integral</span>"
+    + intHTML(fmtLim(q.lo),fmtLim(q.hi),q.body,q.v,q.fa.text) + "</li>";
+  s+="</ol>";
+  return s;
+}
+function solutionHTML(){
+  const q=state.cur;
+  const expanded=fmtPoly(q.integrand,q.v);
+  const anti=fmtPoly(pint(q.integrand),q.v);
+  const inner=pdef(q.integrand,q.lo,q.hi);
+  let s=setupHTML().replace("</ol>","");
+  s+="<li><span class='label'>Expand the integrand</span>"
+    + intHTML(fmtLim(q.lo),fmtLim(q.hi),"("+expanded+")",q.v,q.fa.text)+"</li>";
+  s+="<li><span class='label'>Antidifferentiate</span>"
+    + q.fa.text+"[ "+anti+" ]<sub>"+fmtLim(q.lo)+"</sub><sup>"+fmtLim(q.hi)+"</sup></li>";
+  s+="<li><span class='label'>Evaluate</span>"
+    + q.fa.text+"·"+fmtExact(inner,false)+" = <b>"+fmtExact(q.coef,q.fa.pi)+"</b>"
+    + " ≈ "+q.value.toFixed(4)+"</li>";
+  s+="</ol>";
+  return s;
+}
+
+function parseAnswer(raw){
+  let s=raw.trim().toLowerCase();
+  if(!s)return null;
+  s=s.replace(/π/g,"pi").replace(/\s+/g,"");
+  s=s.replace(/pi/g,"(3.141592653589793)");
+  s=s.replace(/\^/g,"**");
+  s=s.replace(/(\d)\(/g,"$1*(").replace(/\)(\d)/g,")*$1").replace(/\)\(/g,")*(");
+  if(!/^[0-9+\-*/().e]*$/.test(s))return null;
+  try{
+    const v=Function('"use strict";return ('+s+');')();
+    return (typeof v==="number"&&isFinite(v))?v:null;
+  }catch(e){return null;}
+}
+
+function check(){
+  if(state.answered)return;
+  const q=state.cur, raw=$("input").value;
+  const got=parseAnswer(raw);
+  const v=$("verdict"); v.hidden=false;
+  if(got===null){
+    v.className="verdict no";
+    v.innerHTML="That input didn't parse. Use digits, <code>pi</code>, and + − * / ( ) — for example <code>16pi/15</code>.";
+    return;
+  }
+  const ok=Math.abs(got-q.value)<=1e-3*Math.max(1,Math.abs(q.value));
+  state.answered=true; state.att++;
+  stopClock();
+  const tp=state.byTopic[q.topic]; if(tp) tp.n++;
+  state.times.push((Date.now()-state.t0)/1000);
+  $("check").disabled=true; $("input").disabled=true;
+  $("hint").disabled=false; $("solve").disabled=false;
+
+  if(ok){
+    state.cor++; state.streak++; state.best=Math.max(state.best,state.streak); state.miss=0;
+    if(tp) tp.c++;
+    if(state.diff==="ramp"&&state.streak%3===0&&state.level<3)state.level++;
+    v.className="verdict ok";
+    v.innerHTML="Correct — "+fmtExact(q.coef,q.fa.pi)+" ≈ "+q.value.toFixed(4)+".";
+  }else{
+    state.streak=0; state.miss++;
+    if(state.diff==="ramp"&&state.miss>=2&&state.level>1){state.level--;state.miss=0;}
+    v.className="verdict no";
+    v.innerHTML="Not quite. You gave "+got.toFixed(4)+"; the volume is "
+      +fmtExact(q.coef,q.fa.pi)+" ≈ "+q.value.toFixed(4)+".";
+    showWork(true);
+  }
+  save(); updateStats();
+}
+
+function showWork(full){
+  const w=$("work");
+  w.hidden=false;
+  w.innerHTML=full?solutionHTML():setupHTML();
+}
+
+function updateStats(){
+  $("sAtt").textContent=state.att;
+  $("sCor").textContent=state.cor;
+  $("sPct").textContent=state.att?Math.round(100*state.cor/state.att)+"%":"—";
+  $("sStreak").textContent=state.streak;
+  $("sBest").textContent=state.best;
+  const t=state.times;
+  drawMeters();
+  $("sTime").textContent=t.length?Math.round([...t].sort((a,b)=>a-b)[Math.floor(t.length/2)])+"s":"—";
+}
+
+/* light persistence — falls back to memory if storage is unavailable */
+function save(){
+  try{
+    localStorage.setItem("revtrainer",JSON.stringify({
+      att:state.att,cor:state.cor,best:state.best,times:state.times.slice(-40),
+      clock:state.clock,limit:state.limit,byTopic:state.byTopic}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem("revtrainer")||"null");
+    if(d){state.att=d.att||0;state.cor=d.cor||0;state.best=d.best||0;state.times=d.times||[];
+      if(typeof d.clock==="string")state.clock=d.clock;
+      if(typeof d.limit==="number")state.limit=d.limit;
+      if(d.byTopic)Object.keys(state.byTopic).forEach(k=>{if(d.byTopic[k])state.byTopic[k]=d.byTopic[k]});}
+  }catch(e){}
+}
+
+/* ============================ wiring ============================ */
+/* ── standard features: clock, palette, per-topic meters, reset, keys ── */
+function stopClock(){ if(state.tick){clearInterval(state.tick);state.tick=null;} }
+function startClock(){
+  stopClock();
+  const el=$("clockOut");
+  if(state.clock==="off"){ el.hidden=true; return; }
+  el.hidden=false;
+  const paint=()=>{
+    const sec=(Date.now()-state.t0)/1000;
+    const shown=state.clock==="down"?Math.max(0,state.limit-sec):sec;
+    const m=Math.floor(shown/60),ss=Math.floor(shown%60);
+    el.textContent=String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+    el.className="clockline"+(state.clock==="down"&&shown<=10?" crit":state.clock==="down"&&shown<=30?" warn":"");
+    if(state.clock==="down"&&shown<=0&&!state.answered){
+      stopClock();
+      const v=$("verdict"); v.hidden=false; v.className="verdict no";
+      v.innerHTML="Time. The answer is "+fmtExact(state.cur.coef,state.cur.fa.pi)+".";
+      state.answered=true; state.att++; state.streak=0;
+      const tp=state.byTopic[state.cur.topic]; if(tp) tp.n++;
+      $("check").disabled=true; $("input").disabled=true;
+      $("hint").disabled=false; $("solve").disabled=false;
+      showWork(true); save(); updateStats();
+    }
+  };
+  paint(); state.tick=setInterval(paint,250);
+}
+
+function drawMeters(){
+  const NAMES={area:"Area",disk:"Disk",washer:"Washer",shell:"Shell"};
+  const rows=Object.entries(state.byTopic).filter(([,c])=>c.n);
+  $("meters").innerHTML = rows.length ? rows.map(([k,c])=>{
+    const pct=Math.round(100*c.c/c.n);
+    return `<div class="meter"><div class="mtop"><span class="nm">${NAMES[k]}</span>`+
+           `<span class="val">${pct}% · ${c.n}</span></div>`+
+           `<div class="track"><div class="fill" style="width:${pct}%"></div></div></div>`;
+  }).join("") : "";
+}
+
+(function buildPalette(){
+  const toks=["pi","^","/","sqrt(","(",")"];
+  $("pal").innerHTML=toks.map(t=>`<button type="button" data-ins="${t}">${t}</button>`).join("");
+  $("pal").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-ins]"); if(!b)return;
+    const i=$("input"); if(i.disabled)return;
+    i.value+=b.dataset.ins; i.focus();
+  });
+})();
+
+$("clocks").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-clock]"); if(!b)return;
+  state.clock=b.dataset.clock;
+  $("clocks").querySelectorAll("button[data-clock]").forEach(x=>
+    x.setAttribute("aria-pressed",String(x===b)));
+  save(); startClock();
+});
+$("clockSecs").addEventListener("change",e=>{
+  state.limit=Math.max(15,Math.min(900,+e.target.value||120)); save();
+});
+$("resetBtn").addEventListener("click",()=>{
+  state.att=state.cor=state.streak=state.best=0; state.times=[];
+  Object.keys(state.byTopic).forEach(k=>state.byTopic[k]={n:0,c:0});
+  try{ localStorage.removeItem("revtrainer"); }catch(e){}
+  save(); updateStats();
+});
+
+/* H hint · SPACE solution · S skip — the standard set */
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"){
+    if(e.key==="Enter"&&e.target.id==="input"){ e.preventDefault(); check(); }
+    return;
+  }
+  const k=e.key.toLowerCase();
+  if(k==="h"){ e.preventDefault(); if(!$("hint").disabled) $("hint").click(); }
+  else if(k===" "){ e.preventDefault(); if(!$("solve").disabled) $("solve").click(); }
+  else if(k==="s"){ e.preventDefault(); newProblem(); }
+});
+
+$("topics").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  const t=b.dataset.topic, on=b.getAttribute("aria-pressed")==="true";
+  if(on&&state.topics.size===1)return;
+  if(on){state.topics.delete(t);b.setAttribute("aria-pressed","false");}
+  else{state.topics.add(t);b.setAttribute("aria-pressed","true");}
+  newProblem();
+});
+$("diffs").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");
+  state.diff=b.dataset.diff;
+  if(state.diff==="ramp"){state.level=1;state.miss=0;}
+  newProblem();
+});
+$("modes").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  state.exam=!state.exam;
+  b.setAttribute("aria-pressed",String(state.exam));
+  render();
+});
+$("check").addEventListener("click",check);
+$("next").addEventListener("click",newProblem);
+$("hint").addEventListener("click",()=>{state.hinted=true;showWork(false);});
+$("solve").addEventListener("click",()=>{
+  if(!state.answered){state.answered=true;state.att++;state.streak=0;$("check").disabled=true;$("input").disabled=true;save();updateStats();}
+  showWork(true);
+});
+$("input").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); state.answered?newProblem():check(); }
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&state.answered&&document.activeElement!==$("input")) newProblem();
+});
+
+load();
+$("clocks").querySelectorAll("button[data-clock]").forEach(x=>
+  x.setAttribute("aria-pressed",String(x.dataset.clock===state.clock)));
+$("clockSecs").value=state.limit;
+newProblem();
+</script>
+<script src="../shared/scratchpad.js" defer></script>
+</body>
+</html>
