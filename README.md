@@ -73,6 +73,15 @@ both orientations.
 Everything else — trig and hyperbolic substitution, parametric, polar — supplies
 its own closed form, checked against numerical integration of the curve.
 
+Every trainer starts with **nothing selected** — no techniques, no categories, no
+card families. A first visit shows the empty state ("No problems match your
+filters") until you turn something on, so the deck is something you choose
+rather than something you switch off. Saved selections are taken literally,
+empty included: a technique you turned off stays off across reloads, and one
+added to the bank later stays off until you turn it on. Difficulty is not part
+of this — it is single-select on most pages, where "nothing selected" has no
+meaning.
+
 **The engine is versioned in the URL** — `calc-engine.js?v=2`. Bump that query
 on every page that loads it whenever the engine changes. Without it a visitor
 who already has the old file cached gets it served from disk, and any page

@@ -1667,7 +1667,7 @@ async function saveStore(obj){
 
 /* ── state ──────────────────────────────────────────────── */
 const S={
-  techs:new Set(TECHS.map(t=>t.id)),
+  techs:new Set(),                 /* nothing selected until you choose */
   diffs:new Set([1,2,3,4]),
   mode:'up', limit:90, autoReveal:true, autoNext:false, exam:false, night:true,
   queue:[], cur:null, phase:'ask', hintLevel:0,
@@ -1893,7 +1893,7 @@ function buildTechList(){
     const n=BANK.filter(p=>p.tech===t.id).length;
     const row=el('label','sw');
     row.style.setProperty('--tc',t.color);
-    row.innerHTML='<input type="checkbox" checked data-t="'+t.id+'"><span class="box"></span>'
+    row.innerHTML='<input type="checkbox" data-t="'+t.id+'"><span class="box"></span>'
       +'<span class="nm">'+t.name+'</span><span class="only" role="button" tabindex="0">only</span>'
       +'<span class="ct">'+n+'</span>';
     const cb=row.querySelector('input');
@@ -2054,8 +2054,9 @@ function persist(){
 }
 function applySaved(d){
   if(!d) return;
-  if(Array.isArray(d.techs)&&d.techs.length) S.techs=new Set(d.techs);
-  if(Array.isArray(d.diffs)&&d.diffs.length) S.diffs=new Set(d.diffs.map(Number));
+  /* taken literally, empty included — what you turned off stays off */
+  if(Array.isArray(d.techs)) S.techs=new Set(d.techs);
+  if(Array.isArray(d.diffs)) S.diffs=new Set(d.diffs.map(Number));
   if(d.mode) S.mode=d.mode;
   if(d.limit) S.limit=d.limit;
   if(typeof d.autoReveal==='boolean') S.autoReveal=d.autoReveal;
@@ -2086,6 +2087,7 @@ function keys(e){
     if(k==='/'){ e.preventDefault(); $('#sheetSearch').focus(); }
     return;
   }
+  if(!S.cur) return;                /* nothing on the board — the rest is moot */
   if(k===' '||k==='enter'){
     e.preventDefault();
     if(S.phase==='ask') reveal();

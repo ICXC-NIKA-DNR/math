@@ -169,6 +169,8 @@ button:disabled{opacity:.38;cursor:not-allowed}
 .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;letter-spacing:.08em;
   color:var(--faint);border:1px solid var(--rule2);border-radius:2px;padding:1px 4px;margin-left:6px}
 .spacer{flex:1}
+.fallback{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;line-height:1.7;
+  color:var(--dim);white-space:pre-wrap;display:block;text-align:center;padding:26px 0}
 .hintnote{font-size:12.5px;color:var(--faint);margin:0}
 .pal{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0}
 .pal button{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;padding:5px 9px;
@@ -917,7 +919,7 @@ function build(t){
 }
 
 const state={
-  topics:new Set(["area","disk","washer","shell"]),
+  topics:new Set(),
   diff:"mix", exam:false, clock:"off", limit:120, tick:null,
   byTopic:{area:{n:0,c:0},disk:{n:0,c:0},washer:{n:0,c:0},shell:{n:0,c:0}},
   n:0, att:0, cor:0, streak:0, best:0, level:1, miss:0, times:[], t0:0,
@@ -925,19 +927,20 @@ const state={
 };
 
 function poolFor(){
+  if(!state.topics.size) return [];        /* nothing selected */
   let want;
   if(state.diff==="mix") want=[1,2,3];
   else if(state.diff==="ramp") want=[state.level];
   else want=[Number(state.diff)];
   let p=TEMPLATES.filter(t=>state.topics.has(t.topic)&&want.includes(t.diff));
-  if(!p.length) p=TEMPLATES.filter(t=>state.topics.has(t.topic));
-  if(!p.length) p=TEMPLATES;
+  if(!p.length) p=TEMPLATES.filter(t=>state.topics.has(t.topic));  /* that tier is empty here */
   return p;
 }
 
 let lastId=null;
 function newProblem(){
   const pool=poolFor();
+  if(!pool.length){ renderEmpty(); return; }
   let q,guard=0;
   do{ q=build(pick(pool)); guard++; }while(pool.length>1 && q.id===lastId && guard<12);
   lastId=q.id;
@@ -948,6 +951,23 @@ function newProblem(){
 
 /* ============================ view ============================ */
 const $=id=>document.getElementById(id);
+
+/* Nothing selected is a legitimate state, not an error: say so and stop,
+   the way Integration Bench does, instead of quietly drawing from everything. */
+function renderEmpty(){
+  stopClock();
+  state.cur=null; lastId=null;
+  $("tagMethod").textContent="—"; $("tagDiff").textContent=""; $("tagCount").textContent="";
+  $("clockOut").hidden=true;
+  $("stem").innerHTML='<span class="fallback">No problems match your filters.\nTurn on a technique.</span>';
+  $("ask").innerHTML=""; $("axisline").hidden=true;
+  $("input").value=""; $("input").disabled=true;
+  $("verdict").hidden=true; $("work").hidden=true; $("work").innerHTML="";
+  $("timer").textContent="";
+  ["check","hint","solve"].forEach(id=>{ $(id).disabled=true; });
+  updateStats();
+}
+
 
 function render(){
   const q=state.cur;
@@ -1015,7 +1035,7 @@ function parseAnswer(raw){
 }
 
 function check(){
-  if(state.answered)return;
+  if(state.answered||!state.cur)return;
   const q=state.cur, raw=$("input").value;
   const got=parseAnswer(raw);
   const v=$("verdict"); v.hidden=false;
@@ -1050,6 +1070,7 @@ function check(){
 }
 
 function showWork(full){
+  if(!state.cur) return;
   const w=$("work");
   w.hidden=false;
   w.innerHTML=full?solutionHTML():setupHTML();
@@ -1142,7 +1163,6 @@ function buildTopicList(){
     cb.addEventListener("change",()=>{
       const k=cb.dataset.topic;
       if(cb.checked) state.topics.add(k);
-      else if(state.topics.size===1){ cb.checked=true; return; }   /* never empty the pool */
       else state.topics.delete(k);
       newProblem();
     });
@@ -1156,8 +1176,7 @@ function buildTopicList(){
   });
   document.querySelectorAll('.clabel .mini').forEach(m=>{
     m.addEventListener("click",()=>{
-      if(m.dataset.all) state.topics=new Set(Object.keys(METHOD_NAME));
-      else state.topics=new Set([Object.keys(METHOD_NAME)[0]]);
+      state.topics = m.dataset.all ? new Set(Object.keys(METHOD_NAME)) : new Set();
       syncTopics(); newProblem();
     });
   });

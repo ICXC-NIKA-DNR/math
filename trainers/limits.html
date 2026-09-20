@@ -69,13 +69,17 @@ h1{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:.01em;
 .sw input:not(:checked)~.nm{color:var(--faint)}
 .sw .ct{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
 
-.segs{display:flex;gap:6px;flex-wrap:wrap}
-.seg{height:32px;padding:0 12px;border-radius:4px;border:1px solid var(--rule);background:none;
-  color:var(--dim);cursor:pointer;font:inherit;font-size:12.5px;transition:all .15s}
+/* the shared segmented control: mono, equal-width, three across the console */
+.segs{display:flex;gap:5px;flex-wrap:wrap}
+.seg{flex:1 0 auto;min-width:56px;padding:7px 6px;border-radius:4px;border:1px solid var(--rule);
+  background:var(--bg);color:var(--dim);cursor:pointer;white-space:nowrap;
+  font-family:var(--mono);font-size:11.5px;transition:all .15s}
 .seg:hover{color:var(--a2t);border-color:var(--a1)}
 .seg.on{border-color:var(--a2);background:var(--a2b);color:var(--a3t)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;
   color:var(--dim)}
+/* an explicit display beats the hidden attribute — say so, or hidden does nothing */
+.row[hidden],.toggle-row[hidden]{display:none}
 .toggle-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);
   padding:4px 0;cursor:pointer}
 .toggle-row input{appearance:none;-webkit-appearance:none;margin:0;
@@ -96,6 +100,8 @@ h1{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:.01em;
 .btn.solid{border-color:var(--a2);background:var(--a2b);color:var(--a3t)}
 .btn.solid:hover:enabled{background:var(--a3b);border-color:var(--a3)}
 .btn.wide{width:100%;justify-content:center}
+.fallback{font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--dim);
+  white-space:pre-wrap;display:block;text-align:center;padding:26px 0}
 .kbd{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--faint);
   margin-left:6px}
 
@@ -195,13 +201,12 @@ input[type=text]:focus{outline:none;border-color:var(--a2)}
         <button class="seg on" data-clock="up">Stopwatch</button>
         <button class="seg" data-clock="down">Countdown</button>
       </div>
-      <div class="row" style="margin-top:10px">
+      <div class="row" id="limitField" style="margin-top:10px" hidden>
         <span>Seconds per problem</span>
         <input type="number" id="limitSecs" min="10" max="600" step="5" value="60">
       </div>
-      <label class="sw" style="margin-top:6px">
-        <input type="checkbox" id="autoReveal" checked><span class="box"></span>
-        <span class="nm">Reveal when time runs out</span>
+      <label class="toggle-row" id="autoRevealRow" hidden>
+        <input type="checkbox" id="autoReveal" checked> Reveal when time runs out
       </label>
       <label class="toggle-row"><input type="checkbox" id="examBtn"> Exam mode</label>
       <p class="examnote" id="examNote" hidden>Hints and solutions are locked until you check.</p>
@@ -589,7 +594,7 @@ function kindOf(p){ return canon(p.a) ? 'typed' : 'choice'; }
 
 /* ── state ───────────────────────────────────────────────────────── */
 const S={
-  cats:new Set(CATS.map(c=>c[0])),
+  cats:new Set(),                 /* nothing selected until you choose */
   clock:'up', limit:60, autoReveal:true, exam:false,
   cur:null, phase:'ask', hinted:false, t0:0, tick:null,
   att:0, sol:0, streak:0, best:0, times:[],
@@ -620,7 +625,6 @@ function drawConsole(){
   $('#cats').querySelectorAll('input').forEach(i=>i.onchange=()=>{
     const k=i.dataset.cat;
     if(i.checked) S.cats.add(k); else S.cats.delete(k);
-    if(!S.cats.size){ S.cats.add(k); i.checked=true; }
     $('#chipPool').textContent=poolSize(); persist(); next();
   });
   $('#chipPool').textContent=poolSize();
@@ -746,8 +750,19 @@ function startClock(){
 }
 
 /* ── flow ────────────────────────────────────────────────────────── */
+function renderEmpty(){
+  stopClock(); S.cur=null; S.phase='empty';
+  $('#mTag').textContent='—'; $('#mTech').textContent='';
+  $('#mClock').textContent='--:--';
+  $('#q').innerHTML='<span class="fallback">No problems match your filters.\nTurn on a category.</span>';
+  $('#answerZone').innerHTML='';
+  $('#verdict').hidden=true; $('#hintbox').hidden=true; $('#expl').hidden=true;
+  $('#nextBtn').hidden=true; $('#skipBtn').hidden=true;
+  $('#hintBtn').disabled=true; $('#solveBtn').disabled=true;
+}
 function next(){
-  const p=gen(); if(!p) return;
+  const p=gen();
+  if(!p){ renderEmpty(); return; }
   S.cur=p; S.phase='ask'; S.hinted=false;
   drawQuestion(); startClock();
 }
@@ -763,12 +778,10 @@ function persist(){
 function restore(){
   try{
     const d=JSON.parse(localStorage.getItem(KEY)||'null'); if(!d) return;
-    if(Array.isArray(d.cats)&&d.cats.length){
-      S.cats=new Set(d.cats.filter(k=>G[k]));
-      /* categories added since the save default to ON — otherwise new content
-         stays silently hidden from anyone with existing progress */
-      CATS.forEach(([k])=>{ if(!d.cats.includes(k)) S.cats.add(k); });
-    }
+    /* the saved list is taken literally, empty included: the deck is what you
+       chose, so a category you turned off stays off and one added later stays
+       off until you turn it on */
+    if(Array.isArray(d.cats)) S.cats=new Set(d.cats.filter(k=>G[k]));
     if(typeof d.clock==='string') S.clock=d.clock;
     if(typeof d.limit==='number') S.limit=d.limit;
     if(typeof d.autoReveal==='boolean') S.autoReveal=d.autoReveal;
@@ -791,14 +804,20 @@ $('#skipBtn').onclick=skip;
 $('#nextBtn').onclick=next;
 $('#allNone').onclick=()=>{
   const all=S.cats.size===CATS.length;
-  S.cats=new Set(all?[CATS[0][0]]:CATS.map(c=>c[0]));
+  S.cats=new Set(all?[]:CATS.map(c=>c[0]));
   drawConsole(); persist(); next();
 };
 $('#clockSegs').querySelectorAll('.seg').forEach(b=>b.onclick=()=>{
   S.clock=b.dataset.clock;
   $('#clockSegs').querySelectorAll('.seg').forEach(x=>x.classList.toggle('on',x===b));
+  syncClockFields();
   persist(); startClock();
 });
+/* the countdown's two options only mean anything in countdown mode */
+function syncClockFields(){
+  $('#limitField').hidden=S.clock!=='down';
+  $('#autoRevealRow').hidden=S.clock!=='down';
+}
 $('#limitSecs').onchange=e=>{ S.limit=Math.max(10,Math.min(600,+e.target.value||60)); persist(); };
 $('#autoReveal').onchange=e=>{ S.autoReveal=e.target.checked; persist(); };
 $('#examBtn').onchange=e=>{
@@ -828,6 +847,7 @@ drawConsole();
 $('#clockSegs').querySelectorAll('.seg').forEach(b=>b.classList.toggle('on',b.dataset.clock===S.clock));
 $('#limitSecs').value=S.limit;
 $('#autoReveal').checked=S.autoReveal;
+syncClockFields();
 $('#examBtn').checked=S.exam;
 $('#examNote').hidden=!S.exam;
 drawStats();

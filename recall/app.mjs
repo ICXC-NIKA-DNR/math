@@ -323,8 +323,11 @@ export function boot(bank) {
   BANK = bank;
   TREE = E.buildTree(bank);
   const saved = store.get("state", null);
-  state = saved && saved.levels ? saved : E.defaultState(TREE);
-  for (const l of E.leaves(TREE)) if (state.levels[l] == null) state.levels[l] = E.LEVELS.hard;
+  // First run starts with every family off, so the deck is something you choose
+  // rather than something you switch off. defaultState stays "everything at
+  // hard" — it is the engine's primitive and its tests rely on that.
+  state = saved && saved.levels ? saved : E.setNodeLevel(E.defaultState(TREE), TREE, "", E.OFF);
+  for (const l of E.leaves(TREE)) if (state.levels[l] == null) state.levels[l] = E.OFF;
   opts = store.get("opts", { timed: true });
   misses = store.get("misses", []).filter((id) => bank.cards.some((c) => c.id === id));
   drawSetup();
