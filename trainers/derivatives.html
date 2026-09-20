@@ -10,9 +10,10 @@
 :root{
   --bg:#080808; --bg2:#000000; --panel:#111111; --panel2:#171717; --line:#2A2A2A;
   --chalk:#F4F4F4; --muted:#A0A0A0; --dim:#666666;
-  --amber:#F2A93B; --mint:#5BD6A0; --rose:#FF7A85; --blue:#8FB6FF;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --amber:#F2A93B; --good:#EFD7B3; --bad:#B0966D; --warn:#E0BC85;
+  --mono:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -35,8 +36,8 @@ body{
 header{display:flex; flex-wrap:wrap; gap:18px; align-items:flex-end; justify-content:space-between;
   border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:22px}
 .brand{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
-.ddx{font-family:"KaTeX_Math",Georgia,serif; font-style:italic; font-size:30px; color:var(--amber); line-height:1}
-h1{font-family:var(--mono); font-size:15px; letter-spacing:.34em; text-transform:uppercase; margin:0; font-weight:600}
+.ddx{font-family:var(--serif); font-style:italic; font-size:30px; color:var(--amber); line-height:1}
+h1{font-family:var(--serif); font-size:26px; letter-spacing:.01em; margin:0; font-weight:600}
 .tag{margin:0; font-size:12.5px; color:var(--dim); font-family:var(--mono); letter-spacing:.04em}
 .statbar{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end}
 .stat{min-width:62px}
@@ -63,8 +64,8 @@ main{display:grid; grid-template-columns:296px minmax(0,1fr); gap:20px; align-it
 .cardhead{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:16px}
 .badge{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
   padding:4px 9px; border-radius:999px; border:1px solid var(--line); color:var(--muted); background:#00000030}
-.badge.t{color:var(--blue); border-color:#39456b}
-.badge.l1{color:var(--mint)} .badge.l2{color:var(--amber)} .badge.l3{color:var(--rose)}
+.badge.t{color:var(--warn); border-color:#3A3A3A}
+.badge.l1{color:var(--good)} .badge.l2{color:var(--amber)} .badge.l3{color:var(--bad)}
 .clock{margin-left:auto; font-family:var(--mono); font-size:11.5px; color:var(--dim); font-variant-numeric:tabular-nums}
 
 .ask{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--amber); margin-bottom:10px}
@@ -73,16 +74,16 @@ main{display:grid; grid-template-columns:296px minmax(0,1fr); gap:20px; align-it
 .note{font-size:13px; color:var(--muted); margin:-8px 0 14px; border-left:2px solid var(--line); padding-left:11px}
 
 .inputrow{display:flex; gap:9px; align-items:stretch}
-input[type=text]{flex:1; min-width:0; background:#0C0912; border:1px solid var(--line); color:var(--chalk);
+input[type=text]{flex:1; min-width:0; background:#0C0C0C; border:1px solid var(--line); color:var(--chalk);
   border-radius:9px; padding:13px 14px; font-family:var(--mono); font-size:16px; outline:none; transition:border-color .15s, box-shadow .15s}
-input[type=text]::placeholder{color:#5A5370}
+input[type=text]::placeholder{color:#5A5A5A}
 input[type=text]:focus{border-color:var(--amber); box-shadow:0 0 0 3px rgba(242,169,59,.13)}
-input.good{border-color:var(--mint); box-shadow:0 0 0 3px rgba(91,214,160,.13)}
-input.bad{border-color:var(--rose); box-shadow:0 0 0 3px rgba(255,122,133,.13)}
+input.good{border-color:var(--good); box-shadow:0 0 0 3px rgba(239,215,179,.13)}
+input.bad{border-color:var(--bad); box-shadow:0 0 0 3px rgba(176,150,109,.13)}
 button{font-family:var(--mono); font-size:12px; letter-spacing:.11em; text-transform:uppercase;
-  background:#241F30; color:var(--chalk); border:1px solid var(--line); border-radius:9px;
+  background:#1C1C1C; color:var(--chalk); border:1px solid var(--line); border-radius:9px;
   padding:11px 15px; cursor:pointer; transition:background .14s,border-color .14s,color .14s}
-button:hover{background:#2E2740; border-color:#4A3F63}
+button:hover{background:#242424; border-color:#3A3A3A}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
 button.primary{background:var(--amber); color:#1A1206; border-color:var(--amber); font-weight:700}
 button.primary:hover{background:#FFBC55; border-color:#FFBC55}
@@ -91,14 +92,14 @@ button.ghost:hover{color:var(--chalk)}
 
 .preview{min-height:26px; margin-top:9px; font-size:15px; color:var(--muted); overflow-x:auto}
 .preview .katex{color:var(--muted)}
-.preview .err{font-family:var(--mono); font-size:12px; color:var(--rose)}
+.preview .err{font-family:var(--mono); font-size:12px; color:var(--bad)}
 
 .keys{display:flex; gap:6px; flex-wrap:wrap; margin-top:11px}
 .keys button{padding:6px 10px; font-size:12px; letter-spacing:0; text-transform:none; font-family:var(--mono); color:var(--muted)}
 
 .verdict{margin-top:14px; font-family:var(--mono); font-size:13px; letter-spacing:.05em; display:none}
 .verdict.show{display:block}
-.verdict.ok{color:var(--mint)} .verdict.no{color:var(--rose)} .verdict.info{color:var(--blue)}
+.verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)} .verdict.info{color:var(--warn)}
 
 .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; padding-top:15px; border-top:1px solid var(--line)}
 
@@ -108,7 +109,7 @@ button.ghost:hover{color:var(--chalk)}
 .step .lab{font-family:var(--mono); font-size:10px; letter-spacing:.17em; text-transform:uppercase; color:var(--dim); margin-bottom:6px}
 .step .body{font-size:16px; overflow-x:auto; padding-bottom:3px}
 .step.final .body{font-size:19px}
-.step.final .body .katex{color:var(--mint)}
+.step.final .body .katex{color:var(--good)}
 
 /* ---------- rail ---------- */
 main > .stage{grid-column:2; grid-row:1; display:flex; flex-direction:column; gap:20px; min-width:0}
@@ -124,7 +125,14 @@ main > .stage{grid-column:2; grid-row:1; display:flex; flex-direction:column; ga
 /* mode toggles, in Integration Bench's vocabulary: a plain checkbox, not a pill */
 .toggle-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted);
   padding:4px 0; cursor:pointer}
-.toggle-row input{accent-color:var(--amber); width:14px; height:14px; flex:none; cursor:pointer}
+.toggle-row input{appearance:none;-webkit-appearance:none;margin:0;
+  width:15px;height:15px;flex:none;border:1px solid var(--line);border-radius:2px;
+  background:var(--bg);position:relative;cursor:pointer;transition:.12s}
+.toggle-row input:checked{background:var(--amber);border-color:var(--amber)}
+.toggle-row input:checked::after{content:"";position:absolute;inset:0;background:var(--bg);
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat}
+.toggle-row input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .toggle-row:hover{color:var(--chalk)}
 
 .topics{display:flex; flex-direction:column; gap:2px}
@@ -133,20 +141,20 @@ main > .stage{grid-column:2; grid-row:1; display:flex; flex-direction:column; ga
 .topic:hover{background:#00000030}
 .topic .head{display:flex; align-items:center; gap:9px}
 .topic input{appearance:none; -webkit-appearance:none; width:15px; height:15px; flex:none; margin:0;
-  border:1px solid var(--line); border-radius:4px; background:#0C0912; cursor:pointer; position:relative}
+  border:1px solid var(--line); border-radius:4px; background:#0C0C0C; cursor:pointer; position:relative}
 .topic input:checked{background:var(--amber); border-color:var(--amber)}
 .topic input:checked::after{content:""; position:absolute; left:4px; top:1px; width:4px; height:8px;
   border:solid #1A1206; border-width:0 2px 2px 0; transform:rotate(42deg)}
 .topic .name{font-size:13px; color:var(--muted); flex:1; min-width:0}
 .topic input:checked ~ .name{color:var(--chalk)}
 .topic .pct{font-family:var(--mono); font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums}
-.bar{height:3px; border-radius:2px; background:#2A2438; margin:6px 0 0 24px; overflow:hidden}
-.bar i{display:block; height:100%; background:var(--mint); width:0; transition:width .3s}
-.bar i.weak{background:var(--rose)} .bar i.mid{background:var(--amber)}
+.bar{height:3px; border-radius:2px; background:#222222; margin:6px 0 0 24px; overflow:hidden}
+.bar i{display:block; height:100%; background:var(--good); width:0; transition:width .3s}
+.bar i.weak{background:var(--bad)} .bar i.mid{background:var(--amber)}
 
 .help{font-size:12.5px; color:var(--muted); line-height:1.65}
 .help code{font-family:var(--mono); font-size:11.5px; background:#00000045; border:1px solid var(--line);
-  padding:1px 5px; border-radius:5px; color:var(--blue)}
+  padding:1px 5px; border-radius:5px; color:var(--warn)}
 .help p{margin:0 0 8px}
 footer{margin-top:26px; font-family:var(--mono); font-size:11px; color:var(--dim); text-align:center; letter-spacing:.05em}
 .kbd{font-family:var(--mono); font-size:10.5px; border:1px solid var(--line); border-bottom-width:2px;
@@ -180,7 +188,6 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <span class="ddx">d/dx</span>
       <div>
         <h1>Derivatives</h1>
-        <p class="tag">infinite reps &middot; every Calc&nbsp;1 technique</p>
       </div>
     </div>
     <div class="statbar">
@@ -198,23 +205,23 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   <main>
     <aside class="rail">
       <div class="panel">
-        <h2>Difficulty</h2>
-        <div class="seg" id="levels">
-          <button data-l="1">1</button><button data-l="2">2</button>
-          <button data-l="3">3</button><button data-l="0" class="on">Mix</button>
-        </div>
-        <label class="toggle-row"><input type="checkbox" id="adaptive" checked> Drill my weak spots</label>
-        <label class="toggle-row"><input type="checkbox" id="autonext"> Auto-advance when correct</label>
-        <label class="toggle-row"><input type="checkbox" id="exam"> Exam mode</label>
-      </div>
-
-      <div class="panel">
         <h2>Techniques <span id="tcount" style="float:right;color:var(--dim)"></span></h2>
         <div class="topics" id="topics"></div>
         <div class="row" style="margin-top:12px">
           <button class="ghost" id="btn-all" style="flex:1">All</button>
           <button class="ghost" id="btn-none" style="flex:1">None</button>
         </div>
+      </div>
+
+      <div class="panel">
+        <h2>Difficulty</h2>
+        <div class="seg" id="levels">
+          <button data-l="1">Easy</button><button data-l="2">Medium</button>
+          <button data-l="3">Hard</button><button data-l="0" class="on">Mixed</button>
+        </div>
+        <label class="toggle-row"><input type="checkbox" id="adaptive" checked> Drill my weak spots</label>
+        <label class="toggle-row"><input type="checkbox" id="autonext"> Auto-advance when correct</label>
+        <label class="toggle-row"><input type="checkbox" id="exam"> Exam mode</label>
       </div>
 
       
@@ -239,7 +246,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="inputrow">
         <input type="text" id="answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                placeholder="type your derivative, e.g. 2x*cos(x^2)" aria-label="Your answer">
-        <button class="primary" id="btn-check">Check</button>
+        <button class="primary" id="btn-check">Check answer</button>
       </div>
       <div class="preview" id="preview"></div>
       <div class="keys" id="keys"></div>
@@ -247,10 +254,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="verdict" id="verdict"></div>
 
       <div class="actions">
-        <button id="btn-hint" title="First press names the technique, second shows the half-done derivative">Hint</button>
-        <button id="btn-sol" title="Counts as missed">Show solution</button>
-        <button class="ghost" id="btn-skip" title="Counts as missed">Skip</button>
-        <button class="ghost" id="btn-next" style="margin-left:auto">Next problem →</button>
+        <button id="btn-hint" title="First press names the technique, second shows the half-done derivative">Hint <span class="kbd">H</span></button>
+        <button id="btn-sol" title="Counts as missed">Show solution <span class="kbd">SPACE</span></button>
+        <button class="ghost" id="btn-skip" title="Counts as missed">Skip <span class="kbd">S</span></button>
+        <button class="ghost" id="btn-next" style="margin-left:auto">Next problem</button>
       </div>
 
       <div class="solution" id="solution"></div>
@@ -270,8 +277,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 
 
   <footer>
-    <span class="kbd">Enter</span> check / next &nbsp;·&nbsp; <span class="kbd">Esc</span> skip &nbsp;·&nbsp;
-    <span class="kbd">?</span> hint &nbsp;·&nbsp; built for repetition
+    <span class="kbd">Enter</span> check / next &nbsp;·&nbsp; <span class="kbd">H</span> hint &nbsp;·&nbsp;
+    <span class="kbd">SPACE</span> solution &nbsp;·&nbsp; <span class="kbd">S</span> skip
   </footer>
 </div>
 
@@ -1662,7 +1669,7 @@ function newProblem(){
                   : cur.stem === 'point' ? 'a single number — exact or 6+ decimals'
                   : cur.stem === 'tangent' ? 'y = …' : 'type your derivative';
   $('preview').innerHTML = '';
-  $('btn-sol').textContent = 'Show solution';
+  $('btn-sol').innerHTML = 'Show solution <span class="kbd">SPACE</span>';
   $('btn-hint').disabled = EXAM;
   $('btn-sol').disabled = EXAM;
   t0 = Date.now();
@@ -1797,9 +1804,12 @@ $('answer').addEventListener('keydown', function(e){
 });
 document.addEventListener('keydown', function(e){
   if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
-  if (e.key === 'Escape'){ e.preventDefault(); skip(); }
-  else if (e.key === '?'){ e.preventDefault(); hint(); }
-  else if (e.key === 'Enter'){ e.preventDefault(); check(); }
+  var k = e.key.toLowerCase();
+  if (e.key === 'Escape'){ e.preventDefault(); skip(); }          /* kept as an alias */
+  else if (k === 'h' || e.key === '?'){ e.preventDefault(); if(!$('btn-hint').disabled) hint(); }
+  else if (k === ' '){ e.preventDefault(); if(!$('btn-sol').disabled) reveal(); }
+  else if (k === 's'){ e.preventDefault(); skip(); }
+  else if (e.key === 'Enter'){ e.preventDefault(); answered ? newProblem() : check(); }
 });
 
 var KEYS = ['x','^','( )','/','sqrt(','e^(','ln(','sin(','cos(','tan(','sec(','arctan(','pi'];

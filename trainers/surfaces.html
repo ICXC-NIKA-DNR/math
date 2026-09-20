@@ -17,11 +17,12 @@
   --a1t:#D49FDA; --a2t:#E4C0E8; --a3t:#F2DCF4;
 
   --axis:#D08AD8;          /* the curve / interval rule */
-  --good:#7CCBA6;
-  --bad:#F09E92;
+  --good:#EAB3EF;
+  --bad:#AA6DB0; --warn:#D885E0;
 
   --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
-  --sans: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  --sans:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -43,7 +44,7 @@ body{
 .home-link:hover{color:var(--a3t);border-color:var(--a2);background:var(--a1b)}
 
 header{border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:24px}
-h1{font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;color:var(--tx)}
+h1{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.01em;margin:0;color:var(--tx)}
 header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:66ch}
 
 /* ── console left, stage right — the shape every trainer uses ─────────── */
@@ -113,7 +114,14 @@ header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:66ch}
   font-size:12px;color:var(--tx)}
 .toggle-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);
   padding:4px 0;cursor:pointer}
-.toggle-row input{accent-color:var(--acc);width:14px;height:14px}
+.toggle-row input{appearance:none;-webkit-appearance:none;margin:0;
+  width:15px;height:15px;flex:none;border:1px solid var(--a0);border-radius:2px;
+  background:var(--bg);position:relative;cursor:pointer;transition:.12s}
+.toggle-row input:checked{background:var(--acc);border-color:var(--acc)}
+.toggle-row input:checked::after{content:"";position:absolute;inset:0;background:var(--bg);
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat}
+.toggle-row input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .field[hidden]{display:none}          /* [hidden] loses to an explicit display */
 .console details{border:0;background:none;padding:0;margin:0}
 
@@ -154,6 +162,9 @@ button:hover:enabled{background:var(--a2b);border-color:var(--a3)}
 button.ghost{background:none;color:var(--dim);border-color:var(--rule)}
 button.ghost:hover:enabled{color:var(--tx);border-color:var(--a1);background:var(--a1b)}
 button:disabled{opacity:.38;cursor:not-allowed}
+.kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;letter-spacing:.08em;
+  color:var(--faint);border:1px solid var(--rule2);border-radius:2px;padding:1px 4px;margin-left:6px}
+.spacer{flex:1}
 .hintnote{font-size:12.5px;color:var(--faint);margin:0}
 .pal{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0}
 .pal button{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;padding:5px 9px;
@@ -162,7 +173,7 @@ button:disabled{opacity:.38;cursor:not-allowed}
 .pal button:hover{color:var(--a3t);border-color:var(--a1)}
 .clockline{margin-left:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;
   color:var(--dim2);letter-spacing:.02em}
-.clockline.warn{color:#E8B75C}.clockline.crit{color:var(--bad)}
+.clockline.warn{color:var(--warn)}.clockline.crit{color:var(--bad)}
 .meters{display:flex;flex-direction:column;gap:9px}
 .meters:empty{display:none}
 .console details .ref{font-size:12.5px;line-height:1.5}
@@ -230,7 +241,6 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 
 <header>
   <h1>Surfaces</h1>
-  <p>Randomly generated Calculus II surface-of-revolution problems. Every one is an arc-length integrand carrying a radius: <b>S = 2π ∫ (radius) ds</b>. Cones and frustums, spherical zones, the perfect-square family, u-substitution, catenoids, parametric and polar curves. Type an exact answer like <code>15pi</code>, <code>32pi/5</code> or <code>pi(10sqrt(10)-1)/27</code>, or a decimal.</p>
 </header>
 
 <div class="grid">
@@ -284,6 +294,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     <div>Perfect-square family: when 1 + [<i>y′</i>]² collapses to a square, radius × ds is an ordinary polynomial and the whole integral is exact.</div>
     <div>Off-axis lines: about <span class="hl"><i>y</i> = k</span> the radius is |<i>y</i> − k|; about <span class="hl"><i>x</i> = c</span> it is |<i>x</i> − c|. <b>ds does not change</b> — only the radius does. Shifting the axis adds a constant to the radius, so anything exact about an axis stays exact about a parallel line.</div>
     <div>Checks worth keeping: cone π<i>Rl</i> · frustum π(<i>R</i><sub>1</sub>+<i>R</i><sub>2</sub>)<i>l</i> · sphere 4π<i>R</i>² · torus 4π²<i>Rr</i>.</div>
+    <div>Answers: type an exact value like <code>15pi</code>, <code>32pi/5</code> or <code>pi(10sqrt(10)-1)/27</code>, or a decimal.</div>
   </div>
 </details>
   </div>
@@ -305,9 +316,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     <div class="answer">
       <input type="text" id="input" placeholder="e.g. 15pi or pi(10sqrt(10)-1)/27" autocomplete="off" spellcheck="false" aria-label="Your answer">
       <button id="check">Check answer</button>
-      <button class="ghost" id="hint">Show setup</button>
-      <button class="ghost" id="solve">Show solution</button>
-      <button class="ghost" id="next">Next problem</button>
+      <button class="ghost" id="hint">Hint <span class="kbd">H</span></button>
+      <button class="ghost" id="solve">Show solution <span class="kbd">SPACE</span></button>
+      <span class="spacer"></span>
+      <button class="ghost" id="next">Next problem <span class="kbd">S</span></button>
     </div>
     <div class="pal" id="pal"></div>
     <p class="hintnote" id="timer"></p>
