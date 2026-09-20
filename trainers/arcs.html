@@ -59,23 +59,73 @@ header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:66ch}
 .stage{display:flex;flex-direction:column;gap:16px;min-width:0}
 .stage > *{margin:0}
 .controls{display:flex;flex-direction:column;gap:20px;align-items:stretch}
-.controls .chips{gap:6px}
-.console .group h2{margin-bottom:8px}
-.console #clocks{align-items:center}
 @media (max-width:860px){
   .grid{grid-template-columns:1fr}
   .console{position:static;max-height:none}
 }
-.group{display:flex;flex-direction:column;gap:8px}
-.group h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:400;
-  color:var(--faint);margin:0}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{font:inherit;font-size:13px;height:34px;padding:0 14px;border:1px solid var(--a0);
-  background:none;color:var(--faint);cursor:pointer;border-radius:17px;
-  transition:color .15s,border-color .15s,background .15s}
-.chip:hover{color:var(--a2t);border-color:var(--a1)}
-.chip[aria-pressed="true"]{background:var(--a3b);border-color:var(--a3);color:var(--a3t)}
-.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+
+/* ── console components, ported from Integration Bench ───────────
+   Bench is the reference console: labelled groups with a rule, checkbox rows
+   for anything multi-select, segmented buttons for anything single-select,
+   plain checkboxes for modes. Pills are gone. ─────────────────── */
+.console{--acc:var(--a2);--acc-line:var(--a1);--acc-tint:var(--a3t);--acc-bg:var(--a2b);--r:4px;
+  padding:0}
+.controls{display:block;gap:0}
+.cgroup{padding:14px 16px 15px;border-bottom:1px solid var(--rule2)}
+.cgroup:last-child{border-bottom:none}
+.cgroup:has(.meters:empty){display:none}
+.clabel{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:8px;
+  margin-bottom:11px}
+.clabel .rule{flex:1;height:1px;background:var(--rule2)}
+.clabel .mini{letter-spacing:.04em;text-transform:none;color:var(--dim);cursor:pointer;
+  border-bottom:1px dotted var(--faint)}
+.clabel .mini:hover{color:var(--acc);border-color:var(--acc)}
+
+.sw{display:flex;align-items:center;gap:9px;padding:5px 6px;margin:0 -6px;
+  border-radius:var(--r);cursor:pointer;user-select:none}
+.sw:hover{background:rgba(255,255,255,.035)}
+.sw input{position:absolute;opacity:0;pointer-events:none}
+.sw .box{width:15px;height:15px;flex:none;border:1px solid var(--a0);border-radius:2px;
+  background:var(--bg);position:relative;transition:.12s}
+.sw input:checked+.box{background:var(--acc);border-color:var(--acc)}
+.sw input:checked+.box::after{content:"";position:absolute;inset:0;background:var(--bg);
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat}
+.sw input:focus-visible+.box{outline:2px solid var(--acc);outline-offset:2px}
+.sw .nm{flex:1;font-size:13px;color:var(--tx);min-width:0}
+.sw input:not(:checked)~.nm{color:var(--dim)}
+.sw .ct{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:var(--faint)}
+.sw .only{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;letter-spacing:.08em;
+  color:var(--faint);opacity:0;padding:1px 4px;border:1px solid var(--rule);border-radius:2px;
+  background:none;cursor:pointer}
+.sw:hover .only{opacity:1}
+.sw .only:hover{color:var(--acc);border-color:var(--acc-line)}
+
+.seg{display:flex;flex-wrap:wrap;gap:5px}
+.seg button{flex:1 0 auto;min-width:56px;border:1px solid var(--rule);background:var(--bg);
+  border-radius:var(--r);padding:7px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:11.5px;color:var(--dim);transition:.12s;cursor:pointer;white-space:nowrap}
+.seg button:hover{border-color:var(--acc-line);color:var(--tx);background:var(--bg)}
+.seg button[aria-pressed="true"]{background:var(--acc-bg);border-color:var(--acc-line);
+  color:var(--acc-tint)}
+
+.field{display:flex;align-items:center;gap:8px;margin-top:9px}
+.field label{font-size:12px;color:var(--dim);flex:1}
+.field input[type=number]{width:64px;background:var(--bg);border:1px solid var(--rule);
+  border-radius:var(--r);padding:5px 7px;font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:12px;color:var(--tx)}
+.toggle-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);
+  padding:4px 0;cursor:pointer}
+.toggle-row input{accent-color:var(--acc);width:14px;height:14px}
+.field[hidden]{display:none}          /* [hidden] loses to an explicit display */
+.console details{border:0;background:none;padding:0;margin:0}
+
+.btn{width:100%;border:1px solid var(--rule);background:var(--panel);color:var(--tx);
+  padding:8px 13px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;
+  transition:background .13s,border-color .13s,color .13s}
+.btn:hover{background:var(--acc-bg);border-color:var(--acc-line);color:var(--acc-tint)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 /* ── problem card ────────────────────────────────────────────── */
 .problem{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
@@ -117,8 +167,6 @@ button:disabled{opacity:.38;cursor:not-allowed}
 .clockline.warn{color:#E8B75C}.clockline.crit{color:var(--bad)}
 .meters{display:flex;flex-direction:column;gap:9px}
 .meters:empty{display:none}
-.console .group:has(.meters:empty){display:none}
-.console details{border:0;background:none;padding:0;margin:0}
 .console details .ref{font-size:12.5px;line-height:1.5}
 .console summary{font-size:12px;color:var(--dim)}
 .meter .mtop{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
@@ -190,55 +238,44 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 <div class="grid">
   <aside class="console">
 <div class="controls">
-  <div class="group">
-    <h2>Techniques</h2>
-    <div class="chips" id="topics">
-      <button class="chip" data-topic="power"  aria-pressed="true">Lines &amp; powers</button>
-      <button class="chip" data-topic="psq"    aria-pressed="true">Perfect square</button>
-      <button class="chip" data-topic="log"    aria-pressed="true">Logarithmic</button>
-      <button class="chip" data-topic="hyp"    aria-pressed="true">Hyperbolic</button>
-      <button class="chip" data-topic="trig"   aria-pressed="true">Trig substitution</button>
-      <button class="chip" data-topic="param"  aria-pressed="true">Parametric</button>
-      <button class="chip" data-topic="polar"  aria-pressed="true">Polar</button>
+  <div class="cgroup">
+    <div class="clabel">Techniques <span class="rule"></span>
+    <span class="mini" data-all="1">all</span>
+    <span class="mini" data-none="1">none</span></div>
+    <div class="swlist" data-topics="power,psq,log,hyp,trig,param,polar"></div>
+  </div>
+  <div class="cgroup">
+    <div class="clabel">Difficulty <span class="rule"></span></div>
+    <div class="seg" id="diffs">
+      <button data-diff="1" aria-pressed="false">Easy</button>
+      <button data-diff="2" aria-pressed="false">Medium</button>
+      <button data-diff="3" aria-pressed="false">Hard</button>
+      <button data-diff="mix" aria-pressed="true">Mixed</button>
+      <button data-diff="ramp" aria-pressed="false">Ramp up</button>
     </div>
   </div>
-  <div class="group">
-    <h2>Difficulty</h2>
-    <div class="chips" id="diffs">
-      <button class="chip" data-diff="1">Easy</button>
-      <button class="chip" data-diff="2">Medium</button>
-      <button class="chip" data-diff="3">Hard</button>
-      <button class="chip" data-diff="mix" aria-pressed="true">Mixed</button>
-      <button class="chip" data-diff="ramp">Ramp up</button>
+  <div class="cgroup">
+    <div class="clabel">Clock <span class="rule"></span></div>
+    <div class="seg" id="clocks">
+      <button data-clock="off" aria-pressed="true">Off</button>
+      <button data-clock="up" aria-pressed="false">Stopwatch</button>
+      <button data-clock="down" aria-pressed="false">Countdown</button>
     </div>
-  </div>
-  <div class="group">
-    <h2>Mode</h2>
-    <div class="chips" id="modes">
-      <button class="chip" data-mode="exam">Exam mode</button>
+    <div class="field" id="limitField" hidden>
+      <label for="clockSecs">Seconds per problem</label>
+      <input type="number" id="clockSecs" min="15" max="900" step="15" value="180">
     </div>
+    <label class="toggle-row"><input type="checkbox" id="examMode"> Exam mode</label>
   </div>
-  <div class="group">
-    <h2>Clock</h2>
-    <div class="chips" id="clocks">
-      <button class="chip" data-clock="off" aria-pressed="true">Off</button>
-      <button class="chip" data-clock="up">Stopwatch</button>
-      <button class="chip" data-clock="down">Countdown</button>
-      <input type="number" id="clockSecs" min="15" max="900" step="15" value="180"
-             aria-label="Seconds per problem"
-             style="width:70px;padding:6px 8px;border-radius:4px;border:1px solid var(--rule);
-                    background:var(--bg);color:var(--tx);font:inherit;font-size:13px">
-    </div>
-  </div>
-  <div class="group">
-    <h2>Records</h2>
-    <div class="chips"><button class="chip" id="resetBtn">Reset all progress</button></div>
-  </div>
-  <div class="group">
-    <h2>By technique</h2>
+  <div class="cgroup">
+    <div class="clabel">By technique <span class="rule"></span></div>
     <div class="meters" id="meters"></div>
   </div>
-  <div class="group">
+  <div class="cgroup">
+    <div class="clabel">Records <span class="rule"></span></div>
+    <button class="btn" id="resetBtn">Reset all progress</button>
+  </div>
+  <div class="cgroup">
     <details>
   <summary>Setup reference</summary>
   <div class="ref">
@@ -1062,6 +1099,52 @@ function drawMeters(){
   }).join("") : "";
 }
 
+
+/* ── console: Bench's component vocabulary ──────────────────────
+   Checkbox rows for the multi-select lists, with a per-row "only" that solos
+   one technique, and all/none on the first group. */
+function buildTopicList(){
+  document.querySelectorAll(".swlist").forEach(box=>{
+    box.innerHTML=box.dataset.topics.split(",").map(k=>{
+      const n=TEMPLATES.filter(t=>t.topic===k).length;
+      return '<label class="sw"><input type="checkbox" data-topic="'+k+'"'
+        +(state.topics.has(k)?" checked":"")+'><span class="box"></span>'
+        +'<span class="nm">'+METHOD_NAME[k]+'</span>'
+        +'<button type="button" class="only" data-only="'+k+'">only</button>'
+        +'<span class="ct">'+n+'</span></label>';
+    }).join("");
+  });
+  document.querySelectorAll('.sw input[data-topic]').forEach(cb=>{
+    cb.addEventListener("change",()=>{
+      const k=cb.dataset.topic;
+      if(cb.checked) state.topics.add(k);
+      else if(state.topics.size===1){ cb.checked=true; return; }   /* never empty the pool */
+      else state.topics.delete(k);
+      newProblem();
+    });
+  });
+  document.querySelectorAll('.sw .only').forEach(b=>{
+    b.addEventListener("click",e=>{
+      e.preventDefault(); e.stopPropagation();
+      state.topics=new Set([b.dataset.only]);
+      syncTopics(); newProblem();
+    });
+  });
+  document.querySelectorAll('.clabel .mini').forEach(m=>{
+    m.addEventListener("click",()=>{
+      if(m.dataset.all) state.topics=new Set(Object.keys(METHOD_NAME));
+      else state.topics=new Set([Object.keys(METHOD_NAME)[0]]);
+      syncTopics(); newProblem();
+    });
+  });
+}
+function syncTopics(){
+  document.querySelectorAll('.sw input[data-topic]').forEach(cb=>{
+    cb.checked=state.topics.has(cb.dataset.topic);
+  });
+}
+buildTopicList();
+
 (function buildPalette(){
   const toks=["pi","e","^","/","sqrt(","ln(","sinh(","(",")"];
   $("pal").innerHTML=toks.map(t=>`<button type="button" data-ins="${t}">${t}</button>`).join("");
@@ -1077,6 +1160,7 @@ $("clocks").addEventListener("click",e=>{
   state.clock=b.dataset.clock;
   $("clocks").querySelectorAll("button[data-clock]").forEach(x=>
     x.setAttribute("aria-pressed",String(x===b)));
+  $("limitField").hidden = state.clock!=="down";
   save(); startClock();
 });
 $("clockSecs").addEventListener("change",e=>{
@@ -1101,33 +1185,31 @@ document.addEventListener("keydown",e=>{
   else if(k==="s"){ e.preventDefault(); newProblem(); }
 });
 
-$("topics").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b)return;
-  const t=b.dataset.topic, on=b.getAttribute("aria-pressed")==="true";
-  if(on&&state.topics.size===1)return;
-  if(on){state.topics.delete(t);b.setAttribute("aria-pressed","false");}
-  else{state.topics.add(t);b.setAttribute("aria-pressed","true");}
-  newProblem();
-});
 $("diffs").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b)return;
+  const b=e.target.closest("button"); if(!b)return;
   [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed","false"));
   b.setAttribute("aria-pressed","true");
   state.diff=b.dataset.diff;
   if(state.diff==="ramp"){state.level=1;state.miss=0;}
   newProblem();
 });
-$("modes").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b)return;
-  state.exam=!state.exam;
-  b.setAttribute("aria-pressed",String(state.exam));
+$("examMode").addEventListener("change",e=>{
+  state.exam=e.target.checked;
   render();
 });
 $("check").addEventListener("click",check);
 $("next").addEventListener("click",newProblem);
 $("hint").addEventListener("click",()=>{state.hinted=true;showWork(false);});
 $("solve").addEventListener("click",()=>{
-  if(!state.answered){state.answered=true;state.att++;state.streak=0;$("check").disabled=true;$("input").disabled=true;save();updateStats();}
+  if(!state.answered){
+    /* Giving up is an attempt, so it has to land in the per-technique meter too
+       — otherwise sum(byTopic.n) drifts below att and the two accuracy figures
+       disagree, flattering whichever technique you gave up on. */
+    state.answered=true; state.att++; state.streak=0;
+    const tp=state.byTopic[state.cur.topic]; if(tp) tp.n++;
+    $("check").disabled=true; $("input").disabled=true;
+    save(); updateStats();
+  }
   showWork(true);
 });
 $("input").addEventListener("keydown",e=>{
@@ -1141,6 +1223,7 @@ load();
 $("clocks").querySelectorAll("button[data-clock]").forEach(x=>
   x.setAttribute("aria-pressed",String(x.dataset.clock===state.clock)));
 $("clockSecs").value=state.limit;
+$("limitField").hidden = state.clock!=="down";
 newProblem();
 </script>
 <script src="../shared/scratchpad.js" defer></script>

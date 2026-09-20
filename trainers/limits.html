@@ -75,6 +75,10 @@ h1{font-family:var(--serif);font-size:26px;font-weight:600;margin:0}
 .seg.on{border-color:var(--a2);background:var(--a2b);color:var(--a3t)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;
   color:var(--dim)}
+.toggle-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);
+  padding:4px 0;cursor:pointer}
+.toggle-row input{accent-color:var(--a2);width:14px;height:14px;flex:none;cursor:pointer}
+.toggle-row:hover{color:var(--tx)}
 .row input[type=number]{width:62px;background:var(--bg);border:1px solid var(--rule);color:var(--tx);
   border-radius:4px;padding:5px 7px;font:inherit;font-family:var(--mono);font-size:12px}
 .btn{font:inherit;font-size:12.5px;padding:8px 13px;border-radius:6px;cursor:pointer;
@@ -195,9 +199,7 @@ input[type=text]:focus{outline:none;border-color:var(--a2)}
     </div>
     <div class="sect">
       <h2>Mode</h2>
-      <div class="segs">
-        <button class="seg" id="examBtn">Exam mode</button>
-      </div>
+      <label class="toggle-row"><input type="checkbox" id="examBtn"> Exam mode</label>
       <p class="examnote" id="examNote" hidden>Hints and solutions are locked until you check.</p>
     </div>
     <div class="sect">
@@ -795,9 +797,8 @@ $('#clockSegs').querySelectorAll('.seg').forEach(b=>b.onclick=()=>{
 });
 $('#limitSecs').onchange=e=>{ S.limit=Math.max(10,Math.min(600,+e.target.value||60)); persist(); };
 $('#autoReveal').onchange=e=>{ S.autoReveal=e.target.checked; persist(); };
-$('#examBtn').onclick=()=>{
-  S.exam=!S.exam;
-  $('#examBtn').classList.toggle('on',S.exam);
+$('#examBtn').onchange=e=>{
+  S.exam=e.target.checked;
   $('#examNote').hidden=!S.exam;
   $('#hintBtn').disabled=S.exam&&S.phase==='ask';
   $('#solveBtn').disabled=S.exam&&S.phase==='ask';
@@ -823,7 +824,7 @@ drawConsole();
 $('#clockSegs').querySelectorAll('.seg').forEach(b=>b.classList.toggle('on',b.dataset.clock===S.clock));
 $('#limitSecs').value=S.limit;
 $('#autoReveal').checked=S.autoReveal;
-$('#examBtn').classList.toggle('on',S.exam);
+$('#examBtn').checked=S.exam;
 $('#examNote').hidden=!S.exam;
 drawStats();
 next();

@@ -129,13 +129,11 @@ main > .stage{grid-column:2; grid-row:1; display:flex; flex-direction:column; ga
 .seg button{flex:1; padding:8px 4px; font-size:11px; letter-spacing:.06em}
 .seg button.on{background:var(--amber); color:#1A1206; border-color:var(--amber); font-weight:700}
 .row{display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:13px; color:var(--muted); margin-top:10px}
-.switch{position:relative; width:38px; height:21px; flex:none}
-.switch input{position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer}
-.switch span{position:absolute; inset:0; background:#2A2438; border:1px solid var(--line); border-radius:999px; transition:background .16s; pointer-events:none}
-.switch span::after{content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:var(--dim); transition:transform .16s, background .16s}
-.switch input:checked + span{background:rgba(242,169,59,.28); border-color:var(--amber)}
-.switch input:checked + span::after{transform:translateX(17px); background:var(--amber)}
-.switch input:focus-visible + span{outline:2px solid var(--amber); outline-offset:2px}
+/* mode toggles, in Integration Bench's vocabulary: a plain checkbox, not a pill */
+.toggle-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted);
+  padding:4px 0; cursor:pointer}
+.toggle-row input{accent-color:var(--amber); width:14px; height:14px; flex:none; cursor:pointer}
+.toggle-row:hover{color:var(--chalk)}
 
 .topics{display:flex; flex-direction:column; gap:2px}
 .topic{display:block; padding:6px 8px; border-radius:8px; cursor:pointer; transition:background .12s;
@@ -213,12 +211,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
           <button data-l="1">1</button><button data-l="2">2</button>
           <button data-l="3">3</button><button data-l="0" class="on">Mix</button>
         </div>
-        <div class="row"><span>Drill my weak spots</span>
-          <label class="switch"><input type="checkbox" id="adaptive" checked><span></span></label></div>
-        <div class="row"><span>Auto-advance when correct</span>
-          <label class="switch"><input type="checkbox" id="autonext"><span></span></label></div>
-        <div class="row"><span>Exam mode</span>
-          <label class="switch"><input type="checkbox" id="exam"><span></span></label></div>
+        <label class="toggle-row"><input type="checkbox" id="adaptive" checked> Drill my weak spots</label>
+        <label class="toggle-row"><input type="checkbox" id="autonext"> Auto-advance when correct</label>
+        <label class="toggle-row"><input type="checkbox" id="exam"> Exam mode</label>
       </div>
 
       <div class="panel">
