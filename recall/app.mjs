@@ -62,6 +62,13 @@ function courseCard(course) {
   return el("div", { className: "card" + (E.isOn(state, TREE, course.id) ? "" : " off") }, [head, pills]);
 }
 
+// the shared all/none pair the trainers carry on their selection lists
+function mini(label, fn) {
+  const b = el("button", { type: "button", className: "mini", textContent: label });
+  b.onclick = fn;
+  return b;
+}
+
 function seg(label, on, fn) {
   const b = el("button", { type: "button", className: "seg" + (on ? " on" : ""), textContent: label });
   b.setAttribute("aria-pressed", String(on));
@@ -74,7 +81,15 @@ function drawSetup() {
   root.innerHTML = "";
   root.className = "setup";
 
-  const left = el("div", { className: "col-left" }, [el("span", { className: "eyebrow", textContent: "What to drill" })]);
+  const left = el("div", { className: "col-left" }, [
+    el("div", { className: "lhead" }, [
+      el("span", { className: "eyebrow", textContent: "What to drill" }),
+      el("span", { className: "minis" }, [
+        mini("all", () => { state = E.setNodeLevel(state, TREE, "", E.LEVELS.hard); save(); drawSetup(); }),
+        mini("none", () => { state = E.setNodeLevel(state, TREE, "", E.OFF); save(); drawSetup(); }),
+      ]),
+    ]),
+  ]);
   for (const course of TREE.children) left.append(courseCard(course));
 
   const n = E.pool(BANK, state).length;

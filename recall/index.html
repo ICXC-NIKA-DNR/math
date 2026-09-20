@@ -25,6 +25,11 @@ header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
 h1{font-family:var(--serif);font-size:28px;font-weight:600;margin:0}
 .serif{font-family:var(--serif)}
 .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.lhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.minis{display:flex;gap:9px}
+.mini{font-size:11px;letter-spacing:.04em;color:var(--dim);cursor:pointer;background:none;
+  border:0;border-bottom:1px solid var(--rule);padding:0}
+.mini:hover{color:var(--l3t);border-color:var(--l2)}
 .sub,.note{font-size:13px;color:var(--dim2)}
 .note{color:var(--faint)}
 .grow{flex:1}
@@ -162,7 +167,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   <main id="view"><p class="note">Loading the card bank…</p></main>
 </div>
 <script type="module">
-import { boot } from "./app.mjs";
+/* versioned like shared/calc-engine.js — bump on every app.mjs change, or a
+   returning visitor boots the cached module against the new markup */
+import { boot } from "./app.mjs?v=2";
 const ready = new Promise((r) => (window.katex ? r() : addEventListener("load", r)));
 fetch("./cards.json").then((r) => r.json()).then(async (bank) => { await ready; boot(bank); })
   .catch(() => { document.getElementById("view").textContent = "Could not load cards.json."; });

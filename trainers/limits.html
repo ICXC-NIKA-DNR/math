@@ -56,6 +56,7 @@ h1{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:.01em;
 .sect h2 .all{font-size:10.5px;letter-spacing:.06em;text-transform:none;color:var(--dim);
   cursor:pointer;border-bottom:1px solid var(--rule)}
 .sect h2 .all:hover{color:var(--a3t);border-color:var(--a2)}
+.sect h2 .minis{display:flex;gap:9px}
 
 .sw{display:flex;align-items:center;gap:9px;padding:5px 0;cursor:pointer;position:relative}
 .sw input{position:absolute;opacity:0;pointer-events:none}
@@ -191,7 +192,10 @@ input[type=text]:focus{outline:none;border-color:var(--a2)}
 <div class="grid">
   <aside class="console">
     <div class="sect">
-      <h2>Categories <span class="all" id="allNone">all</span></h2>
+      <h2>Categories <span class="minis">
+        <span class="all" id="selAll">all</span>
+        <span class="all" id="selNone">none</span>
+      </span></h2>
       <div id="cats"></div>
     </div>
     <div class="sect">
@@ -802,11 +806,8 @@ $('#hintBtn').onclick=()=>{
 $('#solveBtn').onclick=()=>{ if(S.exam&&S.phase==='ask') return; reveal(); };
 $('#skipBtn').onclick=skip;
 $('#nextBtn').onclick=next;
-$('#allNone').onclick=()=>{
-  const all=S.cats.size===CATS.length;
-  S.cats=new Set(all?[]:CATS.map(c=>c[0]));
-  drawConsole(); persist(); next();
-};
+$('#selAll').onclick=()=>{ S.cats=new Set(CATS.map(c=>c[0])); drawConsole(); persist(); next(); };
+$('#selNone').onclick=()=>{ S.cats=new Set(); drawConsole(); persist(); next(); };
 $('#clockSegs').querySelectorAll('.seg').forEach(b=>b.onclick=()=>{
   S.clock=b.dataset.clock;
   $('#clockSegs').querySelectorAll('.seg').forEach(x=>x.classList.toggle('on',x===b));
