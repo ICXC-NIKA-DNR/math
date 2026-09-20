@@ -11,7 +11,8 @@ visitor's own browser.
       engine.mjs          selection, filtering, sessions, scoring — no DOM
       cards.json          the 443-card bank (generated; do not hand-edit)
     trainers/             the standalone problem trainers
-                          limits · derivatives · integrals · volumes · arcs · surfaces
+                          limits · derivatives · integrals · volumes
+                          arcs · surfaces · centroids
                           (the old filenames are kept as redirect stubs)
     shared/               code more than one trainer uses
       calc-engine.js      exact rationals, polynomials, rendering, answer parsing
@@ -45,12 +46,13 @@ store them, so the bank is effectively unbounded. They share `shared/`:
 `scratchpad.js` gives every problem page the same scratch paper, and
 `calc-engine.js` holds the arithmetic three of them are built on.
 
-`calc-engine.js` exists because Revolution, Arc Length and Surface Area are the
+`calc-engine.js` exists because Volumes, Arcs, Surfaces and Centroids are the
 same computation with a different integrand:
 
-    revolution   V = π ∫ R² dv     or  2π ∫ (radius)(height) dv
-    arc length   L =   ∫ ds            ds = √(1 + [y′]²) dv
-    surface      S = 2π ∫ (radius) ds
+    volumes      V = π ∫ R² dv     or  2π ∫ (radius)(height) dv
+    arcs         L =   ∫ ds            ds = √(1 + [y′]²) dv
+    surfaces     S = 2π ∫ (radius) ds
+    centroids    A = ∫(top − bot) dx · M_y = ∫x(top − bot) dx · M_x = ½∫(top² − bot²) dx
 
 So all three reduce to: build a polynomial with rational exponents, integrate it
 exactly, render it. The module provides BigInt rational arithmetic, polynomials
@@ -70,6 +72,12 @@ both orientations.
 
 Everything else — trig and hyperbolic substitution, parametric, polar — supplies
 its own closed form, checked against numerical integration of the curve.
+
+**The engine is versioned in the URL** — `calc-engine.js?v=2`. Bump that query
+on every page that loads it whenever the engine changes. Without it a visitor
+who already has the old file cached gets it served from disk, and any page
+using a newly added function dies on load with `… is not a function`. The pages
+themselves are one file each, so only the shared script needs this.
 
 Answers are graded numerically with a relative tolerance, so any equivalent form
 passes: `17/12`, `1.41666`, `pi/6(17sqrt(17)-1)` and `2pi(15/8+ln(2)/2)` all

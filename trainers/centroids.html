@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centroids — centres of mass, moments, Pappus, Calc 2 and Calc 3</title>
+<style>
+:root{
+  /* Base tokens are shared with the rest of the site so the pages read as one product. */
+  --bg:#080808; --panel:#111111; --rule:#242424; --rule2:#1E1E1E;
+  --tx:#F4F4F4; --dim:#A0A0A0; --dim2:#8A8A8A; --faint:#666666;
+
+  /* Cyan ramp — this trainer's identity. */
+  --a0:#1B3840;
+  --a1:#2E6E7D; --a2:#4FB6C9; --a3:#96DEE9;
+  --a1b:#0C1D21; --a2b:#10262B; --a3b:#143036;
+  --a1t:#78CBDA; --a2t:#A8E3EC; --a3t:#D0F2F7;
+
+  --axis:#5FC4D6;          /* the curve / interval rule */
+  --good:#7CCBA6;
+  --bad:#F09E92;
+
+  --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);
+  background-image:linear-gradient(rgba(130,180,196,.05) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(130,180,196,.05) 1px, transparent 1px);
+  background-size:28px 28px;
+  background-position:-1px -1px;
+  color:var(--tx);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 24px 56px}
+
+.home-link{display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;
+  font:500 12.5px/1 var(--sans);letter-spacing:.02em;color:var(--dim);text-decoration:none;
+  border:1px solid var(--rule);padding:7px 12px;border-radius:999px;background:none;
+  transition:color .15s,border-color .15s,background .15s}
+.home-link:hover{color:var(--a3t);border-color:var(--a2);background:var(--a1b)}
+
+header{border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:24px}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;letter-spacing:.01em;margin:0;color:var(--tx)}
+header p{margin:.4em 0 0;color:var(--dim2);font-size:13px;max-width:66ch}
+
+/* ── console left, stage right — the shape every trainer uses ─────────── */
+.grid{display:grid;grid-template-columns:268px minmax(0,1fr);gap:22px;align-items:start}
+.console{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;
+  overscroll-behavior:contain;scrollbar-width:thin;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:16px 18px}
+.stage{display:flex;flex-direction:column;gap:16px;min-width:0}
+.stage > *{margin:0}
+.controls{display:flex;flex-direction:column;gap:20px;align-items:stretch}
+.controls .chips{gap:6px}
+.console .group h2{margin-bottom:8px}
+.console #clocks{align-items:center}
+@media (max-width:860px){
+  .grid{grid-template-columns:1fr}
+  .console{position:static;max-height:none}
+}
+.group{display:flex;flex-direction:column;gap:8px}
+.group h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:400;
+  color:var(--faint);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:13px;height:34px;padding:0 14px;border:1px solid var(--a0);
+  background:none;color:var(--faint);cursor:pointer;border-radius:17px;
+  transition:color .15s,border-color .15s,background .15s}
+.chip:hover{color:var(--a2t);border-color:var(--a1)}
+.chip[aria-pressed="true"]{background:var(--a3b);border-color:var(--a3);color:var(--a3t)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+
+/* ── problem card ────────────────────────────────────────────── */
+.problem{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:0;position:relative;overflow:hidden}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  border-bottom:1px solid var(--rule2);padding:10px 18px;font-size:12px;color:var(--faint)}
+.meta .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--a2t)}
+.body{padding:20px 18px 18px;position:relative}
+.stem{font-family:var(--serif);font-size:1.12rem;line-height:1.6;margin:0 0 .5em;
+  max-width:66ch;color:var(--tx)}
+.ask{font-family:var(--serif);font-size:1.12rem;margin:0;color:var(--tx)}
+
+/* the interval, drawn as a measured span */
+.axisline{margin:16px 0 4px;display:flex;align-items:center;gap:10px;color:var(--axis);font-size:12px}
+.axisline .line{flex:1;height:0;border-top:1.5px dashed var(--axis)}
+
+/* ── answer row ──────────────────────────────────────────────── */
+.answer{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 6px}
+input[type=text]{font-family:var(--serif);font-size:1.02rem;padding:9px 12px;
+  border:1px solid var(--rule);background:var(--bg);color:var(--tx);
+  width:min(320px,100%);border-radius:4px}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus{border-color:var(--a2);outline:none}
+button{font:inherit;font-size:13px;padding:9px 16px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--a3);background:var(--a3b);color:var(--a3t);
+  transition:border-color .15s,background .15s,color .15s}
+button:hover:enabled{background:var(--a2b);border-color:var(--a3)}
+button.ghost{background:none;color:var(--dim);border-color:var(--rule)}
+button.ghost:hover:enabled{color:var(--tx);border-color:var(--a1);background:var(--a1b)}
+button:disabled{opacity:.38;cursor:not-allowed}
+.hintnote{font-size:12.5px;color:var(--faint);margin:0}
+.pal{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0}
+.pal button{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;padding:5px 9px;
+  border-radius:4px;border:1px solid var(--rule2);background:var(--panel);color:var(--dim);
+  cursor:pointer}
+.pal button:hover{color:var(--a3t);border-color:var(--a1)}
+.clockline{margin-left:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;
+  color:var(--dim2);letter-spacing:.02em}
+.clockline.warn{color:#E8B75C}.clockline.crit{color:var(--bad)}
+.meters{display:flex;flex-direction:column;gap:9px}
+.meters:empty{display:none}
+.console .group:has(.meters:empty){display:none}
+.console details{border:0;background:none;padding:0;margin:0}
+.console details .ref{font-size:12.5px;line-height:1.5}
+.console summary{font-size:12px;color:var(--dim)}
+.meter .mtop{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
+.meter .mtop .nm{color:var(--dim)}
+.meter .mtop .val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:var(--faint)}
+.track{height:4px;background:var(--rule2);border-radius:9px;overflow:hidden}
+.fill{height:100%;border-radius:9px;background:var(--a2);transition:width .35s ease}
+
+.verdict{font-family:var(--serif);font-size:1.02rem;margin:12px 0 0;padding-left:12px;
+  border-left:3px solid transparent}
+.verdict.ok{border-color:var(--good);color:var(--good)}
+.verdict.no{border-color:var(--bad);color:var(--bad)}
+
+/* ── worked solution ─────────────────────────────────────────── */
+.work{border-top:1px solid var(--rule2);margin-top:18px;padding-top:14px}
+.work ol{margin:0;padding-left:1.25em}
+.work li{margin:.55em 0;font-family:var(--serif);font-size:1rem;color:var(--tx)}
+.work li::marker{color:var(--faint)}
+.work li .label{font-family:var(--sans);font-size:11.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint);display:block}
+
+.stats{display:flex;flex-wrap:wrap;gap:34px;
+  border:1px solid var(--rule);background:var(--panel);border-radius:6px;padding:16px 20px;
+  font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.stats b{display:block;font-family:var(--serif);font-size:1.5rem;font-weight:400;
+  color:var(--tx);letter-spacing:0;text-transform:none}
+
+details{border:1px solid var(--rule);background:var(--panel);border-radius:6px;
+  padding:12px 16px;margin-top:22px}
+summary{cursor:pointer;font-size:13px;color:var(--dim)}
+summary:hover{color:var(--tx)}
+details .ref{font-family:var(--serif);font-size:1rem;color:var(--dim2)}
+details .ref div{margin:.5em 0}
+
+/* ── math bits — the shared typographic vocabulary ───────────── */
+.fr{display:inline-flex;flex-direction:column;vertical-align:-0.42em;text-align:center;line-height:1.1;font-size:.86em}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em}
+.fr>span:last-child{padding:0 .2em}
+.itg{font-size:1.6em;line-height:0;vertical-align:-.28em;font-family:var(--serif)}
+.lims{display:inline-flex;flex-direction:column;font-size:.52em;line-height:1.05;vertical-align:.1em;margin:0 .25em 0 1px}
+.rad{border-top:1px solid currentColor;padding:0 .12em}
+i{font-family:var(--serif);font-style:italic}
+sup,sub{font-size:.68em}
+.hl{color:var(--a3)}
+
+@media (max-width:520px){
+  .wrap{padding:18px 16px 44px}
+  h1{font-size:22px}
+  .controls{gap:14px}
+}
+
+/* shared design system: static accent aura, matching the hub's hover glow */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(70% 55% at 50% -10%, #4FB6C9 0%, transparent 68%);
+  opacity:.16}
+.wrap{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="home-link" href="../index.html">&#8592; all trainers</a>
+
+<header>
+  <h1>Centroids</h1>
+  <p>Randomly generated centroid, centre-of-mass and moment problems, from Calculus II plane regions through Calculus III multiple integrals. A centroid answer is a pair — type it as <code>2/3, 1/3</code>. Single-value problems take one number: <code>9/5</code>, <code>32pi^2</code>, <code>4/(3pi)</code>, or a decimal.</p>
+</header>
+
+<div class="grid">
+  <aside class="console">
+<div class="controls">
+  <div class="group">
+    <h2>Calc 2 · applications of the integral</h2>
+    <div class="chips topicgroup">
+      <button class="chip" data-topic="region" aria-pressed="true">Plane regions</button>
+      <button class="chip" data-topic="lamina" aria-pressed="true">Density &amp; mass</button>
+      <button class="chip" data-topic="arc"    aria-pressed="true">Centroid of an arc</button>
+      <button class="chip" data-topic="pappus" aria-pressed="true">Pappus</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Calc 3 · multiple integrals</h2>
+    <div class="chips topicgroup">
+      <button class="chip" data-topic="double"  aria-pressed="true">Double integrals</button>
+      <button class="chip" data-topic="polarc"  aria-pressed="true">Polar regions</button>
+      <button class="chip" data-topic="triple"  aria-pressed="true">Solids</button>
+      <button class="chip" data-topic="inertia" aria-pressed="true">Moments of inertia</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Difficulty</h2>
+    <div class="chips" id="diffs">
+      <button class="chip" data-diff="1">Easy</button>
+      <button class="chip" data-diff="2">Medium</button>
+      <button class="chip" data-diff="3">Hard</button>
+      <button class="chip" data-diff="mix" aria-pressed="true">Mixed</button>
+      <button class="chip" data-diff="ramp">Ramp up</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Mode</h2>
+    <div class="chips" id="modes">
+      <button class="chip" data-mode="exam">Exam mode</button>
+    </div>
+  </div>
+  <div class="group">
+    <h2>Clock</h2>
+    <div class="chips" id="clocks">
+      <button class="chip" data-clock="off" aria-pressed="true">Off</button>
+      <button class="chip" data-clock="up">Stopwatch</button>
+      <button class="chip" data-clock="down">Countdown</button>
+      <input type="number" id="clockSecs" min="15" max="900" step="15" value="180"
+             aria-label="Seconds per problem"
+             style="width:70px;padding:6px 8px;border-radius:4px;border:1px solid var(--rule);
+                    background:var(--bg);color:var(--tx);font:inherit;font-size:13px">
+    </div>
+  </div>
+  <div class="group">
+    <h2>Records</h2>
+    <div class="chips"><button class="chip" id="resetBtn">Reset all progress</button></div>
+  </div>
+  <div class="group">
+    <h2>By technique</h2>
+    <div class="meters" id="meters"></div>
+  </div>
+  <div class="group">
+    <details>
+  <summary>Setup reference</summary>
+  <div class="ref">
+    <div>Plane region, uniform: <span class="hl">A = ∫(top − bot) <i>dx</i></span>, <span class="hl">M<sub>y</sub> = ∫<i>x</i>(top − bot) <i>dx</i></span>, <span class="hl">M<sub>x</sub> = ½∫(top² − bot²) <i>dx</i></span>, then x̄ = M<sub>y</sub>/A and ȳ = M<sub>x</sub>/A.</div>
+    <div>The <b>squared</b> one gives the coordinate you are <i>not</i> integrating along. Integrating in <i>y</i> instead swaps which formula gives which — the usual place to slip.</div>
+    <div>With density ρ(<i>x</i>): put ρ inside every integral. A constant ρ cancels out of x̄ and ȳ but not out of the mass.</div>
+    <div>Arc (a wire): weight by ds, not by area — <span class="hl">x̄ = (1/L)∫<i>x</i> ds</span>. A straight wire's centroid is its midpoint.</div>
+    <div>Pappus: <span class="hl">V = 2π<i>d</i>·A</span> and <span class="hl">S = 2π<i>d</i>·L</span>, with <i>d</i> the distance from the centroid to the axis. Works in both directions — a known volume hands you a centroid.</div>
+    <div>Polar: the Jacobian is <i>r</i>, so A = ∬<i>r dr dθ</i> and M<sub>y</sub> = ∬<i>r</i>²cos θ <i>dr dθ</i>.</div>
+    <div>Second moments weight by the <b>square</b> of the distance: I<sub>x</sub> = ∬<i>y</i>²ρ <i>dA</i>, I<sub>y</sub> = ∬<i>x</i>²ρ <i>dA</i>, and always I<sub>0</sub> = I<sub>x</sub> + I<sub>y</sub>.</div>
+    <div>Worth knowing cold: triangle ⅓ · simplex in <i>n</i>-D 1/(<i>n</i>+1) · parabolic segment ⅖ of the height · half-disc 4<i>R</i>/3π · semicircular wire 2<i>R</i>/π · solid hemisphere 3<i>R</i>/8 · cone <i>h</i>/4.</div>
+  </div>
+</details>
+  </div>
+</div>
+  </aside>
+
+  <main class="stage">
+<section class="problem">
+  <div class="meta">
+    <span><span class="tag" id="tagMethod">—</span> <span id="tagDiff"></span></span>
+    <span id="tagCount">Problem 1</span>
+    <span class="clockline" id="clockOut" hidden>00:00</span>
+  </div>
+  <div class="body">
+    <p class="stem" id="stem"></p>
+    <p class="ask" id="ask"></p>
+    <div class="axisline" id="axisline"><span class="line"></span><span id="axisLabel"></span><span class="line"></span></div>
+
+    <div class="answer">
+      <input type="text" id="input" placeholder="e.g. 2/3, 1/3" autocomplete="off" spellcheck="false" aria-label="Your answer">
+      <button id="check">Check answer</button>
+      <button class="ghost" id="hint">Show setup</button>
+      <button class="ghost" id="solve">Show solution</button>
+      <button class="ghost" id="next">Next problem</button>
+    </div>
+    <div class="pal" id="pal"></div>
+    <p class="hintnote" id="timer"></p>
+    <p class="verdict" id="verdict" hidden></p>
+    <div class="work" id="work" hidden></div>
+  </div>
+</section>
+
+<div class="stats">
+  <div><b id="sAtt">0</b>attempted</div>
+  <div><b id="sCor">0</b>solved</div>
+  <div><b id="sPct">—</b>accuracy</div>
+  <div><b id="sStreak">0</b>streak</div>
+  <div><b id="sBest">0</b>best streak</div>
+  <div><b id="sTime">—</b>median time</div>
+</div>
+    <scratch-pad accent="#4FB6C9" height="330"></scratch-pad>
+  </main>
+</div>
+
+</div>
+
+<script src="../shared/calc-engine.js?v=2"></script>
+<script>
+"use strict";
+const {f,ZERO,ONE,T,conj,pdef,pdefL,pmul,padd,psub,psq,pk,ppow,pnorm,pint,pintL,pev,pdiff,
+       ratPow,fsqrt,regionMoments,fmtPoly,fmtLim,fmtCoef,fmtExact,fmtDivPi,terms,intHTML,
+       RAD,SQ,ri,pick,pickTwo,TRIPLES,evalNum,evalTuple,sameNum} = CALC;
+
+/* ============================ shared shorthands ============================ */
+const St=(label,html)=>({label,html});
+const V=v=>"<i>"+v+"</i>";
+const XB="<span style='text-decoration:overline'>x</span>";
+const YB="<span style='text-decoration:overline'>y</span>";
+const ZB="<span style='text-decoration:overline'>z</span>";
+const iv=(v,a,b)=>V(v)+" = "+a+" to "+V(v)+" = "+b;
+const cf=q=>q.eqInt(1)?"":fmtLim(q);
+const pair=(a,b)=>"("+a+", "+b+")";
+const piN=k=>(k===1?"":String(k))+"π";        /* 9π, not π9 */
+function divPi(q,sym){                        /* q·sym / π — π stays in the denominator */
+  if(q.isZero()) return "0";
+  const neg=q.isNeg(), a=neg?q.neg():q;
+  const num=(a.n===1n&&sym)?sym:(a.n+(sym||""));
+  const den=a.d===1n?"π":a.d+"π";
+  return (neg?"−":"")+'<span class="fr"><span>'+num+'</span><span>'+den+'</span></span>';
+}
+
+/* nested integral signs, reusing the same .itg/.lims vocabulary as the others */
+function dbl(xlo,xhi,ylo,yhi,body,d){
+  return '<span class="itg">∫</span><span class="lims"><span>'+xhi+'</span><span>'+xlo+'</span></span>'
+       + '<span class="itg">∫</span><span class="lims"><span>'+yhi+'</span><span>'+ylo+'</span></span>'
+       + body + " " + (d||"<i>dy dx</i>");
+}
+
+/* Assemble the two hint stages. Templates give a flat `steps` list and say how
+   many of them are the setup stage; the rest appear only with the solution. */
+function P(o){
+  o.ask = o.ask || (o.ans.n===1 ? "Find the exact value."
+                  : o.ans.n===2 ? "Find the exact centroid." : "Find the exact centre of mass.");
+  const cut = o.split===undefined ? o.steps.length-1 : o.split;
+  o.setup = o.steps.slice(0,cut);
+  o.solve = o.steps.slice(cut);
+  return o;
+}
+
+/* The standard four-step opening for a plane region, filled from an exact
+   regionMoments result. Everything here is rational — no rounding anywhere. */
+function regionSteps(m,topH,botH,v,loL,hiL,rhoH){
+  const w = v==="x"?"y":"x", W = v==="x"?YB:XB, Vb = v==="x"?XB:YB;
+  const h = "("+topH+(botH?" − "+botH:"")+")";
+  const dens = rhoH ? rhoH+" " : "";
+  return [
+    St("The three integrals",
+       "A = "+intHTML(loL,hiL,dens+h,v)+" &nbsp;·&nbsp; M<sub>"+w+"</sub> = "+intHTML(loL,hiL,dens+V(v)+h,v)
+       +" &nbsp;·&nbsp; M<sub>"+v+"</sub> = <span class='fr'><span>1</span><span>2</span></span>"
+       +intHTML(loL,hiL,dens+"("+topH+"<sup>2</sup>"+(botH?" − "+botH+"<sup>2</sup>":"")+")",v)
+       +". Then "+Vb+" = M<sub>"+w+"</sub>/A and "+W+" = M<sub>"+v+"</sub>/A."),
+    St(rhoH?"Mass":"Area", (rhoH?"m":"A")+" = "+intHTML(loL,hiL,dens+h,v)+" = <b>"+fmtExact(m.A,false)+"</b>."),
+    St("Moment about the "+w+"-axis",
+       "M<sub>"+w+"</sub> = "+intHTML(loL,hiL,dens+V(v)+h,v)+" = "+fmtExact(m.My,false)
+       +", so "+Vb+" = "+fmtExact(m.My,false)+" ÷ "+fmtExact(m.A,false)+" = <b>"+fmtExact(m.xbar,false)+"</b>."),
+    St("Moment about the "+v+"-axis",
+       "M<sub>"+v+"</sub> = <span class='fr'><span>1</span><span>2</span></span>"
+       +intHTML(loL,hiL,dens+"("+topH+"<sup>2</sup>"+(botH?" − "+botH+"<sup>2</sup>":"")+")",v)
+       +" = "+fmtExact(m.Mx,false)+", so "+W+" = <b>"+fmtExact(m.ybar,false)+"</b>.")
+  ];
+}
+function centroidStep(xH,yH,note){
+  return St("Centroid","The centroid is <b>"+pair(xH,yH)+"</b>."+(note?" "+note:""));
+}
+function ansPair(x,y,xH,yH){
+  return {n:2, vals:[x,y], html:pair(xH,yH)};
+}
+
+/* ============================ problem templates ============================ */
+
+/* A plane region whose boundaries are polynomials — the workhorse. */
+function regionTemplate(id,diff,build){
+  return {id:id,topic:"region",course:"c2",diff:diff,gen(){
+    const b=build();
+    const m=regionMoments(b.top,b.bottom||[],b.lo,b.hi);
+    const xH=fmtExact(m.xbar,false), yH=fmtExact(m.ybar,false);
+    return P(Object.assign(b,{
+      steps:regionSteps(m,b.topH,b.botH,"x",fmtLim(b.lo),fmtLim(b.hi))
+            .concat([centroidStep(xH,yH,b.note)]),
+      ans:ansPair(m.xbar.num(),m.ybar.num(),xH,yH)}));
+  }};
+}
+
+const TEMPLATES=[
+
+/* ---------------- CALC 2 · PLANE REGIONS ---------------- */
+regionTemplate("G1",1,function(){
+  const c=ri(1,3), n=ri(1,3), b=ri(1,4);
+  const topH=CALC.mono(c,n,"x");
+  return {top:[T(c,n)], bottom:[], lo:ZERO, hi:f(b), topH:topH, botH:null,
+    stem:"Consider the region under <span class='hl'><i>y</i> = "+topH+"</span>, above the x-axis, from "
+      +iv("x","0",String(b))+".",
+    axis:"a region with one curved edge",
+    note:"Notice "+XB+" does not depend on the coefficient at all — scaling the curve vertically slides the "
+      +"centroid up, never sideways."};
+}),
+
+regionTemplate("G2",2,function(){
+  const c=ri(2,5);
+  return {top:[T(c,1)], bottom:[T(1,2)], lo:ZERO, hi:f(c), topH:c+V("x"), botH:V("x")+"<sup>2</sup>",
+    stem:"Consider the region enclosed by <span class='hl'><i>y</i> = "+c+"<i>x</i></span> and "
+      +"<span class='hl'><i>y</i> = <i>x</i><sup>2</sup></span>.",
+    axis:"the curves meet at x = 0 and x = "+c};
+}),
+
+regionTemplate("G3",2,function(){
+  const j=ri(1,4), k=j*j;
+  return {top:psub(pk(k),[T(1,2)]), bottom:[], lo:f(-j), hi:f(j),
+    topH:k+" − "+V("x")+"<sup>2</sup>", botH:null,
+    stem:"Consider the region bounded by <span class='hl'><i>y</i> = "+k+" − <i>x</i><sup>2</sup></span> "
+      +"and the x-axis.",
+    axis:"symmetric about the y-axis, so one coordinate is free",
+    note:"A parabolic segment always sits two fifths of the way up: "+YB+" = <sup>2</sup>⁄<sub>5</sub>·"+k+"."};
+}),
+
+regionTemplate("G4",2,function(){
+  const m=pick([2,3]);
+  return {top:[T(1,f(1,2))], bottom:[T(1,m)], lo:ZERO, hi:ONE,
+    topH:RAD(V("x")), botH:V("x")+"<sup>"+m+"</sup>",
+    stem:"Consider the region enclosed by <span class='hl'><i>y</i> = "+RAD("<i>x</i>")+"</span> and "
+      +"<span class='hl'><i>y</i> = <i>x</i><sup>"+m+"</sup></span>.",
+    axis:"both curves run from (0,0) to (1,1)"};
+}),
+
+regionTemplate("G5",3,function(){
+  const a=ri(1,2), n=ri(2,3), b=ri(1,3), c=a*Math.pow(b,n);
+  const botH=CALC.mono(a,n,"x");
+  return {top:pk(c), bottom:[T(a,n)], lo:ZERO, hi:f(b), topH:String(c), botH:botH,
+    stem:"Consider the region bounded above by <span class='hl'><i>y</i> = "+c+"</span>, below by "
+      +"<span class='hl'><i>y</i> = "+botH+"</span>, and on the left by the y-axis.",
+    axis:"the curves meet at x = "+b};
+}),
+
+regionTemplate("G6",3,function(){
+  const c=ri(2,4);
+  return {top:psub([T(c,1)],[T(1,2)]), bottom:[], lo:ZERO, hi:f(c),
+    topH:c+V("x")+" − "+V("x")+"<sup>2</sup>", botH:null,
+    stem:"Consider the region bounded by <span class='hl'><i>y</i> = "+c+"<i>x</i> − <i>x</i><sup>2</sup></span> "
+      +"and the x-axis.",
+    axis:"symmetric about x = "+fmtLim(f(c,2)),
+    note:"The parabola is symmetric about <i>x</i> = "+fmtLim(f(c,2))+", which is a free check on "+XB+"."};
+}),
+
+{id:"G7",topic:"region",course:"c2",diff:3,gen(){
+  const R=ri(1,5), half=pick([true,false]);
+  /* semicircular and quarter-circular laminas — the classic 4R/3π */
+  const q=f(4*R,3);
+  const xH=half?"0":fmtDivPi(q), yH=fmtDivPi(q);
+  const xv=half?0:4*R/(3*Math.PI), yv=4*R/(3*Math.PI);
+  const A="<span class='fr'><span>"+piN(R*R)+"</span><span>"+(half?2:4)+"</span></span>";
+  const loL=half?"−"+R:"0";
+  return P({
+    stem:"Consider the "+(half?"half":"quarter")+"-disc under <span class='hl'><i>y</i> = "
+      +RAD(R*R+" − <i>x</i><sup>2</sup>")+"</span> on "+iv("x",loL,String(R))+".",
+    axis:"the area is known, so only the moment needs integrating",
+    steps:[
+      St("Use the known area","No integration needed for A: "+(half?"half":"a quarter")+" of a disc of radius "
+        +R+" has area "+A+"."),
+      St("Moment about the x-axis","M<sub>x</sub> = <span class='fr'><span>1</span><span>2</span></span>"
+        +intHTML(loL,String(R),"("+(R*R)+" − <i>x</i><sup>2</sup>)","x")
+        +" — squaring the radical is what makes this elementary. It comes to "
+        +fmtExact(pdef(psub(pk(R*R),[T(1,2)]),f(half?-R:0),f(R)).div(f(2)),false)+"."),
+      St(half?"Symmetry gives the other one":"Moment about the y-axis",
+         half?"The region is symmetric about the y-axis, so M<sub>y</sub> = 0 and "+XB+" = 0."
+             :"M<sub>y</sub> = "+intHTML("0",String(R),V("x")+RAD(R*R+" − <i>x</i><sup>2</sup>"),"x")
+              +" = <span class='fr'><span>"+(R*R*R)+"</span><span>3</span></span>, by the substitution "
+              +"<i>u</i> = "+(R*R)+" − <i>x</i><sup>2</sup>."),
+      St("Divide","Dividing the moment by the area puts a π in the denominator — which is why this answer "
+        +"looks unlike every polynomial one."),
+      centroidStep(xH,yH,"The famous 4<i>R</i>/3π. A "+(half?"half":"quarter")+"-disc of radius "+R
+        +" balances at "+(4*R/(3*Math.PI)).toFixed(4)+" from the flat edge — noticeably less than halfway, "
+        +"because the region is widest there.")],
+    ans:ansPair(xv,yv,xH,yH)});
+}},
+
+/* ---------------- CALC 2 · DENSITY AND CENTRE OF MASS ---------------- */
+{id:"M1",topic:"lamina",course:"c2",diff:1,gen(){
+  const c=ri(1,4), n=pick([1,1,2]), b=ri(2,5);
+  const rho=padd(pk(c),[T(1,n)]);
+  const rhoH=c+" + "+CALC.mono(1,n,"x");
+  const m=pdef(rho,ZERO,f(b)), M=pdef(pmul([T(1,1)],rho),ZERO,f(b));
+  const xb=M.div(m);
+  return P({
+    stem:"A thin rod lies along the x-axis from "+iv("x","0",String(b))+". Its linear density is "
+      +"<span class='hl'>ρ(<i>x</i>) = "+rhoH+"</span>.",
+    axis:"one dimension — mass and one moment",
+    ask:"Find the exact centre of mass "+XB+".",
+    steps:[
+      St("Mass and moment","m = "+intHTML("0",String(b),"ρ(<i>x</i>)","x")+" &nbsp;·&nbsp; M = "
+        +intHTML("0",String(b),V("x")+"ρ(<i>x</i>)","x")+", and "+XB+" = M/m."),
+      St("Mass","m = "+intHTML("0",String(b),"("+rhoH+")","x")+" = <b>"+fmtExact(m,false)+"</b>."),
+      St("Moment about the origin","M = "+intHTML("0",String(b),"("+CALC.mono(c,1,"x")+" + "
+        +CALC.mono(1,n+1,"x")+")","x")+" = <b>"+fmtExact(M,false)+"</b>."),
+      St("Centre of mass",XB+" = "+fmtExact(M,false)+" ÷ "+fmtExact(m,false)+" = <b>"+fmtExact(xb,false)
+        +"</b> ≈ "+xb.num().toFixed(4)+". It sits right of the midpoint "+fmtLim(f(b,2))
+        +", as it must — the rod gets heavier toward the far end.")],
+    ans:{n:1, vals:[xb.num()], html:fmtExact(xb,false)}});
+}},
+
+{id:"M2",topic:"lamina",course:"c2",diff:2,gen(){
+  const c=ri(2,4), j=pick([1,1,2]);
+  const rho=[T(1,j)], rhoH=CALC.mono(1,j,"x");
+  const top=[T(c,1)], bottom=[T(1,2)];
+  const m=regionMoments(top,bottom,ZERO,f(c),rho);
+  const xH=fmtExact(m.xbar,false), yH=fmtExact(m.ybar,false);
+  return P({
+    stem:"A lamina occupies the region between <span class='hl'><i>y</i> = "+c+"<i>x</i></span> and "
+      +"<span class='hl'><i>y</i> = <i>x</i><sup>2</sup></span>, with density "
+      +"<span class='hl'>ρ(<i>x</i>) = "+rhoH+"</span> — heavier toward the right.",
+    axis:"density varies, so it stays inside every integral",
+    steps:regionSteps(m,c+V("x"),V("x")+"<sup>2</sup>","x","0",String(c),"ρ(<i>x</i>)")
+          .concat([centroidStep(xH,yH,"Compare the uniform case: weighting by "+rhoH
+            +" drags the centre of mass toward the heavy end.")]),
+    ans:ansPair(m.xbar.num(),m.ybar.num(),xH,yH)});
+}},
+
+{id:"M3",topic:"lamina",course:"c2",diff:2,gen(){
+  const k=ri(1,3), n=pick([1,2]), b=ri(2,4);
+  const rho=[T(k,n)], rhoH=CALC.mono(k,n,"x");
+  const m=pdef(rho,ZERO,f(b)), M=pdef(pmul([T(1,1)],rho),ZERO,f(b));
+  const xb=M.div(m);
+  return P({
+    stem:"A rod from "+iv("x","0",String(b))+" has density <span class='hl'>ρ(<i>x</i>) = "+rhoH+"</span>.",
+    axis:"a pure power law",
+    ask:"Find the exact centre of mass "+XB+".",
+    steps:[
+      St("Mass and moment","m = "+intHTML("0",String(b),"ρ","x")+", M = "+intHTML("0",String(b),V("x")+"ρ","x")
+        +", "+XB+" = M/m."),
+      St("Both integrals","m = "+fmtExact(m,false)+" and M = "+fmtExact(M,false)+"."),
+      St("The coefficient cancels",XB+" = <span class='fr'><span>"+(n+1)+"</span><span>"+(n+2)
+        +"</span></span>·"+b+" = <b>"+fmtExact(xb,false)+"</b>. For ρ = <i>x</i><sup>n</sup> the answer is "
+        +"always <sup>n+1</sup>⁄<sub>n+2</sub> of the length, whatever the constant "+k+" is.")],
+    ans:{n:1, vals:[xb.num()], html:fmtExact(xb,false)}});
+}},
+
+/* ---------------- CALC 2 · CENTROID OF AN ARC ---------------- */
+{id:"W1",topic:"arc",course:"c2",diff:1,gen(){
+  const [p,q,r]=pick(TRIPLES), b=q*ri(1,3), c=ri(0,4);
+  const m=f(p,q), mH=fmtLim(m);
+  const xb=f(b,2), yb=m.mul(xb).add(f(c));
+  const xH=fmtExact(xb,false), yH=fmtExact(yb,false);
+  return P({
+    stem:"A uniform wire runs along <span class='hl'><i>y</i> = "+mH+V("x")+(c?" + "+c:"")+"</span> from "
+      +iv("x","0",String(b))+".",
+    axis:"a wire, not a region — the weight is arc length",
+    steps:[
+      St("Arc-length weighting","For a curve the mass element is ds, so "+XB+" = <span class='fr'><span>1</span>"
+        +"<span>L</span></span>∫<i>x</i> ds and "+YB+" = <span class='fr'><span>1</span><span>L</span></span>"
+        +"∫<i>y</i> ds — the region formulas do not apply."),
+      St("Build ds",V("y′")+" = "+mH+", so ds = "+fmtLim(f(r,q))+" <i>dx</i>, a constant. "
+        +"That constant cancels out of both averages."),
+      St("A constant ds means a plain average","With ds constant the centroid is just the average of the "
+        +"endpoints — the midpoint of the segment."),
+      centroidStep(xH,yH,"Worth internalising: for a straight wire the centroid is always the midpoint, and no "
+        +"integration is needed. Contrast the region problems, where the shape matters.")],
+    ans:ansPair(xb.num(),yb.num(),xH,yH)});
+}},
+
+{id:"W2",topic:"arc",course:"c2",diff:3,gen(){
+  const a=pick([f(1,2),ONE,f(2),f(1,4)]);
+  const c=conj(a,f(3));
+  const [lo,hi]=pickTwo([1,2,3]).map(n=>f(n));
+  const L=pdef(c.ds,lo,hi);
+  const Ix=pdef(pmul([T(1,1)],c.ds),lo,hi), Iy=pdef(pmul(c.y,c.ds),lo,hi);
+  const xb=Ix.div(L), yb=Iy.div(L);
+  const xH=fmtExact(xb,false), yH=fmtExact(yb,false);
+  const yP=fmtPoly(c.y,"x"), dsH="("+fmtPoly(c.ds,"x")+")";
+  return P({
+    stem:"A uniform wire follows <span class='hl'><i>y</i> = "+yP+"</span> from "
+      +iv("x",fmtLim(lo),fmtLim(hi))+".",
+    axis:"the perfect-square family again — ds is a polynomial",
+    steps:[
+      St("Arc-length weighting",XB+" = <span class='fr'><span>1</span><span>L</span></span>∫<i>x</i> ds, "
+        +YB+" = <span class='fr'><span>1</span><span>L</span></span>∫<i>y</i> ds, with L = ∫ds."),
+      St("Build ds",V("y′")+" = "+fmtPoly(c.dy,"x")+"; the cross terms cancel, so 1 + ["+V("y′")+"]<sup>2</sup> = "
+        +dsH+"<sup>2</sup> and ds = "+dsH+" <i>dx</i>. Because ds is a polynomial, so are <i>x</i> ds and "
+        +"<i>y</i> ds — all three integrals are exact."),
+      St("The three integrals","L = "+fmtExact(L,false)+" &nbsp;·&nbsp; ∫<i>x</i> ds = "+fmtExact(Ix,false)
+        +" &nbsp;·&nbsp; ∫<i>y</i> ds = "+fmtExact(Iy,false)+"."),
+      centroidStep(xH,yH,"This is the same curve family the Arcs trainer uses; here it is weighted rather than "
+        +"just measured.")],
+    ans:ansPair(xb.num(),yb.num(),xH,yH)});
+}},
+
+{id:"W3",topic:"arc",course:"c2",diff:2,gen(){
+  const R=ri(1,5), half=pick([true,false]);
+  const q=f(2*R);
+  const xH=half?"0":fmtDivPi(q), yH=fmtDivPi(q);
+  const xv=half?0:2*R/Math.PI, yv=2*R/Math.PI;
+  return P({
+    stem:"A uniform wire is bent into the "+(half?"semicircle":"quarter circle")+" <span class='hl'><i>y</i> = "
+      +RAD(R*R+" − <i>x</i><sup>2</sup>")+"</span>, "+iv("x",half?"−"+R:"0",String(R))+".",
+    axis:"a wire on a circle — compare it with the disc",
+    steps:[
+      St("Arc-length weighting",XB+" = <span class='fr'><span>1</span><span>L</span></span>∫<i>x</i> ds, "
+        +YB+" = <span class='fr'><span>1</span><span>L</span></span>∫<i>y</i> ds."),
+      St("Build ds","ds = <span class='fr'><span>"+R+"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")
+        +"</span></span> <i>dx</i>, and L = "+(half?piN(R):"<span class='fr'><span>"+piN(R)
+        +"</span><span>2</span></span>")+"."),
+      St("The radical cancels","<i>y</i> ds = "+RAD(R*R+" − <i>x</i><sup>2</sup>")+" · <span class='fr'><span>"
+        +R+"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")+"</span></span> <i>dx</i> = "+R
+        +" <i>dx</i> — the same cancellation that gives Archimedes' hat-box theorem. So ∫<i>y</i> ds = "
+        +(half?String(2*R*R):String(R*R))+"."),
+      centroidStep(xH,yH,"A wire gives 2<i>R</i>/π ≈ "+(2*R/Math.PI).toFixed(4)+"; the filled "
+        +(half?"half":"quarter")+"-disc gives 4<i>R</i>/3π ≈ "+(4*R/(3*Math.PI)).toFixed(4)
+        +". The wire's centroid is further out, because a wire puts all its mass at the rim.")],
+    ans:ansPair(xv,yv,xH,yH)});
+}},
+
+/* ---------------- CALC 2 · PAPPUS ---------------- */
+{id:"Q1",topic:"pappus",course:"c2",diff:2,gen(){
+  const r=ri(1,4), R=r+ri(1,5);
+  const val=2*Math.PI*Math.PI*R*r*r;
+  return P({
+    stem:"A disc of radius <span class='hl'>"+r+"</span> centred at ("+R+", 0) is revolved about the "
+      +"<span class='hl'>y-axis</span>, sweeping out a torus.",
+    axis:"the centroid does the work — no integral at all",
+    ask:"Find the exact volume.",
+    steps:[
+      St("Pappus, first theorem","V = 2π<i>d</i>·A, where <i>d</i> is the distance travelled per unit — "
+        +"the distance from the <i>centroid</i> to the axis — and A is the area of the region."),
+      St("Read off both pieces","The centroid of a disc is its centre, so <i>d</i> = "+R
+        +". The area is π·"+r+"<sup>2</sup> = "+(r*r)+"π."),
+      St("Multiply","V = 2π·"+R+"·"+(r*r)+"π = <b>"+fmtCoef(f(2*R*r*r),"π<sup>2</sup>")+"</b> ≈ "
+        +val.toFixed(4)+". A π<sup>2</sup> is the signature of a torus.")],
+    ans:{n:1, vals:[val], html:fmtCoef(f(2*R*r*r),"π<sup>2</sup>")}});
+}},
+
+{id:"Q2",topic:"pappus",course:"c2",diff:2,gen(){
+  const r=ri(1,4), R=r+ri(1,5);
+  const val=4*Math.PI*Math.PI*R*r;
+  return P({
+    stem:"A circle of radius <span class='hl'>"+r+"</span> centred at ("+R+", 0) is revolved about the "
+      +"<span class='hl'>y-axis</span>.",
+    axis:"the curve, not the region it encloses",
+    ask:"Find the exact surface area of the torus.",
+    steps:[
+      St("Pappus, second theorem","S = 2π<i>d</i>·L, with <i>d</i> the distance from the centroid of the "
+        +"<i>curve</i> to the axis and L its length. Same idea, one dimension down."),
+      St("Read off both pieces","The centroid of a full circle is its centre, so <i>d</i> = "+R
+        +", and L = 2π·"+r+" = "+(2*r)+"π."),
+      St("Multiply","S = 2π·"+R+"·"+(2*r)+"π = <b>"+fmtCoef(f(4*R*r),"π<sup>2</sup>")+"</b> ≈ "
+        +val.toFixed(4)+". Compare the Surfaces trainer's horn torus, which is this with <i>R</i> = <i>r</i>.")],
+    ans:{n:1, vals:[val], html:fmtCoef(f(4*R*r),"π<sup>2</sup>")}});
+}},
+
+{id:"Q3",topic:"pappus",course:"c2",diff:3,gen(){
+  const c=ri(1,3), n=pick([1,2]), b=ri(1,3);
+  const top=[T(c,n)];
+  const m=regionMoments(top,[],ZERO,f(b));
+  const V1=m.ybar.mul(f(2)).mul(m.A);            /* V/π = 2·ȳ·A */
+  const topH=CALC.mono(c,n,"x");
+  return P({
+    stem:"The region under <span class='hl'><i>y</i> = "+topH+"</span> from "+iv("x","0",String(b))
+      +" has area <span class='hl'>"+fmtExact(m.A,false)+"</span> and centroid height <span class='hl'>"
+      +YB+" = "+fmtExact(m.ybar,false)+"</span>. It is revolved about the <span class='hl'>x-axis</span>.",
+    axis:"working Pappus forwards",
+    ask:"Find the exact volume.",
+    steps:[
+      St("Pappus, first theorem","V = 2π"+YB+"·A — the centroid height is exactly the <i>d</i> in the theorem "
+        +"when the axis is the x-axis."),
+      St("Substitute","V = 2π·"+fmtExact(m.ybar,false)+"·"+fmtExact(m.A,false)+" = <b>"
+        +fmtCoef(V1,"π")+"</b>."),
+      St("Check it against disks","Directly, V = π∫("+topH+")<sup>2</sup> <i>dx</i> = "+fmtCoef(V1,"π")
+        +". The two agree, which is the whole content of the theorem: <span class='fr'><span>1</span>"
+        +"<span>2</span></span>∫(top<sup>2</sup>) is both the moment M<sub>x</sub> and half the disk integral.")],
+    ans:{n:1, vals:[V1.num()*Math.PI], html:fmtCoef(V1,"π")}});
+}},
+
+{id:"Q4",topic:"pappus",course:"c2",diff:3,gen(){
+  const R=ri(1,5);
+  const q=f(4*R,3);
+  return P({
+    stem:"Revolving a half-disc of radius <span class='hl'>"+R+"</span> about its own diameter gives a sphere, "
+      +"of volume <span class='hl'>"+fmtCoef(f(4*R*R*R,3),"π")+"</span>.",
+    axis:"running Pappus backwards to find a centroid",
+    ask:"Use Pappus to find the exact centroid height "+YB+" of the half-disc.",
+    steps:[
+      St("Turn the theorem around","V = 2π"+YB+"·A, so "+YB+" = <span class='fr'><span>V</span>"
+        +"<span>2πA</span></span>. Knowing the volume gives the centroid, with no moment integral."),
+      St("Both knowns","V = "+fmtCoef(f(4*R*R*R,3),"π")+" and A = <span class='fr'><span>"+piN(R*R)
+        +"</span><span>2</span></span>."),
+      St("Divide",YB+" = "+fmtCoef(f(4*R*R*R,3),"π")+" ÷ (2π · <span class='fr'><span>"+piN(R*R)
+        +"</span><span>2</span></span>) = <b>"+fmtDivPi(q)+"</b> ≈ "+(4*R/(3*Math.PI)).toFixed(4)
+        +". Archimedes' sphere volume hands you 4<i>R</i>/3π for free.")],
+    ans:{n:1, vals:[4*R/(3*Math.PI)], html:fmtDivPi(q)}});
+}},
+
+/* ---------------- CALC 3 · DOUBLE INTEGRALS ---------------- */
+{id:"D1",topic:"double",course:"c3",diff:2,gen(){
+  const a=ri(1,4), b=ri(1,4);
+  const CASES=[
+    {rho:"<i>xy</i>", xb:f(2*a,3), yb:f(2*b,3), why:"both factors weight the far corner equally"},
+    {rho:"<i>x</i>",  xb:f(2*a,3), yb:f(b,2),   why:"only x is weighted, so ȳ stays at the midpoint"},
+    {rho:"<i>y</i>",  xb:f(a,2),   yb:f(2*b,3), why:"only y is weighted, so x̄ stays at the midpoint"}
+  ];
+  const C=pick(CASES);
+  const xH=fmtExact(C.xb,false), yH=fmtExact(C.yb,false);
+  return P({
+    stem:"A lamina occupies the rectangle <span class='hl'>0 ≤ <i>x</i> ≤ "+a+", 0 ≤ <i>y</i> ≤ "+b
+      +"</span> with density <span class='hl'>ρ(<i>x</i>,<i>y</i>) = "+C.rho+"</span>.",
+    axis:"a separable density on a rectangle",
+    steps:[
+      St("The double-integral forms","m = "+dbl("0",String(a),"0",String(b),"ρ")+" &nbsp;·&nbsp; M<sub>y</sub> = "
+        +dbl("0",String(a),"0",String(b),"<i>x</i>ρ")+" &nbsp;·&nbsp; M<sub>x</sub> = "
+        +dbl("0",String(a),"0",String(b),"<i>y</i>ρ")+"."),
+      St("It separates","Over a rectangle with ρ = "+C.rho+", every integral splits into a product of two "
+        +"one-variable integrals, so no iteration is really needed."),
+      St("Each factor","∫<sub>0</sub><sup>L</sup><i>u</i> <i>du</i> = L<sup>2</sup>/2 and "
+        +"∫<sub>0</sub><sup>L</sup><i>u</i><sup>2</sup> <i>du</i> = L<sup>3</sup>/3, so a weighted direction "
+        +"gives <sup>2</sup>⁄<sub>3</sub>L and an unweighted one gives <sup>1</sup>⁄<sub>2</sub>L."),
+      centroidStep(xH,yH,"Here "+C.why+".")],
+    ans:ansPair(C.xb.num(),C.yb.num(),xH,yH)});
+}},
+
+{id:"D2",topic:"double",course:"c3",diff:2,gen(){
+  const c=ri(1,3), n=pick([1,2]), b=ri(1,3);
+  const top=[T(c,n)];
+  const m=regionMoments(top,[],ZERO,f(b));
+  const topH=CALC.mono(c,n,"x");
+  const xH=fmtExact(m.xbar,false), yH=fmtExact(m.ybar,false);
+  return P({
+    stem:"A lamina of constant density occupies the type I region <span class='hl'>0 ≤ <i>x</i> ≤ "+b
+      +", 0 ≤ <i>y</i> ≤ "+topH+"</span>.",
+    axis:"a double integral that collapses to a single one",
+    steps:[
+      St("Set up the iterated integrals","m = "+dbl("0",String(b),"0",topH,"1")+", M<sub>x</sub> = "
+        +dbl("0",String(b),"0",topH,"<i>y</i>")+", M<sub>y</sub> = "+dbl("0",String(b),"0",topH,"<i>x</i>")+"."),
+      St("Do the inner integral","∫<sub>0</sub><sup>g</sup>1 <i>dy</i> = g and ∫<sub>0</sub><sup>g</sup>"
+        +"<i>y</i> <i>dy</i> = g<sup>2</sup>/2. That is exactly where the Calc 2 formulas come from — "
+        +"M<sub>x</sub> = ½∫g<sup>2</sup> is the inner integral already done for you."),
+      St("Outer integrals","A = "+fmtExact(m.A,false)+", M<sub>y</sub> = "+fmtExact(m.My,false)
+        +", M<sub>x</sub> = "+fmtExact(m.Mx,false)+"."),
+      centroidStep(xH,yH,"Constant density cancels, so this is a pure centroid.")],
+    ans:ansPair(m.xbar.num(),m.ybar.num(),xH,yH)});
+}},
+
+{id:"D3",topic:"double",course:"c3",diff:3,gen(){
+  const c=ri(1,3), n=pick([1,2]), b=ri(1,3);
+  const g=[T(c,n)], gH=CALC.mono(c,n,"x");
+  /* rho = y : m = ∫g²/2, My = ∫x g²/2, Mx = ∫g³/3 */
+  const m  = pdef(psq(g),ZERO,f(b)).div(f(2));
+  const My = pdef(pmul([T(1,1)],psq(g)),ZERO,f(b)).div(f(2));
+  const Mx = pdef(ppow(g,3),ZERO,f(b)).div(f(3));
+  const xb=My.div(m), yb=Mx.div(m);
+  const xH=fmtExact(xb,false), yH=fmtExact(yb,false);
+  return P({
+    stem:"A lamina occupies <span class='hl'>0 ≤ <i>x</i> ≤ "+b+", 0 ≤ <i>y</i> ≤ "+gH+"</span> with "
+      +"density <span class='hl'>ρ(<i>x</i>,<i>y</i>) = <i>y</i></span> — it thickens upward.",
+    axis:"the density depends on the inner variable",
+    steps:[
+      St("Why this one needs the double integral","ρ depends on <i>y</i>, so it cannot be pulled out of the "
+        +"inner integral the way a ρ(<i>x</i>) can. The Calc 2 shortcut does not apply."),
+      St("Inner integrals","∫<sub>0</sub><sup>g</sup><i>y</i> <i>dy</i> = g<sup>2</sup>/2 and "
+        +"∫<sub>0</sub><sup>g</sup><i>y</i><sup>2</sup> <i>dy</i> = g<sup>3</sup>/3, with g = "+gH+"."),
+      St("Outer integrals","m = "+intHTML("0",String(b),"<span class='fr'><span>g<sup>2</sup></span>"
+        +"<span>2</span></span>","x")+" = "+fmtExact(m,false)+", M<sub>y</sub> = "+fmtExact(My,false)
+        +", M<sub>x</sub> = "+intHTML("0",String(b),"<span class='fr'><span>g<sup>3</sup></span>"
+        +"<span>3</span></span>","x")+" = "+fmtExact(Mx,false)+"."),
+      centroidStep(xH,yH,"Compare the uniform case: weighting by <i>y</i> lifts the centre of mass.")],
+    ans:ansPair(xb.num(),yb.num(),xH,yH)});
+}},
+
+{id:"D4",topic:"double",course:"c3",diff:3,gen(){
+  const c=ri(2,4);
+  /* type II: region between x = y² and x = c·y, 0 ≤ y ≤ c — integrate in y */
+  const right=[T(c,1)], left=[T(1,2)];
+  const m=regionMoments(right,left,ZERO,f(c));
+  /* regionMoments in y: "xbar" is the y-moment ratio, "ybar" the x one — swap the labels */
+  const yb=m.xbar, xb=m.ybar;
+  const xH=fmtExact(xb,false), yH=fmtExact(yb,false);
+  return P({
+    stem:"A lamina of constant density occupies the type II region between <span class='hl'><i>x</i> = "
+      +V("y")+"<sup>2</sup></span> and <span class='hl'><i>x</i> = "+c+V("y")+"</span>.",
+    axis:"x-simple — integrate in y and the roles swap",
+    steps:[
+      St("Set up in y","Horizontal strips run from <i>x</i> = <i>y</i><sup>2</sup> to <i>x</i> = "+c+"<i>y</i>, "
+        +"for "+iv("y","0",String(c))+". So A = ∫(right − left) <i>dy</i>, "
+        +YB+" = <span class='fr'><span>1</span><span>A</span></span>∫<i>y</i>(right − left) <i>dy</i>, and "
+        +XB+" = <span class='fr'><span>1</span><span>2A</span></span>∫(right<sup>2</sup> − left<sup>2</sup>) <i>dy</i>."),
+      St("Mind the swap","Integrating in <i>y</i> exchanges the two formulas: the <i>squared</i> one now gives "
+        +XB+", not "+YB+". Getting this backwards is the usual mistake."),
+      St("The integrals","A = "+fmtExact(m.A,false)+", ∫<i>y</i>(right − left) <i>dy</i> = "+fmtExact(m.My,false)
+        +", <span class='fr'><span>1</span><span>2</span></span>∫(right<sup>2</sup> − left<sup>2</sup>) <i>dy</i> = "
+        +fmtExact(m.Mx,false)+"."),
+      centroidStep(xH,yH,null)],
+    ans:ansPair(xb.num(),yb.num(),xH,yH)});
+}},
+
+/* ---------------- CALC 3 · POLAR ---------------- */
+{id:"C1",topic:"polarc",course:"c3",diff:1,gen(){
+  const a=ri(1,5);
+  return P({
+    stem:"A lamina of constant density fills the disc <span class='hl'><i>r</i> = "+(2*a)+" cos θ</span> — "
+      +"the circle of radius "+a+" centred at ("+a+", 0).",
+    axis:"the calibration problem: you already know the answer",
+    steps:[
+      St("Polar moment formulas","A = ∬<i>r dr dθ</i>, "+XB+" = <span class='fr'><span>1</span><span>A</span>"
+        +"</span>∬<i>r</i> cos θ · <i>r dr dθ</i>, "+YB+" = <span class='fr'><span>1</span><span>A</span>"
+        +"</span>∬<i>r</i> sin θ · <i>r dr dθ</i>. The extra <i>r</i> is the Jacobian."),
+      St("Symmetry","The disc is symmetric about the polar axis, so "+YB+" = 0 without any integration."),
+      St("And the rest","A centroid of a disc is its centre. The integrals confirm "+XB+" = "+a
+        +", but you should not need them."),
+      centroidStep(String(a),"0","Use this one to check that your setup and your Jacobian are right before "
+        +"trusting the harder polar problems.")],
+    ans:ansPair(a,0,String(a),"0")});
+}},
+
+{id:"C2",topic:"polarc",course:"c3",diff:2,gen(){
+  const R=ri(1,4);
+  const CASES=[
+    {al:"π/4", sin:RAD("2")+"/2", disp:divPi(f(4*R,3),RAD("2")), v:4*R*Math.SQRT2/(3*Math.PI)},
+    {al:"π/2", sin:"1",           disp:divPi(f(4*R,3),""),       v:4*R/(3*Math.PI)},
+    {al:"π/6", sin:"1/2",         disp:divPi(f(2*R),""),         v:2*R/Math.PI}
+  ];
+  const C=pick(CASES);
+  const xH=C.disp;
+  return P({
+    stem:"A lamina of constant density fills the circular sector of radius <span class='hl'>"+R+"</span> "
+      +"between θ = −"+C.al+" and θ = "+C.al+".",
+    axis:"a sector — symmetric about the polar axis",
+    steps:[
+      St("Symmetry first",YB+" = 0: the sector is symmetric about θ = 0, so the y-moment cancels."),
+      St("Area and moment","A = <span class='fr'><span>1</span><span>2</span></span>∫<i>r</i><sup>2</sup> "
+        +"<i>dθ</i> = α<i>R</i><sup>2</sup> with α = "+C.al+". And M<sub>y</sub> = ∬<i>r</i><sup>2</sup> cos θ "
+        +"<i>dr dθ</i> = <span class='fr'><span><i>R</i><sup>3</sup></span><span>3</span></span>·2 sin α."),
+      St("Divide",XB+" = <span class='fr'><span>2<i>R</i> sin α</span><span>3α</span></span> — the general "
+        +"sector formula. Here sin α = "+C.sin+"."),
+      centroidStep(xH,"0","As α → 0 this tends to <sup>2</sup>⁄<sub>3</sub><i>R</i>, the centroid of a thin "
+        +"triangle; at α = π/2 it is the half-disc's 4<i>R</i>/3π.")],
+    ans:ansPair(C.v,0,xH,"0")});
+}},
+
+{id:"C3",topic:"polarc",course:"c3",diff:3,gen(){
+  const a=ri(1,4);
+  const q=f(5*a,6);
+  return P({
+    stem:"A lamina of constant density fills the cardioid <span class='hl'><i>r</i> = "+a
+      +"(1 + cos θ)</span>.",
+    axis:"symmetric about the polar axis",
+    steps:[
+      St("Symmetry first",YB+" = 0."),
+      St("Area","A = <span class='fr'><span>1</span><span>2</span></span>∫<sub>0</sub><sup>2π</sup>"
+        +"<i>r</i><sup>2</sup> <i>dθ</i> = <span class='fr'><span>"+(a*a)+"</span><span>2</span></span>"
+        +"∫(1 + cos θ)<sup>2</sup> <i>dθ</i> = "+fmtCoef(f(3*a*a,2),"π")+", since ∫(1 + 2cos + cos<sup>2</sup>) "
+        +"over a full turn is 2π + 0 + π = 3π."),
+      St("Moment","M<sub>y</sub> = ∬<i>r</i><sup>2</sup> cos θ <i>dr dθ</i> = <span class='fr'><span>"
+        +(a*a*a)+"</span><span>3</span></span>∫(1 + cos θ)<sup>3</sup> cos θ <i>dθ</i>. Expanding, only the "
+        +"even powers survive: 3π + <span class='fr'><span>3π</span><span>4</span></span> = "
+        +"<span class='fr'><span>15π</span><span>4</span></span>, so M<sub>y</sub> = "
+        +fmtCoef(f(5*a*a*a,4),"π")+"."),
+      centroidStep(fmtExact(q,false),"0","The π cancels here — unusually for a polar problem — leaving the "
+        +"clean 5<i>a</i>/6. The cardioid's cusp is at the origin and its far point at 2<i>a</i>, so the "
+        +"centroid sitting just past the midpoint is believable.")],
+    ans:ansPair(q.num(),0,fmtExact(q,false),"0")});
+}},
+
+/* ---------------- CALC 3 · SOLIDS ---------------- */
+{id:"T1",topic:"triple",course:"c3",diff:2,gen(){
+  const a=ri(1,4), b=ri(1,4), c=ri(1,4);
+  const xb=f(a,4), yb=f(b,4), zb=f(c,4);
+  const html="("+fmtExact(xb,false)+", "+fmtExact(yb,false)+", "+fmtExact(zb,false)+")";
+  return P({
+    stem:"A solid of constant density is the tetrahedron bounded by the coordinate planes and "
+      +"<span class='hl'><sup><i>x</i></sup>⁄<sub>"+a+"</sub> + <sup><i>y</i></sup>⁄<sub>"+b
+      +"</sub> + <sup><i>z</i></sup>⁄<sub>"+c+"</sub> = 1</span>.",
+    axis:"three coordinates this time",
+    ask:"Find the exact centroid ("+XB+", "+YB+", "+ZB+").",
+    steps:[
+      St("The triple-integral forms","V = ∭<i>dV</i> and "+XB+" = <span class='fr'><span>1</span><span>V</span>"
+        +"</span>∭<i>x dV</i>, and likewise for the other two."),
+      St("Volume","V = <span class='fr'><span>"+a+"·"+b+"·"+c+"</span><span>6</span></span> = "
+        +fmtExact(f(a*b*c,6),false)+" — one sixth of the box, the 3-D analogue of a triangle's half."),
+      St("One moment","∭<i>x dV</i> = <span class='fr'><span>"+a+"<sup>2</sup>·"+b+"·"+c
+        +"</span><span>24</span></span>, so "+XB+" = <span class='fr'><span>6</span><span>24</span></span>·"
+        +a+" = <span class='fr'><span>"+a+"</span><span>4</span></span>."),
+      St("Centroid","The centroid is <b>"+html+"</b> — a quarter of the way along each axis. Compare a "
+        +"triangle, where it is a third: in <i>n</i> dimensions a simplex balances at 1/(<i>n</i>+1).")],
+    ans:{n:3, vals:[xb.num(),yb.num(),zb.num()], html:html}});
+}},
+
+{id:"T2",topic:"triple",course:"c3",diff:2,gen(){
+  const h=ri(1,4)*pick([1,2]);
+  const zb=f(2*h,3);
+  return P({
+    stem:"A solid of constant density is bounded below by the paraboloid <span class='hl'><i>z</i> = "
+      +"<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup></span> and above by <span class='hl'><i>z</i> = "+h+"</span>.",
+    axis:"symmetric about the z-axis, so only z̄ is in doubt",
+    ask:"Find the exact "+ZB+".",
+    steps:[
+      St("Symmetry",XB+" = "+YB+" = 0 by rotational symmetry. Only "+ZB+" needs work."),
+      St("Slice horizontally","At height <i>z</i> the cross-section is a disc of radius "+RAD("<i>z</i>")
+        +", area π<i>z</i>. So V = π∫<sub>0</sub><sup>"+h+"</sup><i>z</i> <i>dz</i> = "
+        +fmtCoef(f(h*h,2),"π")+"."),
+      St("Moment about the xy-plane","∭<i>z dV</i> = π∫<sub>0</sub><sup>"+h+"</sup><i>z</i><sup>2</sup> "
+        +"<i>dz</i> = "+fmtCoef(f(h*h*h,3),"π")+"."),
+      St("Divide",ZB+" = "+fmtCoef(f(h*h*h,3),"π")+" ÷ "+fmtCoef(f(h*h,2),"π")+" = <b>"+fmtExact(zb,false)
+        +"</b>. Two thirds of the way up — the paraboloid is wide at the top, so the mass sits high.")],
+    ans:{n:1, vals:[zb.num()], html:fmtExact(zb,false)}});
+}},
+
+{id:"T3",topic:"triple",course:"c3",diff:3,gen(){
+  const R=ri(1,5);
+  const zb=f(3*R,8);
+  return P({
+    stem:"A solid hemisphere of constant density has radius <span class='hl'>"+R
+      +"</span> and its flat face on the xy-plane.",
+    axis:"symmetric about the z-axis",
+    ask:"Find the exact "+ZB+".",
+    steps:[
+      St("Symmetry","Only "+ZB+" is non-zero."),
+      St("Slice horizontally","At height <i>z</i> the cross-section is a disc of radius "
+        +RAD((R*R)+" − <i>z</i><sup>2</sup>")+", area π("+(R*R)+" − <i>z</i><sup>2</sup>). "
+        +"V = π∫<sub>0</sub><sup>"+R+"</sup>("+(R*R)+" − <i>z</i><sup>2</sup>) <i>dz</i> = "
+        +fmtCoef(f(2*R*R*R,3),"π")+"."),
+      St("Moment","∭<i>z dV</i> = π∫<sub>0</sub><sup>"+R+"</sup><i>z</i>("+(R*R)+" − <i>z</i><sup>2</sup>) "
+        +"<i>dz</i> = π("+(R*R*R*R)+"/2 − "+(R*R*R*R)+"/4) = "+fmtCoef(f(R*R*R*R,4),"π")+"."),
+      St("Divide",ZB+" = <b>"+fmtExact(zb,false)+"</b> = <sup>3</sup>⁄<sub>8</sub><i>R</i> ≈ "
+        +zb.num().toFixed(4)+". Lower than the hemispherical <i>shell</i>, which balances at <i>R</i>/2 — "
+        +"a solid has more of its mass near the wide base.")],
+    ans:{n:1, vals:[zb.num()], html:fmtExact(zb,false)}});
+}},
+
+{id:"T4",topic:"triple",course:"c3",diff:3,gen(){
+  const h=ri(1,5), R=ri(1,4);
+  const zb=f(h,4);
+  return P({
+    stem:"A solid right circular cone of constant density has base radius <span class='hl'>"+R
+      +"</span> and height <span class='hl'>"+h+"</span>, with its base on the xy-plane.",
+    axis:"measured from the base",
+    ask:"Find the exact "+ZB+" above the base.",
+    steps:[
+      St("Symmetry","Only "+ZB+" is in question."),
+      St("Slice horizontally","At height <i>z</i> the radius has shrunk to "+R+"(1 − <i>z</i>/"+h
+        +"), so the area is π·"+(R*R)+"(1 − <i>z</i>/"+h+")<sup>2</sup>."),
+      St("Two integrals","V = <span class='fr'><span>1</span><span>3</span></span>π·"+(R*R)+"·"+h+" = "
+        +fmtCoef(f(R*R*h,3),"π")+", and ∭<i>z dV</i> = π"+(R*R)+"∫<sub>0</sub><sup>"+h
+        +"</sup><i>z</i>(1 − <i>z</i>/"+h+")<sup>2</sup> <i>dz</i> = "+fmtCoef(f(R*R*h*h,12),"π")+"."),
+      St("Divide",ZB+" = <b>"+fmtExact(zb,false)+"</b> = <i>h</i>/4. A cone balances a quarter of the way up, "
+        +"the same fraction as the tetrahedron — and the radius cancels entirely.")],
+    ans:{n:1, vals:[zb.num()], html:fmtExact(zb,false)}});
+}},
+
+/* ---------------- CALC 3 · MOMENTS OF INERTIA ---------------- */
+{id:"I1",topic:"inertia",course:"c3",diff:2,gen(){
+  const a=ri(1,4), b=ri(1,4);
+  const CASES=[
+    {sym:"I<sub>x</sub>", q:f(a*b*b*b,3), form:"∬<i>y</i><sup>2</sup> ρ <i>dA</i>",
+     why:"distance to the x-axis is <i>y</i>"},
+    {sym:"I<sub>y</sub>", q:f(a*a*a*b,3), form:"∬<i>x</i><sup>2</sup> ρ <i>dA</i>",
+     why:"distance to the y-axis is <i>x</i>"},
+    {sym:"I<sub>0</sub>", q:f(a*b*(a*a+b*b),3), form:"∬(<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup>) ρ <i>dA</i>",
+     why:"the polar moment is the sum of the other two"}
+  ];
+  const C=pick(CASES);
+  return P({
+    stem:"A lamina of density ρ = 1 occupies the rectangle <span class='hl'>0 ≤ <i>x</i> ≤ "+a
+      +", 0 ≤ <i>y</i> ≤ "+b+"</span>.",
+    axis:"second moments, not first",
+    ask:"Find the exact "+C.sym+".",
+    steps:[
+      St("Second moments","A moment of inertia weights by the <i>square</i> of the distance to the axis: "
+        +C.sym+" = "+C.form+". Centroid integrals use the first power; these use the second."),
+      St("Why it separates","Over a rectangle the integral splits: ∫<sub>0</sub><sup>"+a+"</sup><i>dx</i> · "
+        +"∫<sub>0</sub><sup>"+b+"</sup><i>y</i><sup>2</sup> <i>dy</i>, and so on."),
+      St("Evaluate",C.sym+" = <b>"+fmtExact(C.q,false)+"</b> — "+C.why+"."),
+      St("Sanity check","I<sub>0</sub> = I<sub>x</sub> + I<sub>y</sub> always, because "
+        +"<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup> is the squared distance to the origin. Here that reads "
+        +fmtExact(f(a*b*b*b,3),false)+" + "+fmtExact(f(a*a*a*b,3),false)+" = "
+        +fmtExact(f(a*b*(a*a+b*b),3),false)+".")],
+    ans:{n:1, vals:[C.q.num()], html:fmtExact(C.q,false)}});
+}},
+
+{id:"I2",topic:"inertia",course:"c3",diff:3,gen(){
+  const c=ri(1,3), n=pick([1,2]), b=ri(1,3);
+  const g=[T(c,n)], gH=CALC.mono(c,n,"x");
+  const Ix=pdef(ppow(g,3),ZERO,f(b)).div(f(3));
+  const Iy=pdef(pmul([T(1,2)],g),ZERO,f(b));
+  const C=pick([{sym:"I<sub>x</sub>",q:Ix,inner:"∫<sub>0</sub><sup>g</sup><i>y</i><sup>2</sup> <i>dy</i> = "
+                 +"g<sup>3</sup>/3"},
+                {sym:"I<sub>y</sub>",q:Iy,inner:"∫<sub>0</sub><sup>g</sup><i>x</i><sup>2</sup> <i>dy</i> = "
+                 +"<i>x</i><sup>2</sup>g, since <i>x</i> is constant in the inner integral"}]);
+  return P({
+    stem:"A lamina of density ρ = 1 occupies the region <span class='hl'>0 ≤ <i>x</i> ≤ "+b
+      +", 0 ≤ <i>y</i> ≤ "+gH+"</span>.",
+    axis:"second moments over a curved region",
+    ask:"Find the exact "+C.sym+".",
+    steps:[
+      St("The definition",C.sym+" = ∬ (distance)<sup>2</sup> <i>dA</i>, set up as an iterated integral over "
+        +"this type I region."),
+      St("Inner integral",C.inner+"."),
+      St("Outer integral","With g = "+gH+", the outer integral is a plain power integral."),
+      St("Result",C.sym+" = <b>"+fmtExact(C.q,false)+"</b> ≈ "+C.q.num().toFixed(4)+".")],
+    ans:{n:1, vals:[C.q.num()], html:fmtExact(C.q,false)}});
+}},
+
+{id:"I3",topic:"inertia",course:"c3",diff:3,gen(){
+  const R=ri(1,4);
+  const CASES=[
+    {sym:"I<sub>0</sub>", q:f(R*R*R*R,2), note:"the polar moment of a disc"},
+    {sym:"I<sub>x</sub>", q:f(R*R*R*R,4), note:"half the polar moment, by symmetry between x and y"}
+  ];
+  const C=pick(CASES);
+  return P({
+    stem:"A disc of density ρ = 1 has radius <span class='hl'>"+R+"</span> and is centred at the origin.",
+    axis:"polar coordinates make this one line",
+    ask:"Find the exact "+C.sym+".",
+    steps:[
+      St("Polar is the natural setting","The squared distance to the origin is just <i>r</i><sup>2</sup>, so "
+        +"I<sub>0</sub> = ∬<i>r</i><sup>2</sup>·<i>r dr dθ</i> — the Jacobian makes it <i>r</i><sup>3</sup>."),
+      St("Integrate","I<sub>0</sub> = ∫<sub>0</sub><sup>2π</sup>∫<sub>0</sub><sup>"+R
+        +"</sup><i>r</i><sup>3</sup> <i>dr dθ</i> = 2π·<span class='fr'><span>"+(R*R*R*R)
+        +"</span><span>4</span></span> = "+fmtCoef(f(R*R*R*R,2),"π")+"."),
+      St("Split it","By symmetry I<sub>x</sub> = I<sub>y</sub>, and they sum to I<sub>0</sub>, so each is "
+        +fmtCoef(f(R*R*R*R,4),"π")+"."),
+      St("Result",C.sym+" = <b>"+fmtCoef(C.q,"π")+"</b> — "+C.note+".")],
+    ans:{n:1, vals:[C.q.num()*Math.PI], html:fmtCoef(C.q,"π")}});
+}}
+
+];
+
+/* ============================ engine ============================ */
+const METHOD_NAME={region:"Plane regions",lamina:"Density & mass",arc:"Centroid of an arc",
+  pappus:"Pappus",double:"Double integrals",polarc:"Polar regions",triple:"Solids",
+  inertia:"Moments of inertia"};
+const COURSE={region:"Calc 2",lamina:"Calc 2",arc:"Calc 2",pappus:"Calc 2",
+  double:"Calc 3",polarc:"Calc 3",triple:"Calc 3",inertia:"Calc 3"};
+const COORD=["<span style='text-decoration:overline'>x</span>",
+             "<span style='text-decoration:overline'>y</span>",
+             "<span style='text-decoration:overline'>z</span>"];
+const DIFF_NAME={1:"easy",2:"medium",3:"hard"};
+
+function build(t){
+  const q=t.gen();
+  return Object.assign(q,{id:t.id,topic:t.topic,diff:t.diff});
+}
+
+const state={
+  topics:new Set(Object.keys(METHOD_NAME)),
+  diff:"mix", exam:false, clock:"off", limit:180, tick:null,
+  byTopic:{}, n:0, att:0, cor:0, streak:0, best:0, level:1, miss:0, times:[], t0:0,
+  cur:null, answered:false, hinted:false
+};
+Object.keys(METHOD_NAME).forEach(k=>state.byTopic[k]={n:0,c:0});
+
+function poolFor(){
+  let want;
+  if(state.diff==="mix") want=[1,2,3];
+  else if(state.diff==="ramp") want=[state.level];
+  else want=[Number(state.diff)];
+  let p=TEMPLATES.filter(t=>state.topics.has(t.topic)&&want.includes(t.diff));
+  if(!p.length) p=TEMPLATES.filter(t=>state.topics.has(t.topic));
+  if(!p.length) p=TEMPLATES;
+  return p;
+}
+
+let lastId=null;
+function newProblem(){
+  const pool=poolFor();
+  let q,guard=0;
+  do{ q=build(pick(pool)); guard++; }while(pool.length>1 && q.id===lastId && guard<12);
+  lastId=q.id;
+  state.cur=q; state.n++; state.answered=false; state.hinted=false; state.t0=Date.now();
+  startClock();
+  render();
+}
+
+/* ============================ view ============================ */
+const $=id=>document.getElementById(id);
+
+function render(){
+  const q=state.cur;
+  $("tagMethod").textContent=METHOD_NAME[q.topic];
+  $("tagDiff").textContent="· "+COURSE[q.topic]+" · "+DIFF_NAME[q.diff];
+  $("tagCount").textContent="Problem "+state.n;
+  $("stem").innerHTML=q.stem;
+  $("ask").innerHTML=q.ask;
+
+  const al=$("axisline");
+  if(q.axis){ al.hidden=false; $("axisLabel").textContent=q.axis; }
+  else al.hidden=true;
+
+  $("input").value=""; $("input").disabled=false; $("input").focus();
+  $("verdict").hidden=true; $("verdict").className="verdict";
+  $("work").hidden=true; $("work").innerHTML="";
+  $("check").disabled=false;
+  $("hint").disabled=state.exam; $("solve").disabled=state.exam;
+  $("timer").textContent=state.exam?"Exam mode: hints and solutions are off until you check.":"";
+  updateStats();
+}
+
+const liOf=s=>"<li><span class='label'>"+s.label+"</span>"+s.html+"</li>";
+function setupHTML(){ return "<ol>"+state.cur.setup.map(liOf).join("")+"</ol>"; }
+function solutionHTML(){
+  const q=state.cur;
+  return "<ol>"+q.setup.concat(q.solve).map(liOf).join("")+"</ol>";
+}
+
+function check(){
+  if(state.answered)return;
+  const q=state.cur, n=q.ans.n, got=evalTuple($("input").value);
+  const v=$("verdict"); v.hidden=false;
+  if(got===null){
+    v.className="verdict no";
+    v.innerHTML="That input didn't parse. Use digits, <code>pi</code>, <code>sqrt( )</code>, <code>^</code> "
+      +"and + − * / ( )"+(n>1?", with the "+n+" coordinates separated by commas — for example "
+      +"<code>2/3, 1/3</code>.":" — for example <code>9/5</code> or <code>4/(3pi)</code>.");
+    return;
+  }
+  if(got.length!==n){
+    v.className="verdict no";
+    v.innerHTML="This one wants "+(n===1?"a single number":n+" numbers separated by "+(n===2?"a comma":"commas"))
+      +"; you gave "+got.length+".";
+    return;
+  }
+  const each=got.map((g,i)=>sameNum(g,q.ans.vals[i])), ok=each.every(Boolean);
+  state.answered=true; state.att++;
+  stopClock();
+  const tp=state.byTopic[q.topic]; if(tp) tp.n++;
+  state.times.push((Date.now()-state.t0)/1000);
+  $("check").disabled=true; $("input").disabled=true;
+  $("hint").disabled=false; $("solve").disabled=false;
+
+  if(ok){
+    state.cor++; state.streak++; state.best=Math.max(state.best,state.streak); state.miss=0;
+    if(tp) tp.c++;
+    if(state.diff==="ramp"&&state.streak%3===0&&state.level<3)state.level++;
+    v.className="verdict ok";
+    v.innerHTML="Correct — "+q.ans.html+".";
+  }else{
+    state.streak=0; state.miss++;
+    if(state.diff==="ramp"&&state.miss>=2&&state.level>1){state.level--;state.miss=0;}
+    v.className="verdict no";
+    if(n===1){
+      v.innerHTML="Not quite. You gave "+got[0].toFixed(4)+"; the answer is "+q.ans.html+".";
+    }else{
+      /* Naming the coordinate that is off is the whole lesson here: using
+         ∫(top − bot) where ½∫(top² − bot²) belongs breaks ȳ alone. */
+      const wrong=each.map((t,i)=>t?null:COORD[i]).filter(Boolean);
+      v.innerHTML="Not quite — "+wrong.join(" and ")+(wrong.length>1?" are":" is")+" off"
+        +(wrong.length<n?" (the other"+(n-wrong.length>1?"s are":" is")+" right)":"")
+        +". The answer is "+q.ans.html+".";
+    }
+    showWork(true);
+  }
+  save(); updateStats();
+}
+
+function showWork(full){
+  const w=$("work");
+  w.hidden=false;
+  w.innerHTML=full?solutionHTML():setupHTML();
+}
+
+function updateStats(){
+  $("sAtt").textContent=state.att;
+  $("sCor").textContent=state.cor;
+  $("sPct").textContent=state.att?Math.round(100*state.cor/state.att)+"%":"—";
+  $("sStreak").textContent=state.streak;
+  $("sBest").textContent=state.best;
+  const t=state.times;
+  drawMeters();
+  $("sTime").textContent=t.length?Math.round([...t].sort((a,b)=>a-b)[Math.floor(t.length/2)])+"s":"—";
+}
+
+/* light persistence — falls back to memory if storage is unavailable */
+function save(){
+  try{
+    localStorage.setItem("centroids",JSON.stringify({
+      att:state.att,cor:state.cor,best:state.best,times:state.times.slice(-40),
+      clock:state.clock,limit:state.limit,byTopic:state.byTopic}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem("centroids")||"null");
+    if(d){state.att=d.att||0;state.cor=d.cor||0;state.best=d.best||0;state.times=d.times||[];
+      if(typeof d.clock==="string")state.clock=d.clock;
+      if(typeof d.limit==="number")state.limit=d.limit;
+      if(d.byTopic)Object.keys(state.byTopic).forEach(k=>{if(d.byTopic[k])state.byTopic[k]=d.byTopic[k]});}
+  }catch(e){}
+}
+
+/* ============================ wiring ============================ */
+function stopClock(){ if(state.tick){clearInterval(state.tick);state.tick=null;} }
+function startClock(){
+  stopClock();
+  const el=$("clockOut");
+  if(state.clock==="off"){ el.hidden=true; return; }
+  el.hidden=false;
+  const paint=()=>{
+    const sec=(Date.now()-state.t0)/1000;
+    const shown=state.clock==="down"?Math.max(0,state.limit-sec):sec;
+    const m=Math.floor(shown/60),ss=Math.floor(shown%60);
+    el.textContent=String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+    el.className="clockline"+(state.clock==="down"&&shown<=10?" crit":state.clock==="down"&&shown<=30?" warn":"");
+    if(state.clock==="down"&&shown<=0&&!state.answered){
+      stopClock();
+      const v=$("verdict"); v.hidden=false; v.className="verdict no";
+      v.innerHTML="Time. The answer is "+state.cur.ans.html+".";
+      state.answered=true; state.att++; state.streak=0;
+      const tp=state.byTopic[state.cur.topic]; if(tp) tp.n++;
+      $("check").disabled=true; $("input").disabled=true;
+      $("hint").disabled=false; $("solve").disabled=false;
+      showWork(true); save(); updateStats();
+    }
+  };
+  paint(); state.tick=setInterval(paint,250);
+}
+
+function drawMeters(){
+  const rows=Object.entries(state.byTopic).filter(([,c])=>c.n);
+  $("meters").innerHTML = rows.length ? rows.map(([k,c])=>{
+    const pct=Math.round(100*c.c/c.n);
+    return `<div class="meter"><div class="mtop"><span class="nm">${METHOD_NAME[k]}</span>`+
+           `<span class="val">${pct}% · ${c.n}</span></div>`+
+           `<div class="track"><div class="fill" style="width:${pct}%"></div></div></div>`;
+  }).join("") : "";
+}
+
+(function buildPalette(){
+  const toks=[",","pi","^","/","sqrt(","(",")"];
+  $("pal").innerHTML=toks.map(t=>`<button type="button" data-ins="${t}">${t}</button>`).join("");
+  $("pal").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-ins]"); if(!b)return;
+    const i=$("input"); if(i.disabled)return;
+    i.value+=b.dataset.ins; i.focus();
+  });
+})();
+
+$("clocks").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-clock]"); if(!b)return;
+  state.clock=b.dataset.clock;
+  $("clocks").querySelectorAll("button[data-clock]").forEach(x=>
+    x.setAttribute("aria-pressed",String(x===b)));
+  save(); startClock();
+});
+$("clockSecs").addEventListener("change",e=>{
+  state.limit=Math.max(15,Math.min(900,+e.target.value||180)); save();
+});
+$("resetBtn").addEventListener("click",()=>{
+  state.att=state.cor=state.streak=state.best=0; state.times=[];
+  Object.keys(state.byTopic).forEach(k=>state.byTopic[k]={n:0,c:0});
+  try{ localStorage.removeItem("centroids"); }catch(e){}
+  save(); updateStats();
+});
+
+/* H hint · SPACE solution · S skip — the standard set */
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"){
+    if(e.key==="Enter"&&e.target.id==="input"){ e.preventDefault(); check(); }
+    return;
+  }
+  const k=e.key.toLowerCase();
+  if(k==="h"){ e.preventDefault(); if(!$("hint").disabled) $("hint").click(); }
+  else if(k===" "){ e.preventDefault(); if(!$("solve").disabled) $("solve").click(); }
+  else if(k==="s"){ e.preventDefault(); newProblem(); }
+});
+
+document.querySelectorAll(".topicgroup").forEach(g=>g.addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  const t=b.dataset.topic, on=b.getAttribute("aria-pressed")==="true";
+  if(on&&state.topics.size===1)return;
+  if(on){state.topics.delete(t);b.setAttribute("aria-pressed","false");}
+  else{state.topics.add(t);b.setAttribute("aria-pressed","true");}
+  newProblem();
+}));
+$("diffs").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");
+  state.diff=b.dataset.diff;
+  if(state.diff==="ramp"){state.level=1;state.miss=0;}
+  newProblem();
+});
+$("modes").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  state.exam=!state.exam;
+  b.setAttribute("aria-pressed",String(state.exam));
+  render();
+});
+$("check").addEventListener("click",check);
+$("next").addEventListener("click",newProblem);
+$("hint").addEventListener("click",()=>{state.hinted=true;showWork(false);});
+$("solve").addEventListener("click",()=>{
+  if(!state.answered){state.answered=true;state.att++;state.streak=0;$("check").disabled=true;$("input").disabled=true;save();updateStats();}
+  showWork(true);
+});
+$("input").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); state.answered?newProblem():check(); }
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&state.answered&&document.activeElement!==$("input")) newProblem();
+});
+
+load();
+$("clocks").querySelectorAll("button[data-clock]").forEach(x=>
+  x.setAttribute("aria-pressed",String(x.dataset.clock===state.clock)));
+$("clockSecs").value=state.limit;
+newProblem();
+</script>
+<script src="../shared/scratchpad.js" defer></script>
+</body>
+</html>

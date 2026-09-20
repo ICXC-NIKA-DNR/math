@@ -91,6 +91,7 @@ const psub = (a, b) => pnorm([...a, ...b.map(t => ({ c: t.c.neg(), e: t.e }))]);
 function pmul(a, b) { const o = []; for (const s of a) for (const t of b) o.push({ c: s.c.mul(t.c), e: s.e.add(t.e) }); return pnorm(o); }
 const psq = a => pmul(a, a);
 const pk = k => [T(k, 0)];
+function ppow(p, n) { let r = pk(1); for (let i = 0; i < n; i++) r = pmul(r, p); return r; }
 const pscale = (a, k) => pnorm(a.map(t => ({ c: t.c.mul(k instanceof F ? k : f(k)), e: t.e })));
 
 /* derivative — needed to go from y to y′ inside a generator */
@@ -141,6 +142,26 @@ function pdefN(p, a, b) {                            // numeric fallback
   return pevN(P, b) - pevN(P, a) + (lg.isZero() ? 0 : lg.num() * Math.log(b / a));
 }
 
+/* ============================ moments of a plane region ============================
+   For a region between two polynomial boundaries these are all exact:
+
+       A  = ∫ (top − bottom) dv          x̄ = M_y / A
+       M_y= ∫ v (top − bottom) dv        ȳ = M_x / A
+       M_x= ½ ∫ (top² − bottom²) dv
+
+   ρ is an optional density polynomial in the variable of integration; a
+   constant density cancels out of the bar values but not out of the mass.
+================================================================================ */
+function regionMoments(top, bottom, lo, hi, rho) {
+  const h = psub(top, bottom);
+  const w = rho ? pmul(rho, h) : h;
+  const A = pdef(w, lo, hi);
+  const My = pdef(pmul([T(1, 1)], w), lo, hi);
+  const half = rho ? pmul(rho, psub(psq(top), psq(bottom))) : psub(psq(top), psq(bottom));
+  const Mx = pdef(half, lo, hi).div(f(2));
+  return { A: A, My: My, Mx: Mx, xbar: My.div(A), ybar: Mx.div(A), h: h, w: w };
+}
+
 /* ============================ rendering ============================ */
 function fracHTML(a) {                               // a = non-negative F
   return a.d === 1n ? String(a.n)
@@ -183,6 +204,15 @@ function fmtCoef(q, sym) {
   return (neg ? "−" : "") + s;
 }
 const fmtExact = (q, pi) => fmtCoef(q, pi ? "π" : "");
+
+/* q/π — π in the denominator, which is where centroid answers keep putting it
+   (the semicircular lamina sits at 4R/3π, the wire at 2R/π). */
+function fmtDivPi(q) {
+  if (q.isZero()) return "0";
+  const neg = q.isNeg(), a = neg ? q.neg() : q;
+  const den = a.d === 1n ? "π" : a.d + "π";
+  return (neg ? "−" : "") + '<span class="fr"><span>' + a.n + '</span><span>' + den + '</span></span>';
+}
 
 /* a signed sum of coefficient·symbol pieces: terms([{q,sym},…]) */
 function terms(list) {
@@ -371,6 +401,35 @@ function evalNum(raw) {
   } catch (e) { return null; }
 }
 
+/* A tuple answer: "1/2, 8/5" or "(0, 4R/3pi, 3/4)". Splits on top-level commas
+   and semicolons only, so nested parentheses and function calls survive, then
+   evaluates each component. Returns null if any component fails to parse. */
+function evalTuple(raw) {
+  if (typeof raw !== "string") return null;
+  let s = raw.trim();
+  if (!s) return null;
+  // strip one bracket pair if it wraps the whole thing
+  if (/^[([{]/.test(s)) {
+    let d = 0, wraps = true;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if ("([{".indexOf(c) >= 0) d++;
+      else if (")]}".indexOf(c) >= 0) { d--; if (d === 0 && i < s.length - 1) { wraps = false; break; } }
+    }
+    if (wraps && d === 0) s = s.slice(1, -1);
+  }
+  const parts = []; let depth = 0, cur = "";
+  for (const c of s) {
+    if ("([{".indexOf(c) >= 0) depth++;
+    if (")]}".indexOf(c) >= 0) depth--;
+    if ((c === "," || c === ";") && depth === 0) { parts.push(cur); cur = ""; }
+    else cur += c;
+  }
+  parts.push(cur);
+  const out = parts.map(evalNum);
+  return out.some(v => v === null) ? null : out;
+}
+
 /* relative tolerance, so a typed decimal and an exact form both pass */
 function sameNum(got, want, tol) {
   const t = tol || 1e-3;
@@ -380,7 +439,8 @@ function sameNum(got, want, tol) {
 global.CALC = {
   F: F, f: f, ZERO: ZERO, ONE: ONE, TWO: TWO, HALF: HALF,
   isqrt: isqrt, fsqrt: fsqrt, ratPow: ratPow,
-  T: T, pnorm: pnorm, padd: padd, psub: psub, pmul: pmul, psq: psq, pk: pk,
+  T: T, pnorm: pnorm, padd: padd, psub: psub, pmul: pmul, psq: psq, pk: pk, ppow: ppow,
+  regionMoments: regionMoments, fmtDivPi: fmtDivPi, evalTuple: evalTuple,
   pscale: pscale, pdiff: pdiff, pint: pint, pintL: pintL,
   pev: pev, pevN: pevN, pdef: pdef, pdefL: pdefL, pdefN: pdefN,
   fracHTML: fracHTML, expHTML: expHTML, varHTML: varHTML, fmtPoly: fmtPoly,
