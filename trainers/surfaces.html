@@ -199,6 +199,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <button class="chip" data-topic="sphere" aria-pressed="true">Sphere &amp; zones</button>
       <button class="chip" data-topic="psq"    aria-pressed="true">Perfect square</button>
       <button class="chip" data-topic="usub"   aria-pressed="true">u-substitution</button>
+      <button class="chip" data-topic="offset" aria-pressed="true">Offset axis</button>
       <button class="chip" data-topic="hyp"    aria-pressed="true">Hyperbolic</button>
       <button class="chip" data-topic="param"  aria-pressed="true">Parametric</button>
       <button class="chip" data-topic="polar"  aria-pressed="true">Polar</button>
@@ -249,6 +250,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     <div>Polar about the polar axis: the radius is <span class="hl"><i>y</i> = <i>r</i> sin θ</span>.</div>
     <div>Archimedes' hat-box: for a sphere <i>y</i>·ds = <i>R dx</i> exactly, so a zone's area is <span class="hl">2π<i>R</i>·(width along the axis)</span> — independent of where the zone sits.</div>
     <div>Perfect-square family: when 1 + [<i>y′</i>]² collapses to a square, radius × ds is an ordinary polynomial and the whole integral is exact.</div>
+    <div>Off-axis lines: about <span class="hl"><i>y</i> = k</span> the radius is |<i>y</i> − k|; about <span class="hl"><i>x</i> = c</span> it is |<i>x</i> − c|. <b>ds does not change</b> — only the radius does. Shifting the axis adds a constant to the radius, so anything exact about an axis stays exact about a parallel line.</div>
     <div>Checks worth keeping: cone π<i>Rl</i> · frustum π(<i>R</i><sub>1</sub>+<i>R</i><sub>2</sub>)<i>l</i> · sphere 4π<i>R</i>² · torus 4π²<i>Rr</i>.</div>
   </div>
 </details>
@@ -332,6 +334,8 @@ const FORMULA={
   ydy:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>x</i> "+DSX("y"),"y")+" &nbsp;— the curve is written x = g(y)",
   t:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>y</i> "+RAD("[<i>x′</i>(t)]<sup>2</sup> + [<i>y′</i>(t)]<sup>2</sup>"),"t"),
   tY:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>x</i> "+RAD("[<i>x′</i>(t)]<sup>2</sup> + [<i>y′</i>(t)]<sup>2</sup>"),"t"),
+  hline:(lo,hi)=>"S = "+intHTML(lo,hi,"2π|<i>y</i> − <i>k</i>| "+DSX("x"),"x")+" &nbsp;— the radius is the distance to the <i>line</i>, not to the axis",
+  vline:(lo,hi)=>"S = "+intHTML(lo,hi,"2π|<i>x</i> − <i>c</i>| "+DSX("x"),"x")+" &nbsp;— about a vertical line the radius is a horizontal distance",
   r:(lo,hi)=>"S = "+intHTML(lo,hi,"2π<i>r</i> sin "+TH+" "+RAD("<i>r</i><sup>2</sup> + [<i>dr/dθ</i>]<sup>2</sup>"),"θ")
              +" &nbsp;— the distance to the polar axis is <i>y</i> = <i>r</i> sin "+TH
 };
@@ -391,6 +395,34 @@ function conjSurface(id,diff,pOpts,aOpts,limitPool,about){
         +fmtPoly(psq(c.ds),"x")+" = "+dsH+"<sup>2</sup>. Hence ds = "+dsH+" <i>dx</i>"
         +" — a polynomial, which is the whole point of this family.",
       body:bodyH, intPoly:intPoly}));
+  }};
+}
+
+/* Same conjugate curve, revolved about y = -k or x = -k. The radius picks up a
+   constant; ds is untouched; the product is still a polynomial. */
+function conjOffset(id,diff,pOpts,aOpts,limitPool,about){
+  return {id:id,topic:"offset",diff:diff,gen(){
+    const c=conj(pick(aOpts),pick(pOpts));
+    const [lo,hi]=pickTwo(limitPool).map(n=>f(n));
+    const k=ri(1,3), horiz=(about==="y");
+    const dH=fmtPoly(c.dy,"x"), dsH="("+fmtPoly(c.ds,"x")+")", yH=fmtPoly(c.y,"x");
+    const radPoly=horiz?padd(c.y,pk(k)):[T(1,1),T(k,0)];
+    const radH=horiz?"("+yH+" + "+k+")":"("+V("x")+" + "+k+")";
+    return P(polyFinishS({kind:horiz?"hline":"vline", v:"x", lo:lo, hi:hi,
+      loL:fmtLim(lo), hiL:fmtLim(hi),
+      stem:"The arc <span class='hl'><i>y</i> = "+yH+"</span> on "+iv("x",fmtLim(lo),fmtLim(hi))
+        +" is revolved about the line <span class='hl'><i>"+(horiz?"y":"x")+"</i> = −"+k+"</span>.",
+      axis:{t:horiz?"h":"v",label:"axis of revolution:  "+(horiz?"y":"x")+" = −"+k},
+      radius:horiz
+        ? "Measured up from <i>y</i> = −"+k+", the radius is "+radH+" — the curve plus "+k+", not the curve."
+        : "Measured across to <i>x</i> = −"+k+", the radius is "+radH+". About a vertical line the curve's height never enters.",
+      d:V("y′")+" = "+dH+"; the cross terms cancel, so 1 + ["+V("y′")+"]<sup>2</sup> = "
+        +fmtPoly(psq(c.ds),"x")+" = "+dsH+"<sup>2</sup> and ds = "+dsH+" <i>dx</i>, exactly as it was about the axis.",
+      body:radH+dsH,
+      intPoly:pmul(radPoly,c.ds),
+      extra:[St("Why the offset is free","Moving the axis adds a constant to the radius, and a constant times a "
+        +"polynomial is still a polynomial. Everything that was exact about the axis stays exact about a line "
+        +"parallel to it.")]}));
   }};
 }
 
@@ -487,6 +519,81 @@ const TEMPLATES=[
     body:String(R),
     intPoly:[T(R,0)],
     extra:[St("Same theorem, other axis","2π<i>R</i> times the width of the band, whichever way you orient it.")]}));
+}},
+
+/* ---------------- OFFSET AXIS ---------------- */
+{id:"O1",topic:"offset",diff:1,gen(){
+  const c0=ri(2,6), k=ri(1,4), a=ri(0,3), b=a+ri(2,6), R=c0+k;
+  return P(polyFinishS({kind:"hline", v:"x", lo:f(a), hi:f(b), loL:String(a), hiL:String(b),
+    stem:"The horizontal segment <span class='hl'><i>y</i> = "+c0+"</span> on "+iv("x",String(a),String(b))
+      +" is revolved about the line <span class='hl'><i>y</i> = −"+k+"</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = −"+k+"  (parallel to the segment)"},
+    radius:c0+" − (−"+k+") = "+R+", the same at every point — the segment is parallel to the axis.",
+    d:V("y′")+" = 0, so ds = <i>dx</i>. Nothing bends here; only the radius does any work.",
+    body:String(R),
+    intPoly:[T(R,0)],
+    extra:[St("Sanity check","A segment parallel to the axis always sweeps a cylinder: radius "+R
+      +", height "+(b-a)+", so 2π<i>rh</i> = "+(2*R*(b-a))+"π.")]}));
+}},
+
+{id:"O2",topic:"offset",diff:2,gen(){
+  const [p,q,r]=pick(TRIPLES), c0=ri(1,4), k=ri(1,4), a=q*ri(0,1), b=a+q*ri(1,3);
+  const m=f(p,q), mH=fmtLim(m), sH=fmtLim(f(r,q));
+  const yH=mH+V("x")+" + "+c0;
+  const R1=m.mul(f(a)).add(f(c0+k)), R2=m.mul(f(b)).add(f(c0+k));
+  return P(polyFinishS({kind:"hline", v:"x", lo:f(a), hi:f(b), loL:String(a), hiL:String(b),
+    stem:"The segment <span class='hl'><i>y</i> = "+yH+"</span> on "+iv("x",String(a),String(b))
+      +" is revolved about the line <span class='hl'><i>y</i> = −"+k+"</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = −"+k+"  (below the segment)"},
+    radius:"Measured from <i>y</i> = −"+k+" rather than from the x-axis: ("+yH+") + "+k+" = "
+      +mH+V("x")+" + "+(c0+k)+".",
+    d:V("y′")+" = "+mH+", so ds = "+sH+" <i>dx</i> — unchanged by where the axis sits.",
+    body:"("+mH+V("x")+" + "+(c0+k)+")("+sH+")",
+    intPoly:pmul([T(m,1),T(c0+k,0)],[T(f(r,q),0)]),
+    extra:[St("Sanity check","Still a frustum; lowering the axis just adds "+k+" to both radii. Here "
+      +"R<sub>1</sub> = "+fmtLim(R1)+", R<sub>2</sub> = "+fmtLim(R2)+" and the slant is "+sH+"·"+(b-a)
+      +", so π(R<sub>1</sub> + R<sub>2</sub>)<i>l</i> agrees.")]}));
+}},
+
+{id:"O3",topic:"offset",diff:2,gen(){
+  const [p,q,r]=pick(TRIPLES), k=ri(1,4), b=q*ri(1,3);
+  const m=f(p,q), mH=fmtLim(m), sH=fmtLim(f(r,q));
+  return P(polyFinishS({kind:"vline", v:"x", lo:ZERO, hi:f(b), loL:"0", hiL:String(b),
+    stem:"The segment <span class='hl'><i>y</i> = "+mH+V("x")+"</span> on "+iv("x","0",String(b))
+      +" is revolved about the vertical line <span class='hl'><i>x</i> = −"+k+"</span>.",
+    axis:{t:"v",label:"axis of revolution:  x = −"+k+"  (left of the segment)"},
+    radius:V("x")+" − (−"+k+") = "+V("x")+" + "+k+". About a vertical line the radius is horizontal, so the "
+      +"slope of the segment never enters the radius at all.",
+    d:V("y′")+" = "+mH+", so ds = "+sH+" <i>dx</i>.",
+    body:"("+V("x")+" + "+k+")("+sH+")",
+    intPoly:pmul([T(1,1),T(k,0)],[T(f(r,q),0)]),
+    extra:[St("Sanity check","A frustum with radii "+k+" and "+(b+k)+" and slant "+sH+"·"+b+", so "
+      +"π(R<sub>1</sub> + R<sub>2</sub>)<i>l</i> = π·"+(b+2*k)+"·"+sH+"·"+b+".")]}));
+}},
+
+{id:"O4",topic:"offset",diff:3,gen(){
+  const R=pick([2,4,6]), k=ri(1,3);
+  const C=pick([{b:R/2, as:"π/6", th:Math.PI/6, q:f(k*R,3), what:"the top 30° of the circle"},
+                {b:R,   as:"π/2", th:Math.PI/2, q:f(k*R),   what:"a whole quarter-circle"}]);
+  const val=2*Math.PI*(R*C.b + k*R*C.th);
+  return P({kind:"hline", v:"x", lo:null, hi:null, loL:"0", hiL:String(C.b),
+    stem:"The arc <span class='hl'><i>y</i> = "+RAD(R*R+" − <i>x</i><sup>2</sup>")+"</span> on "
+      +iv("x","0",String(C.b))+" — "+C.what+" — is revolved about the line <span class='hl'><i>y</i> = −"+k+"</span>.",
+    axis:{t:"h",label:"axis of revolution:  y = −"+k+"  (below the circle's centre)"},
+    radius:RAD(R*R+" − <i>x</i><sup>2</sup>")+" + "+k+".",
+    d:"As before, ds = <span class='fr'><span>"+R+"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")
+      +"</span></span> <i>dx</i>. Now the radius times ds is "+R+" + <span class='fr'><span>"+(k*R)
+      +"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")+"</span></span> — the first piece cancels as it "
+      +"always does, but the "+k+" does not.",
+    body:R+" + <span class='fr'><span>"+(k*R)+"</span><span>"+RAD(R*R+" − "+V("x")+"<sup>2</sup>")+"</span></span>",
+    extra:[St("The hat-box theorem breaks","About <i>y</i> = 0 the integrand is the constant "+R
+      +" and a zone's area is just 2π<i>R</i>·(width). Move the axis off the centre and the radical no longer "
+      +"cancels: the leftover term integrates to an arcsine, and the answer picks up a π<sup>2</sup>. "
+      +"Archimedes' result is about the centre line specifically."),
+      St("Evaluate the arcsine","arcsin("+(C.b===R?"1":"½")+") = "+C.as+", and arcsin(0) = 0.")],
+    anti:"2π[ "+R+V("x")+" + "+(k*R)+" arcsin("+V("x")+"/"+R+") ]<sub>0</sub><sup>"+C.b+"</sup>",
+    exact:fmtCoef(f(2*R*C.b),"π")+" + "+fmtCoef(C.q,"π<sup>2</sup>"),
+    value:val});
 }},
 
 /* ---------------- u-SUBSTITUTION ---------------- */
@@ -781,12 +888,14 @@ const TEMPLATES=[
 TEMPLATES.push(
   conjSurface("P1",3,[f(2),f(3)],       [f(1,2),ONE,f(2),f(1,4)], [1,2,3], "x"),
   conjSurface("P2",3,[f(2)],            [f(1,2),ONE,f(2)],        [1,2,3], "y"),
-  conjSurface("P3",3,[f(3),f(3,2)],     [f(1,2),ONE,f(2)],        [1,4,9], "y")
+  conjSurface("P3",3,[f(3),f(3,2)],     [f(1,2),ONE,f(2)],        [1,4,9], "y"),
+  conjOffset ("O5",3,[f(2),f(3)],       [f(1,2),ONE,f(2),f(1,4)], [1,2,3], "y"),
+  conjOffset ("O6",3,[f(2),f(3)],       [f(1,2),ONE,f(2)],        [1,2,3], "x")
 );
 
 /* ============================ engine ============================ */
 const METHOD_NAME={cone:"Cone & frustum",sphere:"Sphere & zones",psq:"Perfect square",
-  usub:"u-substitution",hyp:"Hyperbolic",param:"Parametric",polar:"Polar"};
+  usub:"u-substitution",offset:"Offset axis",hyp:"Hyperbolic",param:"Parametric",polar:"Polar"};
 const DIFF_NAME={1:"easy",2:"medium",3:"hard"};
 
 function build(t){
