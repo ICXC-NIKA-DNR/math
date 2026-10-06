@@ -25,13 +25,19 @@ visitor's own browser.
       bundle.mjs          writes ../dist/recall-standalone.html
       review.html         plain listing of every card, for proofreading
       test/               engine tests
+      integrals/          the Integration Bench bank and its checker
+        bank/*.mjs        the authored problems, one file per technique
+        latex.mjs         LaTeX -> numeric JS, for the subset the bank writes
+        verify.mjs        differentiates every answer, compares to its integrand
+        build.mjs         merges, cross-lists, verifies, splices into the page
 
 ## Working on it
 
     cd src && npm install
-    npm run build      # rebuild cards.json + review.html (refuses on any error)
-    npm test           # engine tests
-    npm run bundle     # rebuild the one-file version
+    npm run build            # rebuild cards.json + review.html (refuses on any error)
+    npm run build:integrals  # rebuild the Integration Bench bank (add --write)
+    npm test                 # engine tests + every bench antiderivative
+    npm run bundle           # rebuild the one-file version
 
 `npm run build` fails loudly rather than shipping a bad deck. It rejects: LaTeX
 that will not parse, a card without exactly three distinct distractors, a
@@ -93,6 +99,30 @@ passes: `17/12`, `1.41666`, `pi/6(17sqrt(17)-1)` and `2pi(15/8+ln(2)/2)` all
 parse. Implicit multiplication by a bare number binds tighter than division
 (`1/2pi` is `1/(2π)`) but a parenthesised group does not (`pi/6(…)` is
 `(π/6)·(…)`), which is how the printed exact answers read.
+
+## The Integration Bench bank
+
+Integrals cannot be generated the way the other trainers generate problems, so
+the bench carries a curated bank instead — 446 problems, **all indefinite**.
+Definite integrals were removed deliberately: the point of the bench is finding
+an antiderivative, and the `improper` and `multi` categories went with them,
+since neither has an indefinite form.
+
+The bank lives in the page, but it is **authored in `src/integrals/bank/`** and
+spliced in by `build.mjs`. Edit the chunk files, not the page.
+
+Every answer is checked by differentiating it numerically and comparing to its
+integrand, reading the same LaTeX string the page renders — so a typo in what
+ships is a failing test, not a wrong answer a student has to catch.
+`src/integrals/latex.mjs` parses the subset the bank writes in; the build
+refuses to write if any problem fails or cannot be parsed at all. This is how
+`∫x²sin x dx` got caught with a sign error and `-x^2` got caught parsing as
+`(-x)^2`.
+
+A problem needing two techniques is filed under **both**, one difficulty harder
+in the second: mark it `also:'usub'` and the build emits the copy, tagged
+`xref`. Where a cross-listed copy collides with a problem the target category
+already has, the better-written entry wins.
 
 ## The three layers
 

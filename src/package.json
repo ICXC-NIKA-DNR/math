@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "build:integrals": "node integrals/build.mjs",
     "bundle": "node bundle.mjs",
-    "test": "node test/engine.test.mjs"
+    "test": "node test/engine.test.mjs && node integrals/verify.mjs"
   },
   "dependencies": {
     "katex": "^0.16.47"
