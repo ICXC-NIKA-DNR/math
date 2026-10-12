@@ -8,12 +8,13 @@ visitor's own browser.
     learn/                interactive topic pages — figures you push on
       index.html          page shell + styles
       app.mjs             hash router: learn/#riemann is a linkable topic
-      plot.mjs            the figure kernel (SVG, maths coordinates in)
       ui.mjs              prose, notes, figure frames, KaTeX typesetting
+      imported.mjs        renders a graph brought over from Desmos
       topics/*.mjs        one module per topic
     convert/              LaTeX <-> typed math, and Desmos graph import
       index.html          page shell + styles
       convert.mjs         the translator (pure, unit-tested)
+      eval.mjs            AST -> numeric function, so imports can be drawn
       app.mjs             view layer + PNG/SVG export
     recall/               the Recall trainer (the new one)
       index.html          page shell + styles (the view's CSS variables)
@@ -27,6 +28,8 @@ visitor's own browser.
     shared/               code more than one trainer uses
       calc-engine.js      exact rationals, polynomials, rendering, answer parsing
       scratchpad.js       the <scratch-pad> element (pannable, zoomable canvas)
+      plot.mjs            the figure kernel (SVG, maths coordinates in)
+      graph.mjs           draws a Desmos-style expression list with plot.mjs
     dist/                 one-file build of Recall, for hosts without sibling files
     src/                  sources and tooling for the card bank
       data/source.mjs     hand-written content: closure pairs + recall cards
@@ -161,8 +164,34 @@ readers cannot use.
 - **a pasted Desmos graph → NOUS rows**, reading either the saved-state JSON
   (`Calc.getState()` in the browser console) or bare lines of LaTeX
 
-Both directions go through one AST in `convert/convert.mjs` rather than trading
-regexes, because the hard cases are structural: `a/b/c` has to become the right
+### Desmos → a figure on this site
+
+The point of the import is not the text, it is the picture. Paste a graph and
+it is **drawn immediately**, in this site's palette, with every Desmos slider
+still live. `convert/eval.mjs` compiles the AST to a numeric function over a
+scope object, and `shared/graph.mjs` classifies each expression by shape and
+draws it:
+
+    y = f(x) / bare f(x)   explicit        sampled across the window
+    x = f(y)               explicit in y   sampled down it
+    r = f(theta)           polar           swept two turns
+    (f(t), g(t))           parametric      swept over t
+    (a, b) and [(a,b),…]   points          dots
+    F(x,y) = 0             implicit        marching squares
+    F(x,y) < 0             inequality      shaded cell by cell
+    a = 3                  definition      becomes a slider
+
+Compiling to a closure over a shared scope is what makes sliders cheap: moving
+one writes a number and redraws, with no recompilation per frame.
+
+**To put an imported graph in a Learn topic:** press *Copy figure for Learn*,
+paste the JSON into a topic file, and render it with `importedFigure(spec)`
+from `learn/imported.mjs`. `learn/topics/polar.mjs` is a worked example. The
+spec is plain data — expressions and a window — so it stays editable by hand
+afterwards.
+
+Both text directions go through one AST in `convert/convert.mjs` rather than
+trading regexes, because the hard cases are structural: `a/b/c` has to become the right
 nested `\frac`, and `-x^2` must not come back as `(-x)^2`. The module is pure
 and covered by `src/test/convert.test.mjs`, which includes round-trip stability
 checks.

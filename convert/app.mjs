@@ -2,7 +2,9 @@
 // is pure and unit-tested; this file only wires it to the DOM and handles the
 // image export.
 
-import { plainToLatex, convertGraph } from "./convert.mjs?v=1";
+import { plainToLatex, convertGraph, readDesmos } from "./convert.mjs?v=2";
+import { buildGraph } from "../shared/graph.mjs?v=2";
+import { slider } from "../shared/plot.mjs?v=2";
 
 const $ = (s) => document.querySelector(s);
 const on = (el, ev, fn) => el.addEventListener(ev, fn);
@@ -237,7 +239,84 @@ function tag(text) {
   return s;
 }
 
+// ───────────────────────── the drawn graph ─────────────────────────
+// Everything above turns the paste into text. This turns it into a picture, in
+// this site's palette, with the sliders still live — which is the whole point
+// of building the graph in Desmos and bringing it here.
+
+const gstage = $("#gstage"), gsliders = $("#gsliders"),
+      gerr = $("#gerr"), gcount = $("#gcount");
+let figSpec = null;
+
+function drawImported() {
+  gstage.replaceChildren();
+  gsliders.replaceChildren();
+  gerr.textContent = "";
+  gcount.textContent = "";
+  figSpec = null;
+
+  const rows = readDesmos(gsrc.value).filter((r) => r.kind === "expr");
+  if (!rows.length) return;
+
+  const viewport = viewportOf(gsrc.value);
+  let g;
+  try { g = buildGraph({ expressions: rows, viewport }); }
+  catch (e) { gerr.textContent = "Could not build the graph: " + e.message; return; }
+
+  gstage.append(g.plot.svg);
+  g.redraw();
+
+  for (const s of g.sliders) {
+    gsliders.append(slider({
+      label: s.name, min: s.min, max: s.max, step: s.step, value: s.value,
+      format: (v) => (+v).toFixed(2),
+      onInput: (v) => { g.scope[s.name] = v; g.redraw(); },
+    }));
+  }
+
+  gcount.textContent = `${g.count} drawn` +
+    (g.sliders.length ? `, ${g.sliders.length} slider${g.sliders.length > 1 ? "s" : ""}` : "");
+  if (g.problems.length) {
+    gerr.textContent = g.problems.length + " not drawn: " +
+      g.problems.map((p) => `${p.latex} (${p.why})`).join("; ");
+  }
+
+  // the figure a Learn topic would embed — expressions and window, nothing else
+  figSpec = {
+    viewport,
+    expressions: rows.map((r) => ({
+      latex: r.latex,
+      ...(r.hidden ? { hidden: true } : {}),
+      ...(r.slider ? { slider: r.slider } : {}),
+    })),
+  };
+}
+
+/** Desmos stores the window in graph.viewport; fall back to its default. */
+function viewportOf(text) {
+  try {
+    const d = JSON.parse(text);
+    const v = d?.graph?.viewport;
+    if (v && ["xmin", "xmax", "ymin", "ymax"].every((k) => Number.isFinite(v[k]))) {
+      return { xmin: v.xmin, xmax: v.xmax, ymin: v.ymin, ymax: v.ymax };
+    }
+  } catch { /* lines, not JSON */ }
+  return { xmin: -10, xmax: 10, ymin: -6.5, ymax: 6.5 };
+}
+
+on($("#save-fig"), "click", (ev) => {
+  if (!figSpec) return;
+  copyText(JSON.stringify(figSpec, null, 2), ev.currentTarget);
+});
+
+on($("#dl-fig"), "click", () => {
+  if (!figSpec) return;
+  download(new Blob([JSON.stringify(figSpec, null, 2)], { type: "application/json" }),
+           "graph.json");
+});
+
 on(gsrc, "input", renderGraph);
+on(gsrc, "input", drawImported);
 on($("#copy-rows"), "click", (ev) => copyText(plainRows.join("\n"), ev.currentTarget));
 
 on($("#demo"), "click", () => {
@@ -255,12 +334,14 @@ on($("#demo"), "click", () => {
       ],
     },
   }, null, 1);
-  renderGraph();
+  // one event, so every listener on the textarea runs — table and graph alike
+  gsrc.dispatchEvent(new Event("input"));
 });
 
 // ───────────────────────── boot ─────────────────────────
 if (location.hash === "#graph") setMode("graph");
 update();
 renderGraph();
+drawImported();
 // MathJax finishes loading after this module runs; redraw once it is ready
 addEventListener("load", () => { if (lastTex) renderMath(lastTex); });

@@ -163,7 +163,13 @@ export function parsePlain(src) {
       return { t: "name", v: name };
     }
 
-    if (t.k === "(") return { t: "group", x: group() };
+    if (t.k === "(") {
+      // (a) groups; (a,b) is a point, and (f(t),g(t)) is a parametric curve
+      need("(");
+      const items = commas(")");
+      need(")");
+      return items.length === 1 ? { t: "group", x: items[0] } : { t: "point", items };
+    }
     if (t.k === "[") { i++; const items = commas("]"); need("]"); return { t: "list", items }; }
     if (t.k === "{") { i++; const items = commas("}"); need("}"); return { t: "brace", items }; }
     if (t.k === "|") {
@@ -310,7 +316,12 @@ export function parseLatex(src) {
 
     if (t.k === "num") { i++; return { t: "num", v: t.v }; }
     if (t.k === "name") { i++; return { t: "name", v: t.v }; }
-    if (t.k === "(") { i++; const x = relation(); need(")"); return { t: "group", x }; }
+    if (t.k === "(") {
+      i++;
+      const items = commas(")");
+      need(")");
+      return items.length === 1 ? { t: "group", x: items[0] } : { t: "point", items };
+    }
     // Braces in LaTeX are pure grouping with no printed parentheses, so they
     // vanish into the tree — x^{2} must come back as x^2, not x^(2). The
     // printers re-add brackets from precedence where they are actually needed.
@@ -392,6 +403,7 @@ export function toLatex(n) {
     case "sub": return `${toLatex(n.b)}_{${toLatex(n.s)}}`;
     case "neg": return `-${wrap(n.x, 3)}`;
     case "group": return `\\left(${toLatex(n.x)}\\right)`;
+    case "point": return `\\left(${n.items.map((a) => toLatex(strip(a))).join(",")}\\right)`;
     // Bars, brackets, roots and braces group on their own, so a (…) the reader
     // wrote inside one is redundant once it is printed — strip it.
     case "abs": return `\\left|${toLatex(strip(n.x))}\\right|`;
@@ -438,6 +450,7 @@ export function toPlain(n) {
     case "sub": return `${toPlain(n.b)}_${toPlain(n.s)}`;
     case "neg": return `-${wrap(n.x, 3)}`;
     case "group": return `(${toPlain(n.x)})`;
+    case "point": return `(${n.items.map(toPlain).join(", ")})`;
     case "abs": return `|${toPlain(n.x)}|`;
     case "list": return `[${n.items.map(toPlain).join(", ")}]`;
     case "brace": return `{${n.items.map(toPlain).join(", ")}}`;

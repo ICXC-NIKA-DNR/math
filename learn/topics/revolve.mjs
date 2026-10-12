@@ -1,4 +1,4 @@
-import { Plot, slider, segmented, readout } from "../plot.mjs";
+import { Plot, slider, segmented, readout } from "../../shared/plot.mjs";
 import { prose, note, figure, heading, pair } from "../ui.mjs";
 
 // y = sqrt(x) on [0,4], revolved about the x-axis. Chosen because disk and

@@ -106,6 +106,24 @@ figcaption{font-size:12.5px;color:var(--dim2);padding:11px 15px 10px;
 .ell.disk{opacity:.34;stroke:var(--a3)}
 .ell.shell{fill:none;opacity:.8;stroke:var(--a3);stroke-width:1.6}
 
+/* marks for a graph imported from Desmos — recoloured into the page accent so
+   it sits with the hand-built figures rather than beside them */
+.graph-curve{stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.graph-curve.c1{stroke:var(--a2)}
+.graph-curve.c2{stroke:var(--a3)}
+.graph-curve.c3{stroke:var(--a1t)}
+.graph-curve.c4{stroke:var(--a1)}
+.graph-region{stroke:none;opacity:.16}
+.graph-region.c1{fill:var(--a2)}
+.graph-region.c2{fill:var(--a3)}
+.graph-region.c3{fill:var(--a1t)}
+.graph-region.c4{fill:var(--a1)}
+.graph-dot{stroke:var(--bg);stroke-width:1.5}
+.graph-dot.c1{fill:var(--a2)}
+.graph-dot.c2{fill:var(--a3)}
+.graph-dot.c3{fill:var(--a1t)}
+.graph-dot.c4{fill:var(--a1)}
+
 .grip{cursor:grab;touch-action:none}
 .grip:active{cursor:grabbing}
 .grip-hit{fill:transparent}
@@ -185,7 +203,7 @@ figcaption{font-size:12.5px;color:var(--dim2);padding:11px 15px 10px;
 <script type="module">
 /* versioned like the other shared scripts — bump on every app.mjs change, or a
    returning visitor boots the cached module against new markup */
-import { boot } from "./app.mjs?v=1";
+import { boot } from "./app.mjs?v=2";
 const ready = new Promise((r) => (window.katex ? r() : addEventListener("load", r)));
 ready.then(boot).catch((e) => {
   document.getElementById("view").textContent = "Could not load the topic library.";

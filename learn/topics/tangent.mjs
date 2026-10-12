@@ -1,4 +1,4 @@
-import { Plot, slider, segmented, toggle, readout } from "../plot.mjs";
+import { Plot, slider, segmented, toggle, readout } from "../../shared/plot.mjs";
 import { prose, note, figure, heading } from "../ui.mjs";
 
 const FNS = {

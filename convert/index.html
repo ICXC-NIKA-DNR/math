@@ -111,6 +111,51 @@ td.bad{color:var(--bad)}
 .btn:disabled{opacity:.4;cursor:default}
 .btn.solid{background:var(--a2b);border-color:var(--a1);color:var(--a3t)}
 
+/* ── the imported graph ──────────────────────────────────────── */
+.gstage{background:var(--bg);padding:0}
+.gstage svg{display:block;width:100%;height:auto}
+#gcount{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--faint);
+  text-transform:none}
+
+.axis,.tick{stroke:var(--rule);stroke-width:1}
+.ticknum{fill:var(--faint);font-family:var(--mono);font-size:9.5px}
+.axlabel{fill:var(--dim2);font-family:var(--serif);font-style:italic;font-size:12px}
+
+/* Curves cycle through the page accent rather than Desmos's reds and blues,
+   so an imported graph still reads as part of this site. */
+.graph-curve{stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.graph-curve.c1{stroke:var(--a2)}
+.graph-curve.c2{stroke:var(--a3)}
+.graph-curve.c3{stroke:var(--a1t)}
+.graph-curve.c4{stroke:var(--a1)}
+.graph-region{stroke:none;opacity:.16}
+.graph-region.c1{fill:var(--a2)}
+.graph-region.c2{fill:var(--a3)}
+.graph-region.c3{fill:var(--a1t)}
+.graph-region.c4{fill:var(--a1)}
+.graph-dot{stroke:var(--bg);stroke-width:1.5}
+.graph-dot.c1{fill:var(--a2)}
+.graph-dot.c2{fill:var(--a3)}
+.graph-dot.c3{fill:var(--a1t)}
+.graph-dot.c4{fill:var(--a1)}
+
+#gsliders:empty{display:none}
+.ctl-strip{display:flex;flex-wrap:wrap;gap:14px 20px;padding:12px 15px;
+  border-top:1px solid var(--rule2)}
+.ctl{display:flex;flex-direction:column;gap:5px;min-width:160px;flex:1 1 auto}
+.ctl-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.ctl-name{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--faint)}
+.ctl-val{font-family:var(--mono);font-size:12px;color:var(--a3t)}
+.ctl input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;
+  background:none;cursor:pointer}
+.ctl input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+.ctl input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+.ctl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:14px;height:14px;border-radius:50%;background:var(--a2);border:2px solid var(--bg);
+  margin-top:-6px}
+.ctl input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+  background:var(--a2);border:2px solid var(--bg)}
+
 .hidden{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -172,6 +217,18 @@ td.bad{color:var(--bad)}
     </div>
 
     <div class="panel">
+      <div class="plabel">Drawn here <span class="rule"></span>
+        <span id="gcount"></span></div>
+      <div id="gstage" class="gstage"></div>
+      <div id="gsliders" class="ctl-strip"></div>
+      <p class="err" id="gerr"></p>
+      <div class="row">
+        <button class="btn solid" id="save-fig">Copy figure for Learn</button>
+        <button class="btn" id="dl-fig">Download .json</button>
+      </div>
+    </div>
+
+    <div class="panel">
       <div class="plabel">Converted <span class="rule"></span>
         <button class="act" id="copy-rows">copy all</button></div>
       <table><thead><tr><th style="width:46%">Desmos (LaTeX)</th><th>NOUS</th></tr></thead>
@@ -192,6 +249,6 @@ window.MathJax = {
 };
 </script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
-<script type="module" src="./app.mjs?v=1"></script>
+<script type="module" src="./app.mjs?v=2"></script>
 </body>
 </html>

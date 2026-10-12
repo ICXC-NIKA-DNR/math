@@ -5,7 +5,7 @@
 
 import { typeset } from "./ui.mjs";
 
-const MODULES = ["riemann", "tangent", "revolve", "taylor"];
+const MODULES = ["riemann", "tangent", "revolve", "taylor", "polar"];
 
 // Course order on the index, matching the way the trainers are grouped.
 const COURSES = ["Limits", "Derivatives", "Integrals", "Applications", "Series"];

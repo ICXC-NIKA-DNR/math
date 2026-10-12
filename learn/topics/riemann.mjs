@@ -1,4 +1,4 @@
-import { Plot, slider, segmented, readout } from "../plot.mjs";
+import { Plot, slider, segmented, readout } from "../../shared/plot.mjs";
 import { prose, note, figure, heading } from "../ui.mjs";
 
 // Four integrands with known exact values, so the error readout is honest
