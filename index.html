@@ -13,6 +13,7 @@
   --bg:#080808; --panel:#111; --panel2:#171717;
   --tx:#F4F4F4; --dim:#A0A0A0; --faint:#666; --rule:#242424; --rule2:#333;
   --serif:Cambria,Georgia,serif;
+  --mono:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --page-accent:#FFFFFF;
 }
 *{box-sizing:border-box}
@@ -94,6 +95,13 @@ a.card:hover .desc{color:var(--dim)}
   border-color:var(--accent)}
 
 /* Recall: four choices, one already resolved */
+.m-convert .stage .eq{font-family:var(--mono); color:#9A9A9A; letter-spacing:.01em}
+.m-convert .arrow{text-align:center; font-size:11px; color:#C9775A; line-height:1; flex:none}
+.m-convert .out-eq{font-family:var(--serif); font-size:17px; color:#EAEAEA; text-align:center;
+  flex:none; padding:2px 0}
+a.card:hover .m-convert .arrow{animation:convertNudge 2.4s ease-in-out infinite}
+@keyframes convertNudge{0%,100%{transform:translateY(-1px); opacity:.6}50%{transform:translateY(2px); opacity:1}}
+
 .m-learn .lfig{width:100%; height:100%; display:block}
 .m-learn .bars rect{fill:#8FBF6A; opacity:.26; stroke:#5E8F3E; stroke-width:.7}
 .m-learn .lcurve{stroke:#8FBF6A; stroke-width:2; vector-effect:non-scaling-stroke}
@@ -219,6 +227,33 @@ footer a:hover{color:var(--page-accent); border-color:var(--page-accent)}
             <div class="name">Learn</div>
             <div class="desc">Topics you can push on — drag a secant into a tangent, slice a solid
               two ways, watch a Taylor polynomial spread outward. Every figure is live.</div>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Tools</h2>
+    <div class="grid">
+
+      <a class="card" href="convert/" style="--accent:#C9775A; --glow:rgba(201,119,90,.42)">
+        <div class="thumb">
+          <div class="mini m-convert">
+            <div class="lbl"><span>Type → LaTeX</span><span class="t">PNG · SVG</span></div>
+            <div class="stage"><div class="eq" style="font-size:15px">int_0^1 x^2 dx</div></div>
+            <div class="arrow">⇣</div>
+            <div class="out-eq">∫₀¹ x² dx</div>
+          </div>
+          <span class="badge">2 directions</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Convert</div>
+            <div class="desc">Type plain keyboard math, get LaTeX plus a PNG or SVG to drop into
+              notes. Or paste a Desmos graph and get rows NOUS can read.</div>
           </div>
         </div>
       </a>

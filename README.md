@@ -5,6 +5,16 @@ accounts: every trainer is a self-contained page, and progress lives in the
 visitor's own browser.
 
     index.html            hub linking every trainer
+    learn/                interactive topic pages — figures you push on
+      index.html          page shell + styles
+      app.mjs             hash router: learn/#riemann is a linkable topic
+      plot.mjs            the figure kernel (SVG, maths coordinates in)
+      ui.mjs              prose, notes, figure frames, KaTeX typesetting
+      topics/*.mjs        one module per topic
+    convert/              LaTeX <-> typed math, and Desmos graph import
+      index.html          page shell + styles
+      convert.mjs         the translator (pure, unit-tested)
+      app.mjs             view layer + PNG/SVG export
     recall/               the Recall trainer (the new one)
       index.html          page shell + styles (the view's CSS variables)
       app.mjs             view layer: DOM, KaTeX, clock, localStorage
@@ -123,6 +133,49 @@ A problem needing two techniques is filed under **both**, one difficulty harder
 in the second: mark it `also:'usub'` and the build emits the copy, tagged
 `xref`. Where a cross-listed copy collides with a problem the target category
 already has, the better-written entry wins.
+
+## Learn
+
+`learn/` is the one part of the site that explains rather than drills. Each
+topic is a module under `learn/topics/` exporting `{ id, course, title, blurb,
+build(root) }`, listed on the index and routed by hash — `learn/#riemann` is a
+link you can send someone mid-session.
+
+Figures are hand-rolled SVG through `learn/plot.mjs`, not embedded Desmos.
+Desmos would have been faster to build with, but it is a white-and-blue
+calculator UI that cannot be themed to this palette, it puts a third-party
+runtime on a static site, and a constrained figure teaches better than a
+general calculator — the reader should be moving `n`, not editing the function.
+
+A topic never names a colour or a pixel: it passes mathematical coordinates and
+the kernel maps them, with every mark themed by CSS variable. Draggable handles
+are keyboard-operable, because a figure that needs a mouse is a figure half the
+readers cannot use.
+
+## Convert
+
+`convert/` does two jobs with one translator:
+
+- **typed math → LaTeX**, rendered and downloadable as PNG or SVG, for dropping
+  a worked line into notes or slides
+- **a pasted Desmos graph → NOUS rows**, reading either the saved-state JSON
+  (`Calc.getState()` in the browser console) or bare lines of LaTeX
+
+Both directions go through one AST in `convert/convert.mjs` rather than trading
+regexes, because the hard cases are structural: `a/b/c` has to become the right
+nested `\frac`, and `-x^2` must not come back as `(-x)^2`. The module is pure
+and covered by `src/test/convert.test.mjs`, which includes round-trip stability
+checks.
+
+This is deliberately *not* the parser in `src/integrals/latex.mjs`. That one
+evaluates a known subset numerically; this one translates a wider surface that
+includes things with no numeric value at all (`\int`, `\sum`, `dx`, domain
+restrictions) and must never silently drop what it cannot read.
+
+The page loads MathJax — the only page that does — purely for its SVG output.
+MathJax draws glyphs as paths, so the result rasterises to PNG with no font
+dependency; KaTeX, which every other page uses, emits font-dependent HTML that
+cannot be turned into an image cleanly.
 
 ## The three layers
 
