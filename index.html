@@ -94,6 +94,18 @@ a.card:hover .desc{color:var(--dim)}
   border-color:var(--accent)}
 
 /* Recall: four choices, one already resolved */
+.m-learn .lfig{width:100%; height:100%; display:block}
+.m-learn .bars rect{fill:#8FBF6A; opacity:.26; stroke:#5E8F3E; stroke-width:.7}
+.m-learn .lcurve{stroke:#8FBF6A; stroke-width:2; vector-effect:non-scaling-stroke}
+.m-learn .slide{position:relative; height:3px; margin:3px 2px 0; border-radius:2px;
+  background:#262626; flex:none}
+.m-learn .knob{position:absolute; top:-4px; left:34%; width:9px; height:9px; border-radius:50%;
+  background:#8FBF6A; border:2px solid #0B0B0B}
+a.card:hover .m-learn .knob{animation:learnSlide 2.8s ease-in-out infinite}
+a.card:hover .m-learn .bars rect{animation:learnGrow 2.8s ease-in-out infinite}
+@keyframes learnSlide{0%,100%{left:18%}50%{left:76%}}
+@keyframes learnGrow{0%,100%{opacity:.26}50%{opacity:.5}}
+
 .m-recall .opts{display:grid; grid-template-columns:1fr 1fr; gap:5px}
 .m-recall .score{position:absolute; left:12px; bottom:10px; font-size:8.5px;
   font-weight:700; color:var(--accent); opacity:1}
@@ -175,6 +187,44 @@ footer a:hover{color:var(--page-accent); border-color:var(--page-accent)}
     <p class="sub">Practice tools for precalculus through calculus. Nothing to install,
       nothing to sign in to.</p>
   </header>
+
+  <section>
+    <h2>Understand</h2>
+    <div class="grid">
+
+      <a class="card" href="learn/" style="--accent:#8FBF6A; --glow:rgba(143,191,106,.42)">
+        <div class="thumb">
+          <div class="mini m-learn">
+            <div class="lbl"><span>Integrals · Riemann sums</span><span class="t">n = 12</span></div>
+            <div class="stage">
+              <svg viewBox="0 0 160 70" preserveAspectRatio="none" class="lfig">
+                <g class="bars">
+                  <rect x="8"   y="60" width="18" height="6"></rect>
+                  <rect x="27"  y="53" width="18" height="13"></rect>
+                  <rect x="46"  y="43" width="18" height="23"></rect>
+                  <rect x="65"  y="31" width="18" height="35"></rect>
+                  <rect x="84"  y="20" width="18" height="46"></rect>
+                  <rect x="103" y="10" width="18" height="56"></rect>
+                </g>
+                <path d="M8 65 Q 70 62 122 6" fill="none" class="lcurve"></path>
+              </svg>
+            </div>
+            <div class="slide"><span class="knob"></span></div>
+          </div>
+          <span class="badge">4 topics</span>
+        </div>
+        <div class="meta">
+          <div class="tick"></div>
+          <div>
+            <div class="name">Learn</div>
+            <div class="desc">Topics you can push on — drag a secant into a tangent, slice a solid
+              two ways, watch a Taylor polynomial spread outward. Every figure is live.</div>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </section>
 
   <section>
     <h2>Memory</h2>
@@ -270,7 +320,7 @@ footer a:hover{color:var(--page-accent); border-color:var(--page-accent)}
               <div class="tq"></div>
             </div>
           </div>
-          <span class="badge">112 problems</span>
+          <span class="badge">446 problems</span>
         </div>
         <div class="meta">
           <div class="tick"></div>
