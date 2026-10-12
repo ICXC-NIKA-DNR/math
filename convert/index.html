@@ -10,13 +10,16 @@
   --rule:#242424; --rule2:#1E1E1E;
   --tx:#F4F4F4; --dim:#A0A0A0; --dim2:#8A8A8A; --faint:#666666;
 
-  /* Clay ramp — this applet's identity, ~18° on the wheel. */
-  --a0:#3A251D;
-  --a1:#8A4B33; --a2:#C9775A; --a3:#E8A98F;
-  --a1b:#1A100C; --a2b:#21140F; --a3b:#281811;
-  --a1t:#D9977C; --a2t:#EBB9A2; --a3t:#F5D6C6;
+  /* Rose ramp — this applet's identity, 330° on the wheel. Clay sat at 16°,
+     which is 10° from Volumes and 20° from Derivatives: on the hub it read as
+     the same colour as a trainer. 330° is the widest gap left, 36° clear of
+     both Surfaces and Volumes. */
+  --a0:#3A1F2C;
+  --a1:#9B4570; --a2:#D775A6; --a3:#EEA7C7;
+  --a1b:#1A0D14; --a2b:#210F18; --a3b:#28121D;
+  --a1t:#E093B8; --a2t:#F0BBD5; --a3t:#F7D9E7;
 
-  --good:#E8C0A8; --warn:#D1906F; --bad:#9C6B55;
+  --good:#F0BBD5; --warn:#DD8FB4; --bad:#A86B87;
 
   --serif:"Palatino Linotype", Palatino, "Iowan Old Style", "Book Antiqua", Georgia, serif;
   --sans:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -29,7 +32,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:15px
   line-height:1.55;-webkit-text-size-adjust:100%}
 .wrap{max-width:1080px;margin:0 auto;padding:28px 24px 72px;position:relative;z-index:1}
 body::before{content:"";position:fixed;inset:0 0 auto 0;height:320px;pointer-events:none;
-  background:radial-gradient(70% 55% at 50% -10%, #C9775A 0%, transparent 68%);
+  background:radial-gradient(70% 55% at 50% -10%, #D775A6 0%, transparent 68%);
   opacity:.16;z-index:0}
 
 .home-link{display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;
@@ -121,23 +124,27 @@ td.bad{color:var(--bad)}
 .ticknum{fill:var(--faint);font-family:var(--mono);font-size:9.5px}
 .axlabel{fill:var(--dim2);font-family:var(--serif);font-style:italic;font-size:12px}
 
-/* Curves cycle through the page accent rather than Desmos's reds and blues,
-   so an imported graph still reads as part of this site. */
+/* Imported curves all sit in the page accent — the one-scheme rule — so they
+   are told apart by lightness, spread as far as the ramp allows. Not by dash:
+   an implicit curve is hundreds of separate marching-squares segments and
+   stroke-dasharray restarts on each one, so a dash renders solid there and
+   dashed everywhere else. An encoding that only works on some curve types is
+   worse than none. */
 .graph-curve{stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
 .graph-curve.c1{stroke:var(--a2)}
-.graph-curve.c2{stroke:var(--a3)}
-.graph-curve.c3{stroke:var(--a1t)}
-.graph-curve.c4{stroke:var(--a1)}
+.graph-curve.c2{stroke:var(--a3t)}
+.graph-curve.c3{stroke:var(--a1)}
+.graph-curve.c4{stroke:var(--a2t)}
 .graph-region{stroke:none;opacity:.16}
 .graph-region.c1{fill:var(--a2)}
-.graph-region.c2{fill:var(--a3)}
-.graph-region.c3{fill:var(--a1t)}
-.graph-region.c4{fill:var(--a1)}
+.graph-region.c2{fill:var(--a3t)}
+.graph-region.c3{fill:var(--a1)}
+.graph-region.c4{fill:var(--a2t)}
 .graph-dot{stroke:var(--bg);stroke-width:1.5}
 .graph-dot.c1{fill:var(--a2)}
-.graph-dot.c2{fill:var(--a3)}
-.graph-dot.c3{fill:var(--a1t)}
-.graph-dot.c4{fill:var(--a1)}
+.graph-dot.c2{fill:var(--a3t)}
+.graph-dot.c3{fill:var(--a1)}
+.graph-dot.c4{fill:var(--a2t)}
 
 #gsliders:empty{display:none}
 .ctl-strip{display:flex;flex-wrap:wrap;gap:14px 20px;padding:12px 15px;
@@ -249,6 +256,6 @@ window.MathJax = {
 };
 </script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
-<script type="module" src="./app.mjs?v=2"></script>
+<script type="module" src="./app.mjs?v=3"></script>
 </body>
 </html>

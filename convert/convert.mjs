@@ -284,6 +284,10 @@ export function parseLatex(src) {
         i++; l = { t: "bin", op: "*", l, r: unary() }; continue;
       }
       if (["+", "-", ")", "}", "]", ",", "<", ">", "="].includes(t.k)) break;
+      // \} and \| close a group and must end the term. Without this the
+      // closing brace of a domain restriction is read as another factor, and
+      // \{0<x<3\} fails to parse at all.
+      if (t.k === "esc" && ["}", "|", ")", "]"].includes(t.v)) break;
       if (t.k === "|") { if (absDepth > 0) break; }
       if (t.k === "cmd" && RELS_BACK["\\" + t.v]) break;
       l = { t: "bin", op: "·", l, r: unary() };

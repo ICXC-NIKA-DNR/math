@@ -5,8 +5,8 @@
 // the JSON into a topic file. The spec is plain data — expressions and a
 // window — so it stays editable afterwards by hand.
 
-import { buildGraph } from "../shared/graph.mjs?v=2";
-import { slider } from "../shared/plot.mjs?v=2";
+import { buildGraph } from "../shared/graph.mjs?v=3";
+import { slider } from "../shared/plot.mjs?v=3";
 import { figure } from "./ui.mjs";
 
 /**

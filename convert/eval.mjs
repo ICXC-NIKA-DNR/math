@@ -5,7 +5,7 @@
 // the graph holds one scope, a slider writes into it, and every curve that
 // mentions that name redraws with the new value. No recompilation per frame.
 
-import { parseLatex, parsePlain, ConvertError } from "./convert.mjs?v=2";
+import { parseLatex, parsePlain, ConvertError } from "./convert.mjs?v=3";
 
 const F = {
   sin: Math.sin, cos: Math.cos, tan: Math.tan,

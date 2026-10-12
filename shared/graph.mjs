@@ -18,15 +18,112 @@
 //   bare f(x)           explicit        Desmos treats a lone expression as y =
 
 import { Plot } from "./plot.mjs";
-import { compile, freeNames, parseLatex } from "../convert/eval.mjs?v=2";
+import { compile, freeNames, parseLatex } from "../convert/eval.mjs?v=3";
 
-/** Split a trailing `{…}` domain restriction off an expression. */
+/**
+ * Split a trailing `{…}` domain restriction off an expression.
+ *
+ * The parser leaves a restriction as juxtaposition with a brace group, but it
+ * can sit in two places: on a bare expression, `x^2 {0<x<3}`, or inside the
+ * right-hand side of an equation, `y = x^2 {0<x<3}`. Both have to be peeled,
+ * or the restriction silently becomes a multiplication by a brace.
+ */
 function splitRestriction(node) {
-  // The parser leaves a restriction as juxtaposition with a brace group.
-  if (node?.t === "bin" && node.op === "·" && node.r?.t === "brace") {
-    return { body: node.l, conds: node.r.items };
+  const peel = (n) =>
+    n?.t === "bin" && n.op === "·" && n.r?.t === "brace"
+      ? { body: n.l, conds: n.r.items } : null;
+
+  const top = peel(node);
+  if (top) return top;
+
+  if (node?.t === "rel") {
+    const inner = peel(node.r);
+    if (inner) return { body: { ...node, r: inner.body }, conds: inner.conds };
   }
   return { body: node, conds: null };
+}
+
+/**
+ * Read a numeric interval for one variable out of a restriction, so
+ * `(cos t, sin t) {0 < t < 2pi}` sweeps a whole circle instead of the first
+ * radian of one. Returns null when the bounds are not plain constants.
+ */
+function rangeFor(conds, varName) {
+  if (!conds) return null;
+  let lo = null, hi = null;
+  const constOf = (n) => {
+    try { const v = compile(n)({}); return Number.isFinite(v) ? v : null; }
+    catch { return null; }
+  };
+  const visit = (n) => {
+    if (n?.t !== "rel") return;
+    visit(n.l);
+    const left = n.l.t === "rel" ? n.l.r : n.l;
+    const lName = nameOf(left), rName = nameOf(n.r);
+    const up = n.op === "<" || n.op === "<=";
+    if (lName === varName) {              // t < 5
+      const v = constOf(n.r);
+      if (v != null) { if (up) hi = v; else lo = v; }
+    } else if (rName === varName) {       // 0 < t
+      const v = constOf(left);
+      if (v != null) { if (up) lo = v; else hi = v; }
+    }
+  };
+  for (const c of conds) visit(c);
+  return lo != null && hi != null && hi > lo ? { lo, hi } : null;
+}
+
+/**
+ * Inline a user-defined function. Desmos graphs define `f(x) = …` constantly,
+ * and the parser reads `f(x)` as a multiplication, so without this the call
+ * compiles to `f · x` with `f` undefined — a blank curve and no complaint.
+ * Substituting the body is simpler than teaching the compiler about scopes,
+ * and the depth cap stops a self-referential definition looping forever.
+ */
+export function inlineCalls(node, defs, depth = 0) {
+  if (!node || typeof node !== "object" || depth > 12) return node;
+
+  if (node.t === "bin" && node.op === "·" &&
+      node.l?.t === "name" && defs[node.l.v] &&
+      (node.r?.t === "group" || node.r?.t === "point")) {
+    const def = defs[node.l.v];
+    const arg = node.r.t === "group" ? node.r.x : node.r.items[0];
+    return inlineCalls(substitute(def.body, def.param, inlineCalls(arg, defs, depth + 1)),
+                       defs, depth + 1);
+  }
+
+  const out = { ...node };
+  for (const k of ["x", "l", "r", "b", "e", "n", "body", "sub", "sup"]) {
+    if (out[k] && typeof out[k] === "object") out[k] = inlineCalls(out[k], defs, depth + 1);
+  }
+  for (const k of ["args", "items"]) {
+    if (Array.isArray(out[k])) out[k] = out[k].map((c) => inlineCalls(c, defs, depth + 1));
+  }
+  return out;
+}
+
+function substitute(node, param, arg) {
+  if (!node || typeof node !== "object") return node;
+  if (node.t === "name" && node.v === param) return { t: "group", x: arg };
+  const out = { ...node };
+  for (const k of ["x", "l", "r", "b", "e", "n", "body", "sub", "sup"]) {
+    if (out[k] && typeof out[k] === "object") out[k] = substitute(out[k], param, arg);
+  }
+  for (const k of ["args", "items"]) {
+    if (Array.isArray(out[k])) out[k] = out[k].map((c) => substitute(c, param, arg));
+  }
+  return out;
+}
+
+/** Recognise `f(x) = …` and return the definition it declares. */
+export function asFunctionDef(node) {
+  if (node?.t !== "rel" || node.op !== "=") return null;
+  const l = node.l;
+  if (l?.t !== "bin" || l.op !== "·" || l.l?.t !== "name") return null;
+  const paramNode = l.r?.t === "group" ? l.r.x : null;
+  if (paramNode?.t !== "name") return null;
+  if (["x", "y", "r"].includes(l.l.v)) return null;     // y(x) is not a definition
+  return { name: l.l.v, param: paramNode.v, body: node.r };
 }
 
 /** Compile the conditions of a restriction into one predicate. */
@@ -82,7 +179,9 @@ export function classify(node) {
         return { kind: "explicit", of: "y", f: compile(body.r), guard, vars };
       }
       if (lhs === "r") {
-        return { kind: "polar", f: compile(body.r), guard, vars };
+        const range = rangeFor(conds, "theta") ?? rangeFor(conds, "t");
+        return { kind: "polar", f: compile(body.r), guard, vars,
+                 tmin: range?.lo, tmax: range?.hi };
       }
       return { kind: "implicit", f: compile(body), guard, vars };
     }
@@ -95,7 +194,11 @@ export function classify(node) {
     const vars = freeNames(body);
     const [a, b] = body.items.map(compile);
     // a pair in t is a parametric curve; a pair of constants is a dot
-    if (vars.has("t")) return { kind: "parametric", x: a, y: b, guard, vars };
+    if (vars.has("t")) {
+      const range = rangeFor(conds, "t");
+      return { kind: "parametric", x: a, y: b, guard, vars,
+               tmin: range?.lo, tmax: range?.hi };
+    }
     return { kind: "point", x: a, y: b, vars };
   }
 
@@ -139,12 +242,15 @@ function drawExplicit(plot, item, scope, cls) {
 }
 
 function drawPolar(plot, item, scope, cls) {
-  // One full turn unless a restriction says otherwise; petal curves need more,
-  // so sweep two turns and let duplicate points overdraw harmlessly.
-  const turns = 2, steps = SAMPLES * turns;
+  // Two turns by default: one is not enough for a rose with even k, where the
+  // second turn traces the petals that fall in the first turn's gaps. A
+  // restriction overrides it.
+  const lo = item.tmin ?? 0;
+  const hi = item.tmax ?? 4 * Math.PI;
+  const steps = SAMPLES * 2;
   let d = "", pen = false;
   for (let i = 0; i <= steps; i++) {
-    const th = (i / steps) * turns * Math.PI * 2;
+    const th = lo + (hi - lo) * (i / steps);
     const s = { ...scope, theta: th, t: th };
     if (item.guard && !item.guard(s)) { pen = false; continue; }
     const r = item.f(s);
@@ -276,11 +382,25 @@ export function buildGraph(spec) {
   const sliders = [];
   const problems = [];
 
-  spec.expressions.forEach((e, idx) => {
-    if (e.hidden) return;
-    let node;
+  // First pass: collect f(x) = … definitions, so later expressions that call
+  // them resolve. Desmos graphs lean on these heavily and they are easy to
+  // miss, because an unresolved call draws a blank curve rather than an error.
+  const defs = {};
+  const parsed = [];
+  for (const e of spec.expressions) {
+    let node = null;
     try { node = parseLatex(e.latex); }
-    catch (err) { problems.push({ latex: e.latex, why: err.message }); return; }
+    catch (err) { problems.push({ latex: e.latex, why: err.message }); }
+    if (node) {
+      const def = asFunctionDef(node);
+      if (def) { defs[def.name] = def; parsed.push({ e, node, isDef: true }); continue; }
+    }
+    parsed.push({ e, node, isDef: false });
+  }
+
+  parsed.forEach(({ e, node, isDef }) => {
+    if (e.hidden || !node || isDef) return;
+    node = inlineCalls(node, defs);
 
     let item;
     try { item = classify(node); }

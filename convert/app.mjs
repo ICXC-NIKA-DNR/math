@@ -2,9 +2,9 @@
 // is pure and unit-tested; this file only wires it to the DOM and handles the
 // image export.
 
-import { plainToLatex, convertGraph, readDesmos } from "./convert.mjs?v=2";
-import { buildGraph } from "../shared/graph.mjs?v=2";
-import { slider } from "../shared/plot.mjs?v=2";
+import { plainToLatex, convertGraph, readDesmos } from "./convert.mjs?v=3";
+import { buildGraph } from "../shared/graph.mjs?v=3";
+import { slider } from "../shared/plot.mjs?v=3";
 
 const $ = (s) => document.querySelector(s);
 const on = (el, ev, fn) => el.addEventListener(ev, fn);
