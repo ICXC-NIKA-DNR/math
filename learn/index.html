@@ -128,6 +128,14 @@ figcaption{font-size:12.5px;color:var(--dim2);padding:11px 15px 10px;
 .graph-dot.c3{fill:var(--a1)}
 .graph-dot.c4{fill:var(--a2t)}
 
+/* an imported expression that did not draw, said out loud on the page */
+.fig-problem{border-top:1px solid var(--rule2);background:var(--a1b);
+  padding:11px 15px 12px;font-size:12.5px;line-height:1.6;color:var(--dim)}
+.fig-problem b{display:block;color:var(--bad);font-weight:600;margin-bottom:5px}
+.fig-problem ul{margin:0;padding-left:18px}
+.fig-problem li{margin:2px 0}
+.fig-problem code{font-family:var(--mono);font-size:11.5px;color:var(--a3t)}
+
 .grip{cursor:grab;touch-action:none}
 .grip:active{cursor:grabbing}
 .grip-hit{fill:transparent}
@@ -207,7 +215,7 @@ figcaption{font-size:12.5px;color:var(--dim2);padding:11px 15px 10px;
 <script type="module">
 /* versioned like the other shared scripts — bump on every app.mjs change, or a
    returning visitor boots the cached module against new markup */
-import { boot } from "./app.mjs?v=3";
+import { boot } from "./app.mjs?v=5";
 const ready = new Promise((r) => (window.katex ? r() : addEventListener("load", r)));
 ready.then(boot).catch((e) => {
   document.getElementById("view").textContent = "Could not load the topic library.";

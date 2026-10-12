@@ -19,6 +19,21 @@ const FUNCS = new Set([
   "arcsin", "arccos", "arctan", "arcsec", "arccsc", "arccot",
   "asin", "acos", "atan", "asinh", "acosh", "atanh",
   "ln", "log", "exp", "det", "deg", "gcd", "lcm", "max", "min", "mod",
+  // Desmos emits these as \operatorname{…}; the cleaner rewrites them to
+  // \abs, \floor and friends, so they have to be known here too.
+  "abs", "floor", "ceil", "round", "sign", "cbrt", "nthroot",
+  "lcm", "mean", "median", "total", "length", "stdev",
+]);
+
+// Of the functions above, only these are real LaTeX commands. The rest —
+// abs, floor, sign, mod and friends — exist in Desmos and NOUS but not in
+// LaTeX, and have to be printed as \operatorname{…} or they render as an
+// unknown-macro error.
+const TEX_CMD = new Set([
+  "sin", "cos", "tan", "sec", "csc", "cot",
+  "sinh", "cosh", "tanh", "coth",
+  "arcsin", "arccos", "arctan",
+  "ln", "log", "exp", "det", "deg", "gcd", "max", "min",
 ]);
 
 // Plain names that are a backslash command in LaTeX.
@@ -67,6 +82,7 @@ function lexPlain(src) {
     const two = src.slice(i, i + 2);
     if (["<=", ">=", "!=", "~="].includes(two)) { out.push({ k: "rel", v: two }); i += 2; continue; }
     if ("<>=".includes(c)) { out.push({ k: "rel", v: c }); i++; continue; }
+    if (c === ":") { out.push({ k: ":", v: ":" }); i++; continue; }
     if ("+-*/^(){}[],|".includes(c)) { out.push({ k: c, v: c }); i++; continue; }
     // unicode the user may have pasted
     if (c === "·" || c === "×") { out.push({ k: "*", v: "*" }); i++; continue; }
@@ -200,9 +216,16 @@ export function parsePlain(src) {
   function commas(close) {
     const out = [];
     if (peek() && peek().k === close) return out;
-    out.push(relation());
-    while (eat(",")) out.push(relation());
+    out.push(branch());
+    while (eat(",")) out.push(branch());
     return out;
+  }
+  // {x < 0: -x, x} — a condition, a colon, its value. A bare item is the
+  // fallback. Desmos and NOUS both write piecewise this way.
+  function branch() {
+    const first = relation();
+    if (eat(":")) return { t: "branch", cond: first, val: relation() };
+    return first;
   }
 
   const node = relation();
@@ -228,7 +251,7 @@ function lexTex(src) {
       out.push({ k: "num", v: m[0] }); i += m[0].length; continue;
     }
     if (/[A-Za-z]/.test(c)) { out.push({ k: "name", v: c }); i++; continue; }
-    if ("+-*/^_(){}[]|<>=,".includes(c)) { out.push({ k: c, v: c }); i++; continue; }
+    if ("+-*/^_(){}[]|<>=,:".includes(c)) { out.push({ k: c, v: c }); i++; continue; }
     fail(`unexpected character ${JSON.stringify(c)} in the LaTeX`);
   }
   return out;
@@ -283,7 +306,10 @@ export function parseLatex(src) {
       if (t.k === "cmd" && (t.v === "cdot" || t.v === "times")) {
         i++; l = { t: "bin", op: "*", l, r: unary() }; continue;
       }
-      if (["+", "-", ")", "}", "]", ",", "<", ">", "="].includes(t.k)) break;
+      // ":" ends a piecewise condition. Like the "\}" case below, leaving it
+      // out makes the term loop read it as another factor and the parse dies
+      // on a token it should never have reached.
+      if (["+", "-", ")", "}", "]", ",", "<", ">", "=", ":"].includes(t.k)) break;
       // \} and \| close a group and must end the term. Without this the
       // closing brace of a domain restriction is read as another factor, and
       // \{0<x<3\} fails to parse at all.
@@ -363,8 +389,12 @@ export function parseLatex(src) {
       return node;
     }
     if (FUNCS.has(c)) {
-      if (peek() && peek().k === "(") { i++; const a = commas(")"); need(")"); return { t: "call", f: c, args: a }; }
-      return { t: "call", f: c, args: [unary()], bare: true };
+      // \log_{2}(x): a subscript here is the base, not part of a name
+      let base = null;
+      if (eat("_")) base = braced();
+      const call = (args) => (base ? { t: "call", f: c, args, base } : { t: "call", f: c, args });
+      if (peek() && peek().k === "(") { i++; const a = commas(")"); need(")"); return call(a); }
+      return { ...call([unary()]), bare: true };
     }
     if (GREEK_SET.has(c)) return { t: "name", v: c };
     fail(`unknown LaTeX command \\${c}`);
@@ -376,9 +406,15 @@ export function parseLatex(src) {
     const atClose = () => !peek() ||
       (close === "esc" ? peek().k === "esc" : peek().k === close);
     if (atClose()) return out;
-    out.push(relation());
-    while (eat(",")) out.push(relation());
+    out.push(branch());
+    while (eat(",")) out.push(branch());
     return out;
+  }
+  // \left\{x<0:-x,x\right\} — a piecewise branch. A bare item is the fallback.
+  function branch() {
+    const first = relation();
+    if (eat(":")) return { t: "branch", cond: first, val: relation() };
+    return first;
   }
 
   const node = relation();
@@ -408,6 +444,7 @@ export function toLatex(n) {
     case "neg": return `-${wrap(n.x, 3)}`;
     case "group": return `\\left(${toLatex(n.x)}\\right)`;
     case "point": return `\\left(${n.items.map((a) => toLatex(strip(a))).join(",")}\\right)`;
+    case "branch": return `${toLatex(n.cond)}:${toLatex(n.val)}`;
     // Bars, brackets, roots and braces group on their own, so a (…) the reader
     // wrote inside one is redundant once it is printed — strip it.
     case "abs": return `\\left|${toLatex(strip(n.x))}\\right|`;
@@ -418,7 +455,7 @@ export function toLatex(n) {
     case "pow": return `${wrap(n.b, 5)}^{${toLatex(strip(n.e))}}`;
     case "rel": return `${toLatex(n.l)}${RELS[n.op] ?? n.op}${toLatex(n.r)}`;
     case "call": {
-      const f = FUNCS.has(n.f) ? "\\" + n.f : `\\operatorname{${n.f}}`;
+      const f = TEX_CMD.has(n.f) ? "\\" + n.f : `\\operatorname{${n.f}}`;
       return `${f}\\left(${n.args.map((a) => toLatex(strip(a))).join(",")}\\right)`;
     }
     case "bigop": {
@@ -455,6 +492,7 @@ export function toPlain(n) {
     case "neg": return `-${wrap(n.x, 3)}`;
     case "group": return `(${toPlain(n.x)})`;
     case "point": return `(${n.items.map(toPlain).join(", ")})`;
+    case "branch": return `${toPlain(n.cond)}: ${toPlain(n.val)}`;
     case "abs": return `|${toPlain(n.x)}|`;
     case "list": return `[${n.items.map(toPlain).join(", ")}]`;
     case "brace": return `{${n.items.map(toPlain).join(", ")}}`;
@@ -513,6 +551,17 @@ export function readDesmos(text) {
         for (const row of list) {
           if (row.type === "folder") { out.push({ kind: "folder", title: row.title ?? "" }); continue; }
           if (row.type === "text") { out.push({ kind: "text", note: row.text ?? "" }); continue; }
+          // A table is a whole row of the graph and used to vanish silently.
+          // Its first column is x, every other column a y against it.
+          if (row.type === "table") {
+            const cols = Array.isArray(row.columns) ? row.columns : [];
+            out.push({
+              kind: "table",
+              headers: cols.map((c) => c.latex ?? ""),
+              columns: cols.map((c) => (c.values ?? []).map((v) => parseFloat(v))),
+            });
+            continue;
+          }
           if (typeof row.latex !== "string" || !row.latex.trim()) continue;
           out.push({
             kind: "expr",

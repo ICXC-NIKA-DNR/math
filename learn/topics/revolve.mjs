@@ -10,7 +10,6 @@ export default {
   id: "revolve",
   course: "Applications",
   title: "Disks versus shells",
-  blurb: "The same solid, sliced two ways — and why the choice of slice is the whole problem.",
 
   build(root) {
     let method = "disk", t = 2.2;

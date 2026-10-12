@@ -21,7 +21,6 @@ export default {
   id: "riemann",
   course: "Integrals",
   title: "Riemann sums",
-  blurb: "Watch rectangles become an integral, and see why the midpoint rule beats both endpoints.",
 
   build(root) {
     let key = "sq", rule = "left", n = 6;

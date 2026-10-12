@@ -5,7 +5,7 @@
 // failure mode worth a test — a thrown error would have been obvious.
 
 import assert from "node:assert/strict";
-import { parseLatex } from "../../convert/convert.mjs";
+import { parseLatex, readDesmos } from "../../convert/convert.mjs";
 import { classify, asFunctionDef, inlineCalls } from "../../shared/graph.mjs";
 
 let pass = 0;
@@ -122,6 +122,62 @@ for (const [latex, want] of SHAPES) eq(kindOf(latex), want, latex);
   eq(c.op, ">", "the inequality direction is kept");
   ok(c.f({ x: 0, y: 1 }) > 0, "a point above the parabola");
   ok(c.f({ x: 0, y: -1 }) < 0, "a point below it");
+}
+
+// ── what a real Desmos graph actually contains ───────────────────
+// Every one of these failed before the second audit. Desmos writes most of its
+// builtins as \operatorname{…}, which the cleaner rewrites to \abs, \floor and
+// so on — names the parser then has to know.
+{
+  const at = (latex, x) => classify(parseLatex(latex)).f({ x });
+  near(at(String.raw`y=\operatorname{abs}\left(x\right)`, -3), 3, "abs");
+  near(at(String.raw`y=\operatorname{floor}\left(x\right)`, 2.7), 2, "floor");
+  near(at(String.raw`y=\operatorname{sign}\left(x\right)`, -5), -1, "sign");
+  near(at(String.raw`y=\operatorname{round}\left(x\right)`, 2.5), 3, "round");
+  near(at(String.raw`y=\operatorname{mod}\left(x,3\right)`, 7), 1, "mod");
+  near(at(String.raw`y=\log_{2}\left(x\right)`, 8), 3, "a log base is a base, not a name");
+  near(at(String.raw`y=\left|x-1\right|`, -2), 3, "absolute value bars");
+  near(at(String.raw`y=\sqrt[3]{x}`, 27), 3, "cube root");
+}
+
+// x_1 is one name. Desmos subscripts nearly everything it names, and treating
+// these as unevaluable blanked whole graphs.
+{
+  const c = classify(parseLatex(String.raw`y=x_{1}+1`));
+  near(c.f({ x_1: 4 }), 5, "a subscripted name resolves as one key");
+}
+
+// Piecewise. The colon was not even lexed, and then the term loop read it as
+// another factor — the same bug shape as the closing brace.
+{
+  const c = classify(parseLatex(String.raw`y=\left\{x<0:-x,x\right\}`));
+  near(c.f({ x: -3 }), 3, "the branch that matches");
+  near(c.f({ x: 3 }), 3, "the bare fallback");
+  const s = classify(parseLatex(String.raw`y=\left\{x>0\right\}`));
+  near(s.f({ x: 2 }), 1, "shorthand is 1 where true");
+  ok(Number.isNaN(s.f({ x: -2 })), "and NaN where not, which draws as a gap");
+}
+
+// A list of values is a definition, not a curve. It used to throw.
+{
+  const c = classify(parseLatex(String.raw`A=\left[1,2,3\right]`));
+  eq(c.kind, "definelist", "a list definition is recognised, not thrown on");
+}
+
+// A table row used to vanish from the import with no report at all.
+{
+  const rows = readDesmos(JSON.stringify({
+    expressions: { list: [
+      { type: "table", id: "1", columns: [
+        { latex: "x_1", values: ["1", "2", "3"] },
+        { latex: "y_1", values: ["1", "4", "9"] },
+      ] },
+      { type: "expression", id: "2", latex: "y=x^{2}" },
+    ] },
+  }));
+  eq(rows.length, 2, "the table survives the read");
+  eq(rows[0].kind, "table", "and is tagged as one");
+  eq(rows[0].columns[1][2], 9, "with its values parsed as numbers");
 }
 
 console.log(`graph: ${pass} assertions passed`);

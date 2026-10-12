@@ -26,7 +26,6 @@ export default {
   id: "polar",
   course: "Applications",
   title: "Polar curves",
-  blurb: "Petal counts, inner loops, and why the parity of k decides both.",
 
   build(root) {
     root.append(

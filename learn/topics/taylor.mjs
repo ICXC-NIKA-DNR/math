@@ -37,7 +37,6 @@ export default {
   id: "taylor",
   course: "Series",
   title: "Taylor polynomials",
-  blurb: "Add one term at a time and watch the approximation spread outward from a single point.",
 
   build(root) {
     let key = "exp", deg = 1, showErr = false;

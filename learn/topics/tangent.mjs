@@ -12,7 +12,6 @@ export default {
   id: "tangent",
   course: "Derivatives",
   title: "The derivative as a limit",
-  blurb: "Slide the second point into the first and watch the secant become the tangent.",
 
   build(root) {
     let key = "sq", a = 1, h = 1.2, showTangent = true;

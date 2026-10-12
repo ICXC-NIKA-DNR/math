@@ -18,7 +18,7 @@
 //   bare f(x)           explicit        Desmos treats a lone expression as y =
 
 import { Plot } from "./plot.mjs";
-import { compile, freeNames, parseLatex } from "../convert/eval.mjs?v=3";
+import { compile, freeNames, parseLatex } from "../convert/eval.mjs?v=5";
 
 /**
  * Split a trailing `{…}` domain restriction off an expression.
@@ -168,6 +168,7 @@ export function classify(node) {
     // a = 3, b = pi/2 — a value, which becomes a slider
     if (lhs && !["x", "y", "r"].includes(lhs) && body.op === "=" &&
         !freeNames(body.r).size) {
+      if (body.r.t === "list") return { kind: "definelist", name: lhs };
       return { kind: "define", name: lhs, value: compile(body.r)({}) };
     }
 
@@ -388,6 +389,7 @@ export function buildGraph(spec) {
   const defs = {};
   const parsed = [];
   for (const e of spec.expressions) {
+    if (e.kind === "table") { parsed.push({ e, node: null, isDef: false }); continue; }
     let node = null;
     try { node = parseLatex(e.latex); }
     catch (err) { problems.push({ latex: e.latex, why: err.message }); }
@@ -399,6 +401,21 @@ export function buildGraph(spec) {
   }
 
   parsed.forEach(({ e, node, isDef }) => {
+    // a table carries its own numbers; there is nothing to parse
+    if (e.kind === "table") {
+      const [xs, ...ys] = e.columns ?? [];
+      if (!xs || !ys.length) {
+        problems.push({ latex: "table", why: "needs an x column and at least one y column" });
+        return;
+      }
+      for (const col of ys) {
+        const pts = xs.map((x, i) => [x, col[i]])
+          .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
+          .map(([x, y]) => [() => x, () => y]);
+        if (pts.length) items.push({ kind: "points", items: pts, cls: SHADES[items.length % SHADES.length] });
+      }
+      return;
+    }
     if (e.hidden || !node || isDef) return;
     node = inlineCalls(node, defs);
 
@@ -407,6 +424,10 @@ export function buildGraph(spec) {
     catch (err) { problems.push({ latex: e.latex, why: err.message }); return; }
     if (!item) { problems.push({ latex: e.latex, why: "not something that can be drawn" }); return; }
 
+    if (item.kind === "definelist") {
+      problems.push({ latex: e.latex, why: "a list of values, which is not a curve on its own" });
+      return;
+    }
     if (item.kind === "define") {
       scope[item.name] = item.value;
       const sl = e.slider ?? {};

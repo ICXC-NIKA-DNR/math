@@ -184,11 +184,23 @@ draws it:
 Compiling to a closure over a shared scope is what makes sliders cheap: moving
 one writes a number and redraws, with no recompilation per frame.
 
+It also handles the parts of a Desmos graph that are not expressions at all:
+`f(x) = …` definitions (collected first, then inlined into every call that uses
+them), domain restrictions `{0<x<3}`, piecewise `{x<0:-x, x}`, subscripted
+names, `\operatorname{}` builtins, `\log_2`, and table rows — whose columns
+become plotted points.
+
+**What it will not draw**, and says so rather than going quiet: `polygon` and
+the other geometry builtins, list definitions like `A=[1,2,3]` (a list of
+values is not a curve), regressions, and actions. An expression it cannot draw
+is named on the page, not logged to the console — a figure that is quietly
+incomplete looks exactly like a correct one.
+
 **To put an imported graph in a Learn topic:** press *Copy figure for Learn*,
 paste the JSON into a topic file, and render it with `importedFigure(spec)`
 from `learn/imported.mjs`. `learn/topics/polar.mjs` is a worked example. The
 spec is plain data — expressions and a window — so it stays editable by hand
-afterwards.
+afterwards, and anything that fails to draw is reported in the figure itself.
 
 Both text directions go through one AST in `convert/convert.mjs` rather than
 trading regexes, because the hard cases are structural: `a/b/c` has to become the right
