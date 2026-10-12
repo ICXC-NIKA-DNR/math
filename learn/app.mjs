@@ -24,12 +24,10 @@ function card(t) {
   const a = document.createElement("a");
   a.className = "tcard";
   a.href = "#" + t.id;
-  a.innerHTML =
-    `<span class="tcourse">${t.course}</span>` +
-    `<span class="tname"></span>` +
-    `<span class="tblurb"></span>`;
-  a.querySelector(".tname").textContent = t.title;
-  a.querySelector(".tblurb").textContent = t.blurb;
+  const name = document.createElement("span");
+  name.className = "tname";
+  name.textContent = t.title;
+  a.append(name);
   return a;
 }
 
@@ -38,30 +36,23 @@ function renderIndex() {
   const view = $("#view");
   view.replaceChildren();
   view.className = "view index";
-  $("#crumb").hidden = true;
   $("#h1").textContent = "Learn";
 
   const lede = document.createElement("p");
   lede.className = "lede";
-  lede.textContent =
-    "Topics you can push on. Every figure is live — drag the handles, move the sliders, " +
-    "and watch which numbers move with them.";
+  lede.textContent = "Topics you can push on.";
   view.append(lede);
 
-  for (const course of COURSES) {
-    const inCourse = TOPICS.filter((t) => t.course === course);
-    if (!inCourse.length) continue;
-    const sec = document.createElement("section");
-    const h = document.createElement("h2");
-    h.className = "course";
-    h.textContent = course;
-    const grid = document.createElement("div");
-    grid.className = "tgrid";
-    grid.append(...inCourse.map(card));
-    sec.append(h, grid);
-    view.append(sec);
-  }
+  // Course is still what sets the order — easier before harder — it just is
+  // not printed. The index is a list of names and nothing else.
+  const grid = document.createElement("div");
+  grid.className = "tgrid";
+  grid.append(...ordered().map(card));
+  view.append(grid);
 }
+
+const ordered = () =>
+  COURSES.flatMap((course) => TOPICS.filter((t) => t.course === course));
 
 function renderTopic(t) {
   document.title = `${t.title} — Learn`;
@@ -69,10 +60,6 @@ function renderTopic(t) {
   view.replaceChildren();
   view.className = "view topic";
   $("#h1").textContent = t.title;
-
-  const crumb = $("#crumb");
-  crumb.hidden = false;
-  crumb.textContent = t.course;
 
   try {
     t.build(view);
@@ -85,15 +72,17 @@ function renderTopic(t) {
   }
   typeset(view);
 
-  // next/previous, so a tutoring session can walk the library in order
-  const i = TOPICS.indexOf(t);
+  // next/previous follows the index order, so a tutoring session can walk the
+  // library front to back
+  const seq = ordered();
+  const i = seq.indexOf(t);
   const nav = document.createElement("nav");
   nav.className = "tnav";
-  if (i > 0) nav.append(linkTo(TOPICS[i - 1], "← "));
+  if (i > 0) nav.append(linkTo(seq[i - 1], "← "));
   const spacer = document.createElement("span");
   spacer.className = "grow";
   nav.append(spacer);
-  if (i < TOPICS.length - 1) nav.append(linkTo(TOPICS[i + 1], "", " →"));
+  if (i < seq.length - 1) nav.append(linkTo(seq[i + 1], "", " →"));
   view.append(nav);
 }
 

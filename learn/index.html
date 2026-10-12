@@ -48,24 +48,14 @@ header{border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:26p
   display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 h1{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.01em;margin:0;color:var(--tx)}
 .glyph{font-family:var(--serif);font-size:26px;color:var(--a2);line-height:1}
-#crumb{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--faint);border:1px solid var(--rule);border-radius:3px;padding:3px 7px}
-#crumb[hidden]{display:none}
-
-/* ── library index ─────────────────────────────────────────────── */
-.lede{color:var(--dim);font-size:14px;max-width:64ch;margin:0 0 26px}
-h2.course{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--faint);font-weight:400;margin:28px 0 12px;display:flex;align-items:center;gap:10px}
-h2.course::after{content:"";flex:1;height:1px;background:var(--rule2)}
-.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.tcard{display:flex;flex-direction:column;gap:5px;padding:15px 16px 16px;
+/* ── library index: a line of text and a list of names, nothing else ── */
+.lede{color:var(--dim);font-size:14px;margin:0 0 22px}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.tcard{display:flex;align-items:center;padding:16px 18px;
   border:1px solid var(--rule);border-radius:6px;background:var(--panel);
   text-decoration:none;transition:border-color .15s,background .15s,transform .15s}
 .tcard:hover{border-color:var(--a1);background:var(--panel2);transform:translateY(-1px)}
-.tcourse{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--a2)}
 .tname{font-family:var(--serif);font-size:18px;color:var(--tx)}
-.tblurb{font-size:13px;color:var(--dim2);line-height:1.5}
 
 /* ── topic page ────────────────────────────────────────────────── */
 .topic{max-width:72ch}
@@ -189,7 +179,6 @@ figcaption{font-size:12.5px;color:var(--dim2);padding:11px 15px 10px;
   <header>
     <span class="glyph">∿</span>
     <h1 id="h1">Learn</h1>
-    <span id="crumb" hidden></span>
   </header>
   <main id="view" class="view"><p class="lede">Loading…</p></main>
 </div>
